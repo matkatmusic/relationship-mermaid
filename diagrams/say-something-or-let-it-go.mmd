@@ -1,0 +1,11 @@
+flowchart TD
+  Start(["Something happened.<br/>Say something, or let it go?"])
+  Start --> Q1{"Can I be calm?"}
+  Q1 -- No --> LetGo["Let it go"]
+  Q1 -- Yes --> Q2{"Can they be calm?"}
+  Q2 -- No --> LetGo
+  Q2 -- Yes --> Q3{"Do I need to say something<br/>for my self-esteem?"}
+  Q3 -- No --> LetGo
+  Q3 -- Yes --> Q4{"Will engaging help,<br/>or move us closer to my/our goal?"}
+  Q4 -- "Not helpful / Move further" --> LetGo
+  Q4 -- "Helpful / Move closer" --> HaveConvo["Have the conversation"]

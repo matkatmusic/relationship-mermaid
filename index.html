@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mermaid Viewer</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  body { margin: 0; display: flex; flex-direction: column; height: 100vh; font-family: sans-serif; }
+  #header { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #ccc; }
+  #header button, #header select { padding: 6px 10px; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  textarea { width: 40%; height: 100%; box-sizing: border-box; padding: 12px; font-family: monospace; font-size: 14px; border: none; border-right: 1px solid #ccc; resize: none; }
+  textarea.hidden { display: none; }
+  #output { flex: 1; height: 100%; overflow: auto; padding: 12px; box-sizing: border-box; }
+  #error { color: red; white-space: pre-wrap; padding: 12px; }
+  #status { font-size: 12px; color: #666; padding: 0 12px; }
+</style>
+</head>
+<body>
+<div id="header">
+  <button id="newBtn">New</button>
+  <button id="saveBtn">Save</button>
+  <button id="openBtn">Open editor</button>
+  <select id="diagramSelect">
+    <option value="" disabled selected>Diagrams</option>
+  </select>
+  <div id="status"></div>
+</div>
+<div id="main">
+  <textarea id="code" class="hidden">flowchart TD
+  A[New idea]</textarea>
+  <div id="output">
+    <div id="diagram"></div>
+    <div id="error"></div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: false });
+  const codeBox = document.getElementById('code');
+  const diagramBox = document.getElementById('diagram');
+  const errorBox = document.getElementById('error');
+  const statusBox = document.getElementById('status');
+  const selectBox = document.getElementById('diagramSelect');
+  const openBtn = document.getElementById('openBtn');
+  let renderId = 0;
+  let currentName = null;
+  let watcher = null;
+
+  async function render() {
+    const id = 'diagram-' + (renderId++);
+    errorBox.textContent = '';
+    try {
+      const { svg } = await mermaid.render(id, codeBox.value);
+      diagramBox.innerHTML = svg;
+    } catch (err) {
+      errorBox.textContent = err.message;
+    }
+  }
+
+  function setStatus(text) {
+    statusBox.textContent = text;
+    setTimeout(() => { if (statusBox.textContent === text) statusBox.textContent = ''; }, 2000);
+  }
+
+  function setEditorOpen(open) {
+    codeBox.classList.toggle('hidden', !open);
+    openBtn.textContent = open ? 'Close editor' : 'Open editor';
+  }
+
+  async function loadList() {
+    const names = await fetch('/api/diagrams').then(r => r.json());
+    selectBox.innerHTML = '<option value="" disabled ' + (currentName ? '' : 'selected') + '>Diagrams</option>';
+    for (const name of names) {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      if (name === currentName) option.selected = true;
+      selectBox.appendChild(option);
+    }
+  }
+
+  async function loadDiagram(name) {
+    const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
+    currentName = name;
+    codeBox.value = text;
+    render();
+    loadList();
+    watchDiagram(name);
+  }
+
+  function watchDiagram(name) {
+    if (watcher) watcher.close();
+    watcher = new EventSource('/api/watch/' + encodeURIComponent(name));
+    watcher.onmessage = async () => {
+      codeBox.value = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
+      render();
+    };
+  }
+
+  async function saveDiagram() {
+    let name = currentName;
+    if (!name) {
+      name = prompt('Name this diagram (letters, numbers, - and _ only):');
+      if (!name) return;
+      if (!name.endsWith('.mmd')) name += '.mmd';
+    }
+    await fetch('/api/diagrams/' + encodeURIComponent(name), {
+      method: 'PUT',
+      body: codeBox.value,
+    });
+    currentName = name;
+    setStatus('Saved ' + name);
+    loadList();
+    watchDiagram(name);
+  }
+
+  document.getElementById('newBtn').addEventListener('click', () => {
+    if (watcher) watcher.close();
+    currentName = null;
+    codeBox.value = 'flowchart TD\n  A[New idea]';
+    render();
+    loadList();
+    setEditorOpen(true);
+  });
+  document.getElementById('saveBtn').addEventListener('click', saveDiagram);
+  openBtn.addEventListener('click', () => setEditorOpen(codeBox.classList.contains('hidden')));
+  selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
+
+  codeBox.addEventListener('input', render);
+  render();
+  loadList();
+</script>
+</body>
+</html>
