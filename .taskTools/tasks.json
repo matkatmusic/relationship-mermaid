@@ -26,5 +26,44 @@
     "hasTests": false,
     "tests": "",
     "difficulty": 10
+  },
+  {
+    "taskNumber": 2,
+    "version": "7f47399cb65f7c640b6043ba2855a9e85f478129",
+    "title": "Issue-raiser check-ins and decision-point break timer",
+    "userDescription": "the issue-raiser side should be focused on asking \"do you feel heard by your partner?\" and \"Do you feel your partner understands the issue and impact on you?\".  one of the ways it answers these questions is by checking in with the issue-raiser as the couple navigates the diagram and works through decision points during the conflict.  Separately, the app monitors how long the couple has remained on a decision point and sets time limits so that it can ask \"do you need to take a break from the discussion?\"",
+    "chainGoal": [
+      "- A couples app that walks both people through the issue pipeline diagram; tasks 1 and 2",
+      "- Task 1 builds the app and the issue-causer side; task 2 adds the issue-raiser check-ins and the break timer"
+    ],
+    "goal": [
+      "- The issue-raiser is asked \"do you feel heard?\" at check-in points",
+      "- The issue-raiser is asked \"does your partner understand the issue and impact?\"",
+      "- Time on a decision point is tracked and a limit triggers the break prompt",
+      "- A written spec covers this before any app code"
+    ],
+    "notInScope": [
+      "- The issue-causer side; task 1 owns it",
+      "- The full app build; task 1 owns it",
+      "- The voice tracker; separate idea, no task"
+    ],
+    "problemSolvedByTask": "The issue-raiser has no way to say they still feel unheard",
+    "description": "index.html is the only place diagram interaction currently happens: parseEdges/walkTrail/highlightPath track a single chosenAnswers Set as a user clicks through Q_-prefixed decision nodes, with no concept of two people, roles, or elapsed time on a node. There is no \"issue-raiser\" vs \"issue-causer\" role anywhere in the code (diagrams/accountability.mmd is written entirely from one person's \"Me\" perspective) and no existing check-in, prompt, or timer UI to build on. Q_*-prefixed diamond nodes across diagrams/*.mmd are the natural existing mapping for \"decision points.\" Delivering this needs: a role selector so the app knows who the issue-raiser is, a check-in prompt surfaced as walkTrail's active node advances, and a per-node timer (started when a node becomes the bright/active node in highlightPath) that fires a break-suggestion prompt once a configurable time limit is reached. None of the role, check-in, or timer concepts exist in server.js either, and this can be built as client-only state in index.html without server or diagram-file changes. .taskTools/tasks.json task 1 (\"Couples mobile app...\") is the umbrella idea that also expects raiser/causer roles and per-side timers, but this task can be scoped to the existing single-page web viewer instead of waiting on a mobile rebuild.",
+    "modifiableFiles": [
+      "index.html"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Stay on one decision point past the limit, see the break prompt",
+    "difficulty": 8,
+    "blockedBy": [
+      {
+        "taskNumber": 1,
+        "reason": "Task 1 builds the couples mobile app itself (spec, mobile framework/backend, issue-raiser/issue-causer modes, and diagram-navigation state tracking) and none of that exists yet in the repo (modifiableFiles is empty, readOnlyFiles is \"*\", no spec written). This task's check-in prompts and decision-point timers are features layered on top of that app's raiser mode and diagram-navigation state, so they have nothing to attach to until task 1 produces the app/spec."
+      }
+    ]
   }
 ]
