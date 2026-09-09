@@ -634,5 +634,38 @@
         "reason": "Suggestions need tags and issues to exist first"
       }
     ]
+  },
+  {
+    "taskNumber": 17,
+    "version": "5ca22e245fddf7174e4f716739fa0bbe48afe41a",
+    "title": "Add diagrams/index.json listing the .mmd file names",
+    "userDescription": "Add diagrams/index.json listing the current .mmd file names.",
+    "chainGoal": [
+      "- The viewer works on GitHub Pages with no server; the index.json, viewer fallback, and push tasks"
+    ],
+    "goal": [
+      "- diagrams/index.json exists and is a JSON array of every .mmd file name in diagrams/"
+    ],
+    "notInScope": [
+      "- Saving diagrams from GitHub Pages; Save stays server-only",
+      "- Live reload on GitHub Pages; the watcher stays server-only",
+      "- A custom domain; the default github.io address is enough",
+      "- The viewer fallback that reads it; the viewer fallback task owns it"
+    ],
+    "problemSolvedByTask": "I want to view the diagrams from any device without running the local server",
+    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ holds accountability.mmd, say-something-or-let-it-go.mmd, and stop-causing-harms.mmd, with no index.json yet; server.js derives the list via Bun.Glob, so diagrams/index.json must be created by hand listing those names. GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html and diagrams/ already sit at repo root; enabling Pages is a manual step in the repo Settings.",
+    "modifiableFiles": [
+      "diagrams/index.json"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "diagrams/index.json"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 1
   }
 ]
