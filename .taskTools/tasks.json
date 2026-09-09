@@ -311,5 +311,48 @@
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
     ]
+  },
+  {
+    "taskNumber": 9,
+    "version": "313cb642e06aec383077c84e5bc6eb6d39997446",
+    "title": "Help article for the \"Goal: Changed behavior\" block",
+    "userDescription": "create a new task for each of the blocks that are the main goal points in the pipeline near the bottom, impact, empathy, change behavior, communication, there should be help articles that explain what those things are and what examples of them look like.",
+    "chainGoal": [
+      "- One help article per goal block in accountability.mmd, each linked from its block in the viewer"
+    ],
+    "goal": [
+      "- The article says what the goal means in plain words",
+      "- The article gives at least two real-life examples",
+      "- The article gives an example of what it is NOT",
+      "- The article is reachable from the block in the viewer"
+    ],
+    "notInScope": [
+      "- Changes to the pipeline logic; the diagram stays as is",
+      "- The mobile app; tasks 1 to 3 own it",
+      "- Articles for the question diamonds; the question-diamonds article task owns them",
+      "- The articles/ static route in server.js; task 4 owns it"
+    ],
+    "problemSolvedByTask": "The goal names are vague; people do not know what to actually do at each one",
+    "description": "diagrams/accountability.mmd defines the goal blocks as node IDs SELF_CHECK_EMPATHY_GOAL, SELF_CHECK_IMPACT_GOAL, SELF_CHECK_REGRET_GOAL, SELF_APOLOGIZE, SELF_SPOT_MY_PATTERNS, SELF_CHECK_CHANGE_GOAL, SELF_EXPRESS_NEW_PATTERN, and SELF_CHECK_FOLLOW_UP_GOAL, plus roughly 19 Q_*-prefixed decision-diamond nodes. index.html renders via mermaid.render() and discards bindFunctions; its #output click listener only toggles Q_* answer nodes and never calls preventDefault, so a mermaid `click NODE_ID \"url\"` link directive (rendered as a native SVG <a> wrapping the node) navigates normally with no index.html changes needed. server.js serves only \"/\", \"/api/diagrams\", \"/api/diagrams/:name\", and \"/api/watch/:name\"; there is no static-file route, so a new articles/ directory needs its own route in server.js before article pages are reachable. This task writes articles/goal-changed-behavior.html and adds `click SELF_CHECK_CHANGE_GOAL \"articles/goal-changed-behavior.html\"` to accountability.mmd.",
+    "modifiableFiles": [
+      "diagrams/accountability.mmd",
+      "articles/goal-changed-behavior.html"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "articles/goal-changed-behavior.html"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Click the block in the viewer and the article opens",
+    "difficulty": 4,
+    "blockedBy": [
+      {
+        "taskNumber": 4,
+        "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
+      }
+    ]
   }
 ]
