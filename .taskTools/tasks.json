@@ -738,5 +738,34 @@
         "reason": "Pages has no server, so the viewer fallback must be in place before the page can work there"
       }
     ]
+  },
+  {
+    "taskNumber": 20,
+    "version": "362944cebc8b6889a70c0e816fefa73022bd3a80",
+    "title": "Phone-style viewer: fixed zoom, a few boxes at a time, scroll to the next question on click",
+    "userDescription": "make the diagram viewer be at a fixed zoom level that renders only three or four nodes on the mermaid diagram at a time, when viewed in the browser, as though it was a mobile app render. can you click on a nodes decision choice, it scrolls the diagram so that the next set of decisions go into view.",
+    "goal": [
+      "- The diagram shows at a fixed zoom, about 3 or 4 boxes tall, in a phone-shaped area",
+      "- Clicking an answer scrolls so the next question and its answers are in view",
+      "- The Reset button scrolls back to the top",
+      "- The current full-picture view is still available with a switch"
+    ],
+    "notInScope": [
+      "- The real mobile app; task 1 owns it",
+      "- Changes to the diagram file",
+      "- Touch or swipe gestures"
+    ],
+    "problemSolvedByTask": "Both: the whole diagram is too big, and I want to see how the mobile app will feel if we made moving between precision points feel like animated scrolling",
+    "description": "index.html renders the whole diagram into #diagram inside #output (overflow: auto) with mermaid.render() and no zoom control; the SVG scales to fit. Click handling lives in the #output click listener: it adds the clicked Q_*_ answer node to chosenAnswers and calls highlightPath(), which uses walkTrail() to find the bright trail and dims the rest. The next question after a click is the last Q_ node in the walkTrail() result. Needed: a phone-shaped viewport (fixed width, fixed height) around the SVG at a fixed scale so 3 or 4 boxes are visible; after each click, find the SVG element for the next question (id contains 'flowchart-<ID>-') and scrollIntoView with smooth behavior so the question and its answer boxes are in view; the Reset button scrolls back to the top; a switch toggles between this phone view and the current full view. Only index.html changes.",
+    "modifiableFiles": [
+      "index.html"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Open the viewer, see only the first few boxes, click an answer, see the next question scroll into view",
+    "difficulty": 5
   }
 ]
