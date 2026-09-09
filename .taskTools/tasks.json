@@ -705,5 +705,38 @@
         "reason": "The fallback reads diagrams/index.json, which that task creates"
       }
     ]
+  },
+  {
+    "taskNumber": 19,
+    "version": "752d2d80fe9bdebbdfbafa4c70a449b9ac21588e",
+    "title": "Push the branch and turn on GitHub Pages",
+    "userDescription": "Push the develop branch to origin and turn on GitHub Pages in the repo settings (Deploy from a branch, root folder), then check https://matkatmusic.github.io/relationship-mermaid/ renders accountability.mmd.",
+    "chainGoal": [
+      "- The viewer works on GitHub Pages with no server; the index.json, viewer fallback, and push tasks"
+    ],
+    "goal": [
+      "- https://matkatmusic.github.io/relationship-mermaid/ loads and renders accountability.mmd"
+    ],
+    "notInScope": [
+      "- Saving diagrams from GitHub Pages; Save stays server-only",
+      "- Live reload on GitHub Pages; the watcher stays server-only",
+      "- A custom domain; the default github.io address is enough"
+    ],
+    "problemSolvedByTask": "I want to view the diagrams from any device without running the local server",
+    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ holds accountability.mmd, say-something-or-let-it-go.mmd, and stop-causing-harms.mmd, with no index.json yet; server.js derives the list via Bun.Glob, so diagrams/index.json must be created by hand listing those names. GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html and diagrams/ already sit at repo root; enabling Pages is a manual step in the repo Settings. Enabling Pages in Settings > Pages is manual; the push and the final check can be done from the terminal.",
+    "modifiableFiles": [],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 2,
+    "blockedBy": [
+      {
+        "taskNumber": 18,
+        "reason": "Pages has no server, so the viewer fallback must be in place before the page can work there"
+      }
+    ]
   }
 ]
