@@ -556,5 +556,45 @@
         "reason": "Sharing needs journal entries to exist first"
       }
     ]
+  },
+  {
+    "taskNumber": 15,
+    "version": "6d2838a8cb57d142ffe99fef30d604e9038f2792",
+    "title": "Issues are searchable and taggable",
+    "userDescription": "issues are searchable and taggable.",
+    "chainGoal": [
+      "- A couples app that walks both people through the issue pipeline diagram; tasks 1, 2, 3, 13, 14, and the search and tag tasks"
+    ],
+    "goal": [
+      "- A user can add one or more tags to an issue",
+      "- A user can search issues by words in the title or text",
+      "- A user can filter the issue list by tag",
+      "- Search runs on encrypted data without leaking it",
+      "- User can also search by tag and location"
+    ],
+    "notInScope": [
+      "- The full app build; task 1 owns it",
+      "- Searching inside journal entries and photos; task 13 owns those",
+      "- Suggested or automatic tags; the suggested-tagging task owns them"
+    ],
+    "problemSolvedByTask": "Both problems are being solved",
+    "description": "The app (server.js + index.html) stores diagrams as flat .mmd files under diagrams/ (accountability.mmd, say-something-or-let-it-go.mmd, stop-causing-harms.mmd), with no tag or search concept anywhere in the code. server.js exposes only GET /api/diagrams (list names), GET/PUT /api/diagrams/:name (read/write a diagram), and GET /api/watch/:name (SSE live reload) — no metadata storage exists for tags. index.html's only diagram-discovery UI is the #diagramSelect dropdown populated by loadList(); there is no search box or filter input. \"Issue\" is not a defined data entity in the code — the nearest existing usage is descriptive node labels like RAISE_ISSUE inside diagrams/accountability.mmd, so it is unclear whether \"issue\" should mean a whole diagram file, a tagged section within one, or a new concept altogether; this ambiguity, plus the lack of any existing tag storage format, needs to be settled during implementation. Building search and tagging will require new server endpoints (and a new storage location for tags, exact shape undetermined) plus new UI in index.html for entering/filtering by tags and searching diagram content.",
+    "modifiableFiles": [
+      "index.html",
+      "server.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Tag two issues, search by tag, see only those two",
+    "difficulty": 8,
+    "blockedBy": [
+      {
+        "taskNumber": 1,
+        "reason": "Task 1 is what creates issues as data objects at all (\"they can log issues, and the app tracks issues\") — the repo currently has no issue entity anywhere (index.html/server.js have zero mention of issues, tags, or search), so there is nothing to make searchable or taggable until task 1 builds the issue-tracking data model."
+      }
+    ]
   }
 ]
