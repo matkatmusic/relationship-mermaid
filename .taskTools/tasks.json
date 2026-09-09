@@ -667,5 +667,43 @@
     "hasTests": false,
     "tests": "",
     "difficulty": 1
+  },
+  {
+    "taskNumber": 18,
+    "version": "128359511d4db899fc4fe33bbcedfe9798770c42",
+    "title": "Make the viewer read diagrams as plain files when the server is missing",
+    "userDescription": "In index.html, when the request to /api/diagrams fails, read diagrams/index.json for the list of names and load each diagram from diagrams/<name> as a plain file; do not open the EventSource watcher in that case; Save stays server-only.",
+    "chainGoal": [
+      "- The viewer works on GitHub Pages with no server; the index.json, viewer fallback, and push tasks"
+    ],
+    "goal": [
+      "- On a plain static host, the dropdown lists every .mmd file and picking one renders it",
+      "- The local server still works with save and live reload",
+      "- No error text shows in the page when the server is missing"
+    ],
+    "notInScope": [
+      "- Saving diagrams from GitHub Pages; Save stays server-only",
+      "- Live reload on GitHub Pages; the watcher stays server-only",
+      "- A custom domain; the default github.io address is enough",
+      "- Creating diagrams/index.json; task 17 owns it"
+    ],
+    "problemSolvedByTask": "I want to view the diagrams from any device without running the local server",
+    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ holds accountability.mmd, say-something-or-let-it-go.mmd, and stop-causing-harms.mmd, with no index.json yet; server.js derives the list via Bun.Glob, so diagrams/index.json must be created by hand listing those names. GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html and diagrams/ already sit at repo root; enabling Pages is a manual step in the repo Settings.",
+    "modifiableFiles": [
+      "index.html"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Serve the folder with a plain static server (bunx serve .), open the page, pick accountability.mmd, see it render with no server API",
+    "difficulty": 4,
+    "blockedBy": [
+      {
+        "taskNumber": 17,
+        "reason": "The fallback reads diagrams/index.json, which that task creates"
+      }
+    ]
   }
 ]
