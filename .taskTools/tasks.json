@@ -596,5 +596,43 @@
         "reason": "Task 1 is what creates issues as data objects at all (\"they can log issues, and the app tracks issues\") — the repo currently has no issue entity anywhere (index.html/server.js have zero mention of issues, tags, or search), so there is nothing to make searchable or taggable until task 1 builds the issue-tracking data model."
       }
     ]
+  },
+  {
+    "taskNumber": 16,
+    "version": "26128ba31fff51f54b9621b92f42f13cba792d8b",
+    "title": "Suggested or automatic tagging of issues",
+    "userDescription": "Create a separate task for suggested or automatic tagging",
+    "chainGoal": [
+      "- A couples app that walks both people through the issue pipeline diagram; tasks 1, 2, 3, 13, 14, and the search and tag tasks"
+    ],
+    "goal": [
+      "- When a user creates an issue, the app suggests tags from the issue text",
+      "- Suggestions reuse tags already used by this couple",
+      "- Suggestion runs on the device, not a server",
+      "- Both parties can suggest tags"
+    ],
+    "notInScope": [
+      "- Tags and search themselves; task 15 owns them",
+      "- The full app build; task 1 owns it"
+    ],
+    "problemSolvedByTask": "Both problems are being solved",
+    "description": "Follows the search-and-tag task. When an issue is created, the app suggests tags from the issue text, reusing tags this couple already uses. Suggestion runs on the device so issue text does not leave the phone. Either partner can suggest tags on an issue. Touches the same tag storage and issue UI that the search-and-tag task creates.",
+    "modifiableFiles": [
+      "index.html",
+      "server.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Create an issue whose text contains a word already used as a tag; see that tag suggested; accept it and see it on the issue",
+    "difficulty": 6,
+    "blockedBy": [
+      {
+        "taskNumber": 15,
+        "reason": "Suggestions need tags and issues to exist first"
+      }
+    ]
   }
 ]
