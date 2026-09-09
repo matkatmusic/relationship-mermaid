@@ -479,5 +479,45 @@
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
     ]
+  },
+  {
+    "taskNumber": 13,
+    "version": "561c91792c5d52fd78b51e468d8f174e68ff1bbc",
+    "title": "Journals for the issue-raiser and note-taker, with photos of paper notes at close-out",
+    "userDescription": "for the person who raises the issue, they are given a notepad to jot down their thoughts and ideas and whatnot, kind of like a journal entry for when they create the issue. for the take notes side, that person is given a similar journal but it is better to take notes with pen and paper so the option to take pictures of the notes as part of closing out the conflict should be added as a feature.",
+    "chainGoal": [
+      "- A couples app that walks both people through the issue pipeline diagram; tasks 1, 2, 3, and the journal tasks"
+    ],
+    "goal": [
+      "- The issue-raiser can write a journal entry when creating the issue",
+      "- The note-taker has a journal for the same issue",
+      "- The note-taker can add photos of paper notes when closing out the conflict",
+      "- Journal entries and photos are stored encrypted"
+    ],
+    "notInScope": [
+      "- The full app build; task 1 owns it",
+      "- Reading text out of the photos; photos are stored as images",
+      "- Sharing journal entries with the partner; the share-entries task owns it"
+    ],
+    "problemSolvedByTask": "Both: thoughts get lost between raising an issue and working through it, and paper notes are better in the moments because they engage your frontal lobe, but get lost after",
+    "description": "The app (index.html + server.js, a Bun-served Mermaid diagram viewer) has no per-role journaling feature today. diagrams/accountability.mmd defines RAISE_ISSUE (\"Other side raises an issue\") and SELF_TAKE_NOTES (\"Me: take notes\") as plain flowchart node labels only, with no attached UI or storage. server.js currently only exposes GET/PUT on /api/diagrams/:name (validated by isValidName) for .mmd text files, plus an SSE watch endpoint; it has no endpoint for freeform journal text or image uploads. index.html's #output/#diagram area renders the SVG and highlights the chosen-path trail via chosenAnswers, but has no notepad/journal panel tied to a node. Building this needs: a notepad UI for the issue-raiser, a similar journal UI for the note-taker, a photo-capture/upload control on the note-taker's journal for pictures of handwritten notes taken when closing out the conflict, and new server.js persistence (text notes plus image files) since none exists. Open design decisions: how notes/photos associate with a diagram session or node, where they are stored, and what UI action represents \"closing out the conflict.\"",
+    "modifiableFiles": [
+      "index.html",
+      "server.js",
+      "tests/server.test.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Raise an issue, write a journal entry, and see it saved with the issue",
+    "difficulty": 8,
+    "blockedBy": [
+      {
+        "taskNumber": 2,
+        "reason": "This task needs separate notepads shown to the issue-raiser vs. the note-taker, but index.html has no concept of roles at all right now — just one global chosenAnswers Set with no per-user state. Task 2 is the task that adds a role selector so the app knows who the issue-raiser is; this task's per-role notepad/journal has nothing to attach to until that role concept exists."
+      }
+    ]
   }
 ]
