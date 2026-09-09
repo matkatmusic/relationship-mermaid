@@ -1,0 +1,30 @@
+[
+  {
+    "taskNumber": 1,
+    "version": "c07f3b64fe01aa91e1f78f3c1f55053cdd47b048",
+    "title": "Couples mobile app built on the issue pipeline diagram",
+    "userDescription": "Convert this diagram into a mobile app for couples where they can log issues, and they both see where they are in the \"issue pipeline\".  The app uses this pipeline to navigate individual issues.  It has two modes: issue raiser, issue causer. Either side can raise issues, and the app tracks issues. App would allow creation of Impact statements, all the places where documenting thoughts could occur, journaling, timers for each side speaking, etc.  MVP would include allowing the user to scroll through the diagram and see where they are in the conflict process.  Fully-encrypted user data.  Future expansion: Affiliated with therapy platforms, video chatting with therapists.  Related to the voice tracker idea I had that listens in to a couple's fight and flags when someone breaks any agreed-upon fight rules (name-calling, shutting down, stonewalling).",
+    "goal": [
+      "- A user can scroll the diagram on a phone and see the current step marked",
+      "- Either person can raise an issue and both see it",
+      "- All user data is stored encrypted",
+      "- A written spec exists before any app code",
+      "- users use the clickable-ness of the diagram to navigate a conflict with their person."
+    ],
+    "notInScope": [
+      "- Affiliation with therapy platforms; named as future expansion, no task yet",
+      "- Video chatting with therapists; named as future expansion, no task yet",
+      "- The voice tracker that listens to a fight and flags broken fight rules; a related separate idea, no task yet"
+    ],
+    "problemSolvedByTask": "Couples lose track of where they are in resolving an issue",
+    "description": "Repo is currently a small Bun app (server.js + index.html) that lets a person view/edit mermaid `.mmd` flowcharts and trace one path through them; it has no user accounts, no data storage beyond the raw diagram text files, no auth, and no mobile packaging of any kind. diagrams/accountability.mmd is the \"issue causer\" accountability pipeline the user means by \"issue pipeline\" — nodes like SELF_CREATE_SYNTHETIC_IMPACT_STATEMENT, Q_THEIR_IMPACT_STATEMENT, and SELF_CHECK_EMPATHY_GOAL/SELF_CHECK_REGRET_GOAL/SELF_CHECK_FOLLOW_UP_GOAL already encode the impact-statement and empathy/regret/follow-up stages the request describes; diagrams/say-something-or-let-it-go.mmd and diagrams/stop-causing-harms.mmd are separate, smaller flowcharts in the same repo. index.html's parseEdges/walkTrail functions already do path-highlighting through a diagram in the browser, which is the closest existing building block to the requested MVP (\"scroll through the diagram and see where you are\"), but it runs in a desktop browser tab, not a mobile app, and has no concept of a second user, a raiser/causer role, or persisted per-couple state. The request asks for a native/mobile app, per-user encrypted data, two-role issue tracking, journaling, speaking timers, and (as future work) audio monitoring and therapist video chat — none of which has any code, chosen framework, backend, or auth/encryption library anywhere in this repo, so no concrete file list can be given without first deciding a mobile stack (e.g. React Native/Expo vs. native) and a backend, which the request does not specify. This is effectively a new product built on top of the diagram-viewing idea rather than a bounded change to the existing viewer.",
+    "modifiableFiles": [],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 10
+  }
+]
