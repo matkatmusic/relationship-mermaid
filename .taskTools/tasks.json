@@ -65,5 +65,42 @@
         "reason": "Task 1 builds the couples mobile app itself (spec, mobile framework/backend, issue-raiser/issue-causer modes, and diagram-navigation state tracking) and none of that exists yet in the repo (modifiableFiles is empty, readOnlyFiles is \"*\", no spec written). This task's check-in prompts and decision-point timers are features layered on top of that app's raiser mode and diagram-navigation state, so they have nothing to attach to until task 1 produces the app/spec."
       }
     ]
+  },
+  {
+    "taskNumber": 3,
+    "version": "a43426ebc903ebf908a192da18210f611c053c64",
+    "title": "Check-in notifications and calendar reminders for scheduled loop-backs",
+    "userDescription": "the mobile app would have notifications for the check-ins as well as the ability to integrate with calendar reminders so stuff that gets scheduled actually gets scheduled",
+    "chainGoal": [
+      "- A couples app that walks both people through the issue pipeline diagram; tasks 1, 2, and 3",
+      "- Task 1 builds the app; task 2 adds issue-raiser check-ins and the break timer; task 3 adds notifications and calendar reminders"
+    ],
+    "goal": [
+      "- A check-in sends a phone notification at its time",
+      "- A scheduled loop-back time creates an event in the phone calendar",
+      "- Both partners get the reminder",
+      "- A written spec covers this before any app code"
+    ],
+    "notInScope": [
+      "- The check-in questions themselves; task 2 owns them",
+      "- The full app build; task 1 owns it",
+      "- Therapist scheduling; future idea, no task"
+    ],
+    "problemSolvedByTask": "Couples agree to come back to an issue and then forget",
+    "description": "Repo has no mobile app yet: task 1 (\"Couples mobile app...\") and task 2 (\"Issue-raiser check-ins and decision-point break timer\") are both still open in .taskTools/tasks.json with modifiableFiles: [] and readOnlyFiles: \"*\", meaning no mobile framework, backend, check-in UI, or scheduling concept exists in code. index.html only implements a desktop-browser mermaid diagram viewer (parseEdges/walkTrail/highlightPath) with no user accounts, no persisted state, and no notification or calendar code anywhere in the repo. server.js is a Bun HTTP server exposing only diagram CRUD endpoints (/api/diagrams, /api/watch) with no auth, user, or scheduling model to attach reminders to. This request adds push notifications for check-ins (which task 2 has not built yet) and two-way calendar-reminder integration (device calendar or a service like Google/Apple Calendar) so scheduled items actually create reminders, but no mobile stack, push-notification service, or calendar API has been chosen anywhere in the repo. No concrete file list can be given without those choices first, so this is new functionality layered on two not-yet-built features (the mobile app and the check-in system) rather than a bounded change to the existing diagram viewer.",
+    "modifiableFiles": [],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Agree a loop-back time, see it land on the phone calendar and get a notification",
+    "difficulty": 10,
+    "blockedBy": [
+      {
+        "taskNumber": 2,
+        "reason": "Notifications for check-ins need the check-in feature to exist first, and task 2 is what builds issue-raiser check-ins; this task only adds notifications and calendar-reminder integration on top of that."
+      }
+    ]
   }
 ]
