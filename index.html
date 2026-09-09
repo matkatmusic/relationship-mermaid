@@ -9,8 +9,12 @@
   #header { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #ccc; }
   #header button, #header select { padding: 6px 10px; }
   #main { flex: 1; display: flex; min-height: 0; }
-  textarea { width: 40%; height: 100%; box-sizing: border-box; padding: 12px; font-family: monospace; font-size: 14px; border: none; border-right: 1px solid #ccc; resize: none; }
-  textarea.hidden { display: none; }
+  #drawer { display: flex; height: 100%; border-right: 1px solid #ccc; }
+  #drawer.closed { border-right: none; }
+  #code { width: 320px; height: 100%; box-sizing: border-box; padding: 12px; font-family: monospace; font-size: 14px; border: none; resize: none; }
+  #drawer.closed #code { display: none; }
+  #drawerToggle { width: 24px; border: none; border-left: 1px solid #ccc; background: #f5f5f5; cursor: pointer; }
+  #drawer.closed #drawerToggle { border-left: none; }
   #output { flex: 1; height: 100%; overflow: auto; padding: 12px; box-sizing: border-box; }
   #error { color: red; white-space: pre-wrap; padding: 12px; }
   #status { font-size: 12px; color: #666; padding: 0 12px; }
@@ -20,15 +24,19 @@
 <div id="header">
   <button id="newBtn">New</button>
   <button id="saveBtn">Save</button>
-  <button id="openBtn">Open editor</button>
+  <button id="openFileBtn">Open file...</button>
+  <input type="file" id="openFileInput" accept=".mmd,text/plain" style="display:none">
   <select id="diagramSelect">
     <option value="" disabled selected>Diagrams</option>
   </select>
   <div id="status"></div>
 </div>
 <div id="main">
-  <textarea id="code" class="hidden">flowchart TD
+  <div id="drawer" class="closed">
+    <textarea id="code">flowchart TD
   A[New idea]</textarea>
+    <button id="drawerToggle" title="Show/hide editor">&#9776;</button>
+  </div>
   <div id="output">
     <div id="diagram"></div>
     <div id="error"></div>
@@ -42,7 +50,10 @@
   const errorBox = document.getElementById('error');
   const statusBox = document.getElementById('status');
   const selectBox = document.getElementById('diagramSelect');
-  const openBtn = document.getElementById('openBtn');
+  const drawer = document.getElementById('drawer');
+  const drawerToggle = document.getElementById('drawerToggle');
+  const openFileBtn = document.getElementById('openFileBtn');
+  const openFileInput = document.getElementById('openFileInput');
   let renderId = 0;
   let currentName = null;
   let watcher = null;
@@ -63,9 +74,8 @@
     setTimeout(() => { if (statusBox.textContent === text) statusBox.textContent = ''; }, 2000);
   }
 
-  function setEditorOpen(open) {
-    codeBox.classList.toggle('hidden', !open);
-    openBtn.textContent = open ? 'Close editor' : 'Open editor';
+  function setDrawerOpen(open) {
+    drawer.classList.toggle('closed', !open);
   }
 
   async function loadList() {
@@ -121,11 +131,25 @@
     codeBox.value = 'flowchart TD\n  A[New idea]';
     render();
     loadList();
-    setEditorOpen(true);
+    setDrawerOpen(true);
   });
   document.getElementById('saveBtn').addEventListener('click', saveDiagram);
-  openBtn.addEventListener('click', () => setEditorOpen(codeBox.classList.contains('hidden')));
+  drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
   selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
+
+  openFileBtn.addEventListener('click', () => openFileInput.click());
+  openFileInput.addEventListener('change', async () => {
+    const file = openFileInput.files[0];
+    if (!file) return;
+    if (watcher) watcher.close();
+    currentName = null;
+    codeBox.value = await file.text();
+    selectBox.value = '';
+    render();
+    loadList();
+    setDrawerOpen(true);
+    openFileInput.value = '';
+  });
 
   codeBox.addEventListener('input', render);
   render();
