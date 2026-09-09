@@ -519,5 +519,42 @@
         "reason": "This task needs separate notepads shown to the issue-raiser vs. the note-taker, but index.html has no concept of roles at all right now — just one global chosenAnswers Set with no per-user state. Task 2 is the task that adds a role selector so the app knows who the issue-raiser is; this task's per-role notepad/journal has nothing to attach to until that role concept exists."
       }
     ]
+  },
+  {
+    "taskNumber": 14,
+    "version": "daf13fd65d2cf0ee61e9097f9c1b4dd727f403e8",
+    "title": "Option to share a journal entry with the partner",
+    "userDescription": "Add Option to share entries as a new task",
+    "chainGoal": [
+      "- A couples app that walks both people through the issue pipeline diagram; tasks 1, 2, 3, and the journal tasks"
+    ],
+    "goal": [
+      "- The writer can choose to share one entry with their partner",
+      "- The partner sees the shared entry attached to the same issue",
+      "- The writer can unshare an entry"
+    ],
+    "notInScope": [
+      "- The journals themselves; task 13 owns them",
+      "- The full app build; task 1 owns it"
+    ],
+    "problemSolvedByTask": "Both: thoughts get lost between raising an issue and working through it, and paper notes are better in the moments because they engage your frontal lobe, but get lost after",
+    "description": "Follows the journal task. Journal entries are private to the writer by default; this adds a per-entry share toggle so the partner can see a chosen entry on the same issue, and an unshare action. Touches the same journal UI in index.html and the journal persistence in server.js that the journal task creates.",
+    "modifiableFiles": [
+      "index.html",
+      "server.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Write an entry, share it, and see it appear in the partner's view of the same issue; unshare it and see it disappear",
+    "difficulty": 5,
+    "blockedBy": [
+      {
+        "taskNumber": 13,
+        "reason": "Sharing needs journal entries to exist first"
+      }
+    ]
   }
 ]
