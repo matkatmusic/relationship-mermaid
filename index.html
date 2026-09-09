@@ -18,6 +18,8 @@
   #output { flex: 1; height: 100%; overflow: auto; padding: 12px; box-sizing: border-box; }
   #error { color: red; white-space: pre-wrap; padding: 12px; }
   #status { font-size: 12px; color: #666; padding: 0 12px; }
+  #diagram .node[id*="_Y-"], #diagram .node[id*="_N-"], #diagram .node[id*="_ONCE-"], #diagram .node[id*="_NONE-"], #diagram .node[id*="_MULTIPLE-"] { cursor: pointer; }
+  #diagram .dim { opacity: 0.15; }
 </style>
 </head>
 <body>
@@ -26,6 +28,7 @@
   <button id="saveBtn">Save</button>
   <button id="openFileBtn">Open file...</button>
   <input type="file" id="openFileInput" accept=".mmd,text/plain" style="display:none">
+  <button id="resetBtn">Reset</button>
   <select id="diagramSelect">
     <option value="" disabled selected>Diagrams</option>
   </select>
@@ -57,6 +60,73 @@
   let renderId = 0;
   let currentName = null;
   let watcher = null;
+  const chosenAnswers = new Set();
+
+  function parseEdges(text) {
+    const edges = [];
+    for (const rawLine of text.split('\n')) {
+      const line = rawLine.trim();
+      if (line.startsWith('%%') || !line.includes('-->')) continue;
+      const ids = line.split('-->').map(s => s.trim());
+      for (let i = 0; i + 1 < ids.length; i++) edges.push([ids[i], ids[i + 1]]);
+    }
+    return edges;
+  }
+
+  function walkTrail(edges) {
+    const bright = new Set();
+    const visited = new Set();
+    let node = edges[0][0];
+    while (node && !visited.has(node)) {
+      visited.add(node);
+      bright.add(node);
+      const nextNodes = edges.filter(([from]) => from === node).map(([, to]) => to);
+      if (nextNodes.length <= 1) {
+        node = nextNodes[0];
+        continue;
+      }
+      node = nextNodes.find(option => chosenAnswers.has(option));
+      if (!node) for (const option of nextNodes) bright.add(option);
+    }
+    return bright;
+  }
+
+  function highlightPath() {
+    const svgNodes = diagramBox.querySelectorAll('g.node');
+    const svgEdges = diagramBox.querySelectorAll('path.flowchart-link');
+    const edges = parseEdges(codeBox.value);
+    const bright = chosenAnswers.size ? walkTrail(edges) : null;
+    const isDim = (id) => bright !== null && !bright.has(id);
+    for (const el of svgNodes) el.classList.toggle('dim', isDim(nodeIdOf(el)));
+    for (const el of svgEdges) {
+      const [from, to] = edgeEndsOf(el, edges);
+      el.classList.toggle('dim', isDim(from) || isDim(to));
+    }
+  }
+
+  function edgeEndsOf(el, edges) {
+    return edges.find(([from, to]) => el.id.includes('L_' + from + '_' + to + '_')) || [];
+  }
+
+  function nodeIdOf(el) {
+    return el.id.replace(/^.*flowchart-/, '').replace(/-\d+$/, '');
+  }
+
+  document.getElementById('output').addEventListener('click', (event) => {
+    const nodeEl = event.target.closest('g.node');
+    if (!nodeEl) {
+      chosenAnswers.clear();
+      highlightPath();
+      return;
+    }
+    const clicked = nodeIdOf(nodeEl);
+    const edges = parseEdges(codeBox.value);
+    const isAnswer = edges.some(([from, to]) => to === clicked && from.startsWith('Q_') && clicked.startsWith(from + '_'));
+    if (!isAnswer) return;
+    if (chosenAnswers.has(clicked)) chosenAnswers.delete(clicked);
+    else chosenAnswers.add(clicked);
+    highlightPath();
+  });
 
   async function render() {
     const id = 'diagram-' + (renderId++);
@@ -64,6 +134,7 @@
     try {
       const { svg } = await mermaid.render(id, codeBox.value);
       diagramBox.innerHTML = svg;
+      highlightPath();
     } catch (err) {
       errorBox.textContent = err.message;
     }
@@ -134,6 +205,10 @@
     setDrawerOpen(true);
   });
   document.getElementById('saveBtn').addEventListener('click', saveDiagram);
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    chosenAnswers.clear();
+    highlightPath();
+  });
   drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
   selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
 
