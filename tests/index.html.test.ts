@@ -55,6 +55,24 @@ async function waitForFunction(name: string, timeoutMs = 5000) {
   throw new Error(`${name} was not defined within ${timeoutMs}ms`);
 }
 
+async function nodeIds() {
+  const json = await evaluate(
+    "JSON.stringify(Array.from(document.querySelectorAll('#diagram g.node')).map(nodeIdOf).sort())"
+  );
+  return JSON.parse(json);
+}
+
+async function waitForNodeIds(notEqualTo: string[], timeoutMs = 3000) {
+  const start = Date.now();
+  let ids = await nodeIds();
+  const before = JSON.stringify(notEqualTo);
+  while (Date.now() - start < timeoutMs && JSON.stringify(ids) === before) {
+    await sleep(50);
+    ids = await nodeIds();
+  }
+  return ids;
+}
+
 before(async () => {
   // Scenario: start the real server and headless Chrome, then connect via CDP to drive the page like a user.
   serverProc = spawn("bun", ["server.js"], { stdio: "ignore" });
@@ -103,41 +121,35 @@ test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
   assert.equal(rect.height, 600);
 });
 
-test("test_phone_view_shows_only_the_first_few_boxes", async () => {
-  // Step: the first box in the diagram sits inside the phone frame.
-  const outputRect = await evaluate("JSON.stringify(document.getElementById('output').getBoundingClientRect())").then(JSON.parse);
-  const firstBoxRect = await evaluate(
-    "JSON.stringify(document.querySelector('[id*=\"flowchart-RAISE_ISSUE-\"]').getBoundingClientRect())"
+const START_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_THEM_DONE_SPEAKING_N"].sort();
+const AFTER_Y_SLICE = ["Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_N"].sort();
+
+test("test_phone_view_shows_the_start_slice", async () => {
+  // Step: the rendered slice has exactly the start-slice node ids.
+  const ids = await nodeIds();
+  assert.deepEqual(ids, START_SLICE);
+  // Step: the frame does not scroll.
+  const output = await evaluate(
+    "JSON.stringify({sh: document.getElementById('output').scrollHeight, ch: document.getElementById('output').clientHeight, sw: document.getElementById('output').scrollWidth, cw: document.getElementById('output').clientWidth})"
   ).then(JSON.parse);
-  assert.ok(firstBoxRect.top >= outputRect.top - 1);
-  assert.ok(firstBoxRect.bottom <= outputRect.bottom + 1);
-  // Step: a box far down the diagram sits outside the phone frame.
-  const farBoxRect = await evaluate(
-    "JSON.stringify(document.querySelector('[id*=\"flowchart-Q_INTERNAL_UNDERSTANDING-\"]').getBoundingClientRect())"
-  ).then(JSON.parse);
-  assert.ok(farBoxRect.top > outputRect.bottom);
+  assert.ok(output.sh <= output.ch);
+  assert.ok(output.sw <= output.cw);
 });
 
-test("test_clicking_an_answer_scrolls_the_next_question_into_view", async () => {
+test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async () => {
   // Step: click the "Yes" answer under "are they done speaking".
   await evaluate(
     "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
-  await sleep(600);
-  // Step: the next question, "is there anything I don't understand", is now inside the frame.
-  const outputRect = await evaluate("JSON.stringify(document.getElementById('output').getBoundingClientRect())").then(JSON.parse);
-  const nextQuestionRect = await evaluate(
-    "JSON.stringify(document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND-\"]').getBoundingClientRect())"
-  ).then(JSON.parse);
-  assert.ok(nextQuestionRect.top >= outputRect.top - 1);
-  assert.ok(nextQuestionRect.bottom <= outputRect.bottom + 1);
+  const ids = await waitForNodeIds(START_SLICE);
+  // Step: the slice now centers on the clicked node and its next decision point.
+  assert.deepEqual(ids, AFTER_Y_SLICE);
 });
 
-test("test_reset_scrolls_back_to_the_top", async () => {
+test("test_reset_returns_to_the_start_slice", async () => {
   // Step: press Reset.
   await evaluate("document.getElementById('resetBtn').click()");
-  await sleep(600);
-  // Step: the frame is scrolled back to the top.
-  const scrollTop = await evaluate("document.getElementById('output').scrollTop");
-  assert.ok(scrollTop <= 1);
+  const ids = await waitForNodeIds(AFTER_Y_SLICE);
+  // Step: the slice is the start slice again.
+  assert.deepEqual(ids, START_SLICE);
 });
