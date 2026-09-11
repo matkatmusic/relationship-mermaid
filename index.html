@@ -16,6 +16,8 @@
   #drawerToggle { width: 24px; border: none; border-left: 1px solid #ccc; background: #f5f5f5; cursor: pointer; }
   #drawer.closed #drawerToggle { border-left: none; }
   #output { flex: 1; height: 100%; overflow: auto; padding: 12px; box-sizing: border-box; }
+  #output.phone { flex: none; width: 375px; height: 600px; margin: 16px auto; border: 12px solid #333; border-radius: 30px; }
+  #output.phone svg { max-width: none !important; }
   #error { color: red; white-space: pre-wrap; padding: 12px; }
   #status { font-size: 12px; color: #666; padding: 0 12px; }
   #diagram .node[id*="_Y-"], #diagram .node[id*="_N-"], #diagram .node[id*="_ONCE-"], #diagram .node[id*="_NONE-"], #diagram .node[id*="_MULTIPLE-"] { cursor: pointer; }
@@ -29,6 +31,7 @@
   <button id="openFileBtn">Open file...</button>
   <input type="file" id="openFileInput" accept=".mmd,text/plain" style="display:none">
   <button id="resetBtn">Reset</button>
+  <label><input type="checkbox" id="phoneToggle"> Phone view</label>
   <select id="diagramSelect">
     <option value="" disabled selected>Diagrams</option>
   </select>
@@ -57,6 +60,8 @@
   const drawerToggle = document.getElementById('drawerToggle');
   const openFileBtn = document.getElementById('openFileBtn');
   const openFileInput = document.getElementById('openFileInput');
+  const outputBox = document.getElementById('output');
+  const phoneToggle = document.getElementById('phoneToggle');
   let renderId = 0;
   let currentName = null;
   let watcher = null;
@@ -112,7 +117,19 @@
     return el.id.replace(/^.*flowchart-/, '').replace(/-\d+$/, '');
   }
 
-  document.getElementById('output').addEventListener('click', (event) => {
+  function isAnswerId(id, edges) {
+    return edges.some(([from, to]) => to === id && from.startsWith('Q_') && id.startsWith(from + '_'));
+  }
+
+  function scrollToNextQuestion(edges) {
+    const bright = [...walkTrail(edges)];
+    const nextQuestion = bright.reverse().find((id) => id.startsWith('Q_') && !isAnswerId(id, edges));
+    if (!nextQuestion) return;
+    const el = diagramBox.querySelector('[id*="flowchart-' + nextQuestion + '-"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  outputBox.addEventListener('click', (event) => {
     const nodeEl = event.target.closest('g.node');
     if (!nodeEl) {
       chosenAnswers.clear();
@@ -121,12 +138,27 @@
     }
     const clicked = nodeIdOf(nodeEl);
     const edges = parseEdges(codeBox.value);
-    const isAnswer = edges.some(([from, to]) => to === clicked && from.startsWith('Q_') && clicked.startsWith(from + '_'));
-    if (!isAnswer) return;
+    if (!isAnswerId(clicked, edges)) return;
     if (chosenAnswers.has(clicked)) chosenAnswers.delete(clicked);
     else chosenAnswers.add(clicked);
     highlightPath();
+    if (phoneToggle.checked && chosenAnswers.size) scrollToNextQuestion(edges);
   });
+
+  function updateSvgSizingForPhoneMode() {
+    const svg = diagramBox.querySelector('svg');
+    if (!svg) return;
+    if (!outputBox.classList.contains('phone')) {
+      svg.style.width = '';
+      svg.style.height = '';
+      return;
+    }
+    const viewBox = svg.getAttribute('viewBox');
+    if (!viewBox) return;
+    const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
+    svg.style.width = vbWidth + 'px';
+    svg.style.height = vbHeight + 'px';
+  }
 
   async function render() {
     const id = 'diagram-' + (renderId++);
@@ -135,6 +167,7 @@
       const { svg } = await mermaid.render(id, codeBox.value);
       diagramBox.innerHTML = svg;
       highlightPath();
+      updateSvgSizingForPhoneMode();
     } catch (err) {
       errorBox.textContent = err.message;
     }
@@ -208,9 +241,14 @@
   document.getElementById('resetBtn').addEventListener('click', () => {
     chosenAnswers.clear();
     highlightPath();
+    outputBox.scrollTo({ top: 0, behavior: 'smooth' });
   });
   drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
   selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
+  phoneToggle.addEventListener('change', () => {
+    outputBox.classList.toggle('phone', phoneToggle.checked);
+    updateSvgSizingForPhoneMode();
+  });
 
   openFileBtn.addEventListener('click', () => openFileInput.click());
   openFileInput.addEventListener('change', async () => {
