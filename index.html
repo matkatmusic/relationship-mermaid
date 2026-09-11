@@ -20,6 +20,9 @@
   #output.phone #diagram { height: 100%; }
   #output.phone svg { width: 100% !important; height: 100% !important; max-width: none !important; }
   #output.phone #error:empty { padding: 0; }
+  #undoBtn { display: none; }
+  #output.phone { position: relative; }
+  #output.phone #undoBtn { display: block; position: absolute; top: 12px; left: 12px; /* bottom: 12px; left: 50%; transform: translateX(-50%); */ }
   #error { color: red; white-space: pre-wrap; padding: 12px; }
   #status { font-size: 12px; color: #666; padding: 0 12px; }
   #diagram .node[id*="_Y-"], #diagram .node[id*="_N-"], #diagram .node[id*="_ONCE-"], #diagram .node[id*="_NONE-"], #diagram .node[id*="_MULTIPLE-"] { cursor: pointer; }
@@ -48,6 +51,7 @@
   <div id="output">
     <div id="diagram"></div>
     <div id="error"></div>
+    <button id="undoBtn">Undo decision</button>
   </div>
 </div>
 
@@ -87,8 +91,46 @@
     }
   }
 
-  function sliceSource(ids) {
-    const keep = new Set(ids);
+  function stubIds(ids, edges) {
+    return ids
+      .flatMap(id => isAnswerId(id, edges) ? edges.filter(([from]) => from === id).map(([, to]) => to) : [])
+      .filter(to => !ids.includes(to));
+  }
+
+  function topStubIds(ids, edges, leadIns) {
+    if (!phonePath.length) return [];
+    const visible = new Set([...ids, ...leadIns]);
+    const targets = [ids[0], ...leadIns];
+    return [...new Set(edges.filter(([, to]) => targets.includes(to)).map(([from]) => from).filter(from => !visible.has(from)))];
+  }
+
+  function leadInIds(ids, edges) {
+    if (!phonePath.length) return [];
+    const found = [];
+    const queue = [...ids];
+    while (queue.length) {
+      const node = queue.shift();
+      for (const [from] of edges.filter(([, to]) => to === node)) {
+        const isStatic = !isAnswerId(from, edges) && edges.filter(([f]) => f === from).length <= 1;
+        if (!isStatic || ids.includes(from) || found.includes(from)) continue;
+        found.push(from);
+        queue.push(from);
+      }
+    }
+    return found;
+  }
+
+  function siblingIds(ids, edges) {
+    if (!phonePath.length) return [];
+    return edges.filter(([from, to]) => from === ids[0] && to !== ids[1]).map(([, to]) => to);
+  }
+
+  function sliceSource(ids, stubs, topStubs, siblings, leadIns, bottomQ) {
+    const visible = new Set([...ids, ...leadIns]);
+    const keep = new Set([...ids, ...stubs, ...topStubs, ...siblings, ...leadIns]);
+    const top = new Set(topStubs);
+    const allStubs = [...stubs, ...topStubs];
+    const stubSet = new Set(allStubs);
     const idOf = (line) => line.split(/[\[{(\s]/)[0];
     const lines = [];
     for (const raw of codeBox.value.split('\n')) {
@@ -96,13 +138,26 @@
       if (line.startsWith('flowchart') || line.startsWith('classDef')) lines.push(line);
       else if (line.startsWith('class ')) {
         const [, list, name] = line.split(' ');
-        const kept = list.split(',').filter(id => keep.has(id));
+        const kept = list.split(',').filter(id => visible.has(id));
         if (kept.length) lines.push(`class ${kept.join(',')} ${name}`);
       } else if (line.includes('-->')) {
         const chain = line.split('-->').map(s => s.trim());
-        for (let i = 0; i + 1 < chain.length; i++)
-          if (keep.has(chain[i]) && keep.has(chain[i + 1])) lines.push(`${chain[i]} --> ${chain[i + 1]}`);
-      } else if (keep.has(idOf(line))) lines.push(line);
+        for (let i = 0; i + 1 < chain.length; i++) {
+          const a = chain[i], b = chain[i + 1];
+          if ((visible.has(a) && keep.has(b)) || (top.has(a) && visible.has(b)))
+            lines.push(stubs.includes(b) ? `${a} -.-> ${b}` : `${a} --> ${b}`);
+        }
+      } else if (keep.has(idOf(line)) && !stubSet.has(idOf(line))) lines.push(line);
+    }
+    for (const sibling of siblings) lines.push(`${ids[0]} -.-> ${sibling}`);
+    for (const id of allStubs) lines.push(`${id}[" "]`);
+    if (allStubs.length) {
+      lines.push('classDef stub fill:transparent,stroke:transparent,color:transparent');
+      lines.push(`class ${allStubs.join(',')} stub`);
+    }
+    if (siblings.length) {
+      lines.push('classDef unchosen fill:#eee,stroke:#bbb,color:#999');
+      lines.push(`class ${siblings.join(',')} unchosen`);
     }
     return lines.join('\n');
   }
@@ -180,6 +235,8 @@
     const edges = parseEdges(codeBox.value);
     if (!isAnswerId(clicked, edges)) return;
     if (phoneToggle.checked) {
+      const last = phonePath[phonePath.length - 1];
+      if (last && parentOf(clicked, edges) === parentOf(last, edges)) phonePath.pop();
       phonePath.push(clicked);
       render();
       return;
@@ -205,14 +262,61 @@
   //   svg.style.height = vbHeight + 'px';
   // }
 
+  // function drawSeparator(ids) {
+  //   if (!phonePath.length || ids.length < 3) return;
+  //   const svg = diagramBox.querySelector('svg');
+  //   const nodeEl = (id) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]');
+  //   const yOf = (el) => Number(el.getAttribute('transform').match(/translate\([^,]+,\s*([^)]+)\)/)[1]);
+  //   const chosen = nodeEl(ids[1]);
+  //   const next = nodeEl(ids[2]);
+  //   const chosenBottom = yOf(chosen) + chosen.getBBox().height / 2;
+  //   const nextTop = yOf(next) - next.getBBox().height / 2;
+  //   const [x, , width] = svg.getAttribute('viewBox').split(' ').map(Number);
+  //   const y = (chosenBottom + nextTop) / 2;
+  //   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  //   line.setAttribute('x1', x); line.setAttribute('x2', x + width);
+  //   line.setAttribute('y1', y); line.setAttribute('y2', y);
+  //   line.setAttribute('stroke', '#888'); line.setAttribute('stroke-width', '2'); line.setAttribute('stroke-dasharray', '8 6');
+  //   line.setAttribute('class', 'separator');
+  //   svg.appendChild(line);
+  // }
+
+  function drawSeparatorBetween(topId, belowIds) {
+    const svg = diagramBox.querySelector('svg');
+    const nodeEl = (id) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]');
+    const yOf = (el) => Number(el.getAttribute('transform').match(/translate\([^,]+,\s*([^)]+)\)/)[1]);
+    const top = nodeEl(topId);
+    const belowEls = belowIds.map(nodeEl).filter(Boolean);
+    if (!top || !belowEls.length) return;
+    const topBottom = yOf(top) + top.getBBox().height / 2;
+    const belowTop = Math.min(...belowEls.map(el => yOf(el) - el.getBBox().height / 2));
+    const [x, , width] = svg.getAttribute('viewBox').split(' ').map(Number);
+    const y = (topBottom + belowTop) / 2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x); line.setAttribute('x2', x + width);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#888'); line.setAttribute('stroke-width', '2'); line.setAttribute('stroke-dasharray', '8 6');
+    line.setAttribute('class', 'separator');
+    svg.appendChild(line);
+  }
+
   async function render() {
     const id = 'diagram-' + (renderId++);
     errorBox.textContent = '';
     try {
-      const source = phoneToggle.checked ? sliceSource(sliceIds(parseEdges(codeBox.value))) : codeBox.value;
+      const edges = parseEdges(codeBox.value);
+      const phone = phoneToggle.checked && edges.length > 0;
+      const ids = phone ? sliceIds(edges) : [];
+      const leadIns = leadInIds(ids, edges);
+      const siblings = siblingIds(ids, edges);
+      const topStubs = topStubIds(ids, edges, leadIns).filter(id => !siblings.includes(id));
+      const bottomQ = [...ids].reverse().find(id => edges.filter(([from]) => from === id).length > 1);
+      const source = phone ? sliceSource(ids, stubIds(ids, edges), topStubs, siblings, leadIns, bottomQ) : codeBox.value;
       const { svg } = await mermaid.render(id, source);
       diagramBox.innerHTML = svg;
-      if (!phoneToggle.checked) highlightPath();
+      if (phone && phonePath.length && ids.length > 2) drawSeparatorBetween(ids[1], [ids[2]]);
+      if (phone && bottomQ) drawSeparatorBetween(bottomQ, edges.filter(([from]) => from === bottomQ).map(([, to]) => to));
+      if (!phone) highlightPath();
       // updateSvgSizingForPhoneMode();
     } catch (err) {
       errorBox.textContent = err.message;
@@ -291,6 +395,11 @@
     render();
     outputBox.scrollTo({ top: 0, behavior: 'smooth' });
   });
+  document.getElementById('undoBtn').addEventListener('click', (event) => {
+    event.stopPropagation();
+    phonePath.pop();
+    render();
+  });
   drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
   selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
   phoneToggle.addEventListener('change', () => {
@@ -313,8 +422,9 @@
   });
 
   codeBox.addEventListener('input', render);
-  render();
-  loadList();
+  // render();
+  // loadList();
+  loadDiagram('accountability.mmd');
 </script>
 </body>
 </html>
