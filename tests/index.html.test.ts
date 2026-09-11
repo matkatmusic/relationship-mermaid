@@ -56,7 +56,7 @@ async function waitForFunction(name: string, timeoutMs = 5000) {
 }
 
 before(async () => {
-  // Scenario: start the real server and a real headless Chrome, then open a CDP connection so the test can drive the page the same way a user would.
+  // Scenario: start the real server and headless Chrome, then connect via CDP to drive the page like a user.
   serverProc = spawn("bun", ["server.js"], { stdio: "ignore" });
   await waitForPort(SERVER_PORT);
 
