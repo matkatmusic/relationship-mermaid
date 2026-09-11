@@ -1,0 +1,7 @@
+{
+  "name": "relationship-mermaid",
+  "private": true,
+  "scripts": {
+    "test": "bun test tests/server.test.js && node --test \"tests/**/*.test.ts\""
+  }
+}
