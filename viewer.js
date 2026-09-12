@@ -21,7 +21,6 @@ var currentBottomQ;
 var chosenAnswers = new Set;
 var phonePath = [];
 var MAX_PHONE_NODES = 8;
-var PHONE_INNER = { width: 327, height: 514 };
 function viewBoxOf(svgText) {
   const match = svgText.match(/viewBox="[^"]*?\s([\d.]+)\s([\d.]+)"/);
   const [, w, h] = match;
@@ -34,7 +33,12 @@ async function baseScale(edges) {
   phonePath.push(...saved);
   const { svg } = await mermaid.render("diagram-scale-" + renderId++, source);
   const box = viewBoxOf(svg);
-  return Math.min(PHONE_INNER.width / box.width, diagramBox.clientHeight / box.height);
+  const wasPhone = outputBox.classList.contains("phone");
+  outputBox.classList.add("phone");
+  const screenWidth = diagramBox.clientWidth;
+  const screenHeight = diagramBox.clientHeight;
+  outputBox.classList.toggle("phone", wasPhone);
+  return Math.min(screenWidth / box.width, screenHeight / box.height);
 }
 function parentOf(id, edges) {
   let found;
@@ -510,7 +514,7 @@ async function render() {
       const scale = await baseScale(edges);
       const svgEl = diagramBox.querySelector("svg");
       const box = viewBoxOf(svg);
-      const phoneWidth = phone ? Math.max(box.width * scale, PHONE_INNER.width) : box.width * scale;
+      const phoneWidth = phone ? Math.max(box.width * scale, diagramBox.clientWidth) : box.width * scale;
       svgEl.style.width = phoneWidth + "px";
       svgEl.style.height = box.height * scale + "px";
     }

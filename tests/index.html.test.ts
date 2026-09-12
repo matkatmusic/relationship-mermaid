@@ -141,7 +141,7 @@ test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
   // Step: the output frame reports a fixed phone-shaped size.
   const rect = await evaluate("JSON.stringify(document.getElementById('output').getBoundingClientRect())").then(JSON.parse);
   const mainHeight = await evaluate("document.getElementById('main').getBoundingClientRect().height");
-  assert.equal(rect.width, 375);
+  assert.equal(rect.width, 450);
   assert.ok(Math.abs(rect.height - (mainHeight - 32)) < 1);
   // Step: the phone bar sits above the diagram, with the buttons inside it.
   const bar = await evaluate(`JSON.stringify((() => {

@@ -40,7 +40,13 @@ async function baseScale(edges: Edge[]) {
   const { svg } = await mermaid.render('diagram-scale-' + (renderId++), source);
   const box = viewBoxOf(svg);
   // return Math.min(PHONE_INNER.width / box.width, PHONE_INNER.height / box.height);
-  return Math.min(PHONE_INNER.width / box.width, diagramBox.clientHeight / box.height);
+  // return Math.min(PHONE_INNER.width / box.width, diagramBox.clientHeight / box.height);
+  const wasPhone = outputBox.classList.contains('phone');
+  outputBox.classList.add('phone');
+  const screenWidth = diagramBox.clientWidth;
+  const screenHeight = diagramBox.clientHeight;
+  outputBox.classList.toggle('phone', wasPhone);
+  return Math.min(screenWidth / box.width, screenHeight / box.height);
 }
 
 function parentOf(id: string, edges: Edge[]) {
@@ -722,7 +728,8 @@ async function render() {
       const svgEl = diagramBox.querySelector('svg')!;
       const box = viewBoxOf(svg);
       // svgEl.style.width = box.width * scale + 'px';
-      const phoneWidth = phone ? Math.max(box.width * scale, PHONE_INNER.width) : box.width * scale;
+      // const phoneWidth = phone ? Math.max(box.width * scale, PHONE_INNER.width) : box.width * scale;
+      const phoneWidth = phone ? Math.max(box.width * scale, diagramBox.clientWidth) : box.width * scale;
       svgEl.style.width = phoneWidth + 'px';
       svgEl.style.height = box.height * scale + 'px';
     }
