@@ -430,3 +430,38 @@ test("test_font_size_is_the_same_in_every_view", async () => {
   await evaluate("document.getElementById('phoneToggle').click()");
   await sleep(300);
 });
+
+test("test_clicking_a_decision_node_scrolls_the_new_choices_into_view", async () => {
+  // Step: click "Yes" under "done speaking", then "Yes" under "anything I don't understand".
+  await evaluate(
+    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+  );
+  await sleep(200);
+  await evaluate(
+    "document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+  );
+  const clarifySlice = await waitForNodeIds(AFTER_Y_SLICE);
+  // Step: the new slice overflows the phone frame, so this test actually exercises scrolling.
+  const overflow = await evaluate(
+    "JSON.stringify({sh: document.getElementById('diagram').scrollHeight, ch: document.getElementById('diagram').clientHeight})"
+  ).then(JSON.parse);
+  assert.ok(overflow.sh > overflow.ch);
+  // Step: every choice of the new bottom decision point sits fully inside the visible container.
+  const fits = await evaluate(`JSON.stringify((() => {
+    const container = document.getElementById('diagram').getBoundingClientRect();
+    const ids = ['Q_CLARIFY_ISSUE_COUNT_NONE', 'Q_CLARIFY_ISSUE_COUNT_ONCE', 'Q_CLARIFY_ISSUE_COUNT_MULTIPLE'];
+    return ids.map(id => {
+      const rect = document.querySelector('[id*="flowchart-' + id + '-"]').getBoundingClientRect();
+      return { id, top: rect.top, bottom: rect.bottom, containerTop: container.top, containerBottom: container.bottom };
+    });
+  })())`).then(JSON.parse);
+  for (const choice of fits) {
+    assert.ok(choice.top >= choice.containerTop, `${choice.id} top in view`);
+    assert.ok(choice.bottom <= choice.containerBottom + 1, `${choice.id} bottom in view`);
+  }
+  // Step: press Reset; the diagram scrolls back to the top.
+  await evaluate("document.getElementById('resetBtn').click()");
+  await waitForNodeIds(clarifySlice);
+  const scrollTop = await evaluate("JSON.stringify(document.getElementById('diagram').scrollTop)");
+  assert.equal(scrollTop, "0");
+});

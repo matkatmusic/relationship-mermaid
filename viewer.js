@@ -441,6 +441,24 @@ function drawSeparator(ids, leadIns) {
   line.setAttribute("class", "separator");
   svg.appendChild(line);
 }
+function scrollChoicesIntoView(bottomQ, edges) {
+  const atStart = phonePath.length === 0;
+  if (atStart) {
+    diagramBox.scrollTop = 0;
+    return;
+  }
+  if (!bottomQ)
+    return;
+  let lastChoice = null;
+  for (const [from, to] of edges) {
+    const isChoice = from === bottomQ;
+    if (isChoice)
+      lastChoice = diagramBox.querySelector('[id*="flowchart-' + to + '-"]');
+  }
+  if (!lastChoice)
+    return;
+  lastChoice.scrollIntoView({ block: "end" });
+}
 async function render() {
   const id = "diagram-" + renderId++;
   errorBox.textContent = "";
@@ -488,6 +506,8 @@ async function render() {
       }
       drawSeparatorBetween(bottomQ, bottomQTargets);
     }
+    if (phone)
+      scrollChoicesIntoView(bottomQ, edges);
     if (!phone)
       highlightPath();
   } catch (err) {
