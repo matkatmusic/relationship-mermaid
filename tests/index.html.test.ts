@@ -140,8 +140,9 @@ test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
   await sleep(100);
   // Step: the output frame reports a fixed phone-shaped size.
   const rect = await evaluate("JSON.stringify(document.getElementById('output').getBoundingClientRect())").then(JSON.parse);
+  const mainHeight = await evaluate("document.getElementById('main').getBoundingClientRect().height");
   assert.equal(rect.width, 375);
-  assert.equal(rect.height, 600);
+  assert.ok(Math.abs(rect.height - (mainHeight - 32)) < 1);
   // Step: the phone bar sits above the diagram, with the buttons inside it.
   const bar = await evaluate(`JSON.stringify((() => {
     const svgTop = document.querySelector('#diagram svg').getBoundingClientRect().top;
@@ -156,7 +157,7 @@ test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
 });
 
 const START_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_THEM_DONE_SPEAKING_N"].sort();
-const AFTER_Y_SLICE = ["SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_N"].sort();
+const AFTER_Y_SLICE = ["SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_Y", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N"].sort();
 const AFTER_N_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_N"].sort();
 
 test("test_phone_view_shows_the_start_slice", async () => {
@@ -171,12 +172,12 @@ test("test_phone_view_shows_the_start_slice", async () => {
   assert.ok(output.sw <= output.cw);
   // Step: a stub line leads out of the bottom decision node.
   const stubEdge = await evaluate(
-    "JSON.stringify(Array.from(document.querySelectorAll('#diagram path.flowchart-link')).some(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_ANYTHING_I_DO_NOT_UNDERSTAND')))"
+    "JSON.stringify(Array.from(document.querySelectorAll('#diagram path.flowchart-link')).some(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID')))"
   );
   assert.equal(stubEdge, "true");
   // Step: the stub node itself is present but invisible.
   const stubNode = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND-\"].stub'))"
+    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-\"].stub'))"
   );
   assert.equal(stubNode, "true");
   // Step: the tiny stub box does not blow up the diagram's scale.
@@ -189,13 +190,22 @@ test("test_phone_view_shows_the_start_slice", async () => {
     "JSON.stringify(document.querySelectorAll('#diagram svg line.separator').length)"
   );
   assert.equal(separatorCount, "1");
+  // Step: one label reads "open decision", and there is no last-decision mask at the start slice.
+  const startLabels = await evaluate(
+    "JSON.stringify(Array.from(document.querySelectorAll('#diagram svg text.separator-label')).map(el => el.textContent))"
+  ).then(JSON.parse);
+  assert.deepEqual(startLabels, ["open decision"]);
+  const startMask = await evaluate(
+    "JSON.stringify(!!document.querySelector('#diagram svg rect.last-decision-mask'))"
+  );
+  assert.equal(startMask, "false");
   // Step: the edge from the bottom decision point into its stub target is dotted.
   // const dottedEdge = await evaluate(
   //   "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Q_THEM_DONE_SPEAKING_Y_'))?.classList.contains('edge-pattern-dotted'))"
   // );
   // assert.equal(dottedEdge, "true");
   const dottedEdge = await evaluate(
-    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_ANYTHING_I_DO_NOT_UNDERSTAND'))?.classList.contains('edge-pattern-dotted'))"
+    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID'))?.classList.contains('edge-pattern-dotted'))"
   );
   assert.equal(dottedEdge, "true");
 });
@@ -218,22 +228,33 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
     "JSON.stringify(!!document.querySelector('[id*=\"flowchart-SELF_TAKE_NOTES-\"].stub'))"
   );
   assert.equal(topStubNode, "false");
-  // Step: a dashed separator line sits between the lead-in nodes and the top decision point.
-  const separator = await evaluate(`JSON.stringify((() => {
-    const line = document.querySelector('#diagram svg line.separator');
+  // Step: there are now two separators, one for the answered decision and one for the pending one.
+  const separators = await evaluate(
+    "JSON.stringify({ lineCount: document.querySelectorAll('#diagram svg line.separator').length, labelTexts: Array.from(document.querySelectorAll('#diagram svg text.separator-label')).map(el => el.textContent), labelYs: Array.from(document.querySelectorAll('#diagram svg text.separator-label')).map(el => Number(el.getAttribute('y'))) })"
+  ).then(JSON.parse);
+  assert.equal(separators.lineCount, 2);
+  assert.deepEqual([...separators.labelTexts].sort(), ["last decision", "open decision"]);
+  const lastDecisionY = separators.labelYs[separators.labelTexts.indexOf("last decision")];
+  const openDecisionY = separators.labelYs[separators.labelTexts.indexOf("open decision")];
+  assert.ok(lastDecisionY < openDecisionY);
+  // Step: a light mask covers the answered "last decision" chunk, ending before the still-open decision point.
+  const mask = await evaluate(`JSON.stringify((() => {
+    const rect = document.querySelector('#diagram svg rect.last-decision-mask');
     const yOf = (el) => Number(el.getAttribute('transform').match(/translate\\([^,]+,\\s*([^)]+)\\)/)[1]);
-    const leadInY = yOf(document.querySelector('[id*="flowchart-SELF_TAKE_NOTES-"]'));
-    const topDpY = yOf(document.querySelector('[id*="flowchart-Q_THEM_DONE_SPEAKING-"]'));
-    return { exists: !!line, y1: line && Number(line.getAttribute('y1')), leadInY, topDpY };
+    const doneSpeakingYY = yOf(document.querySelector('[id*="flowchart-Q_THEM_DONE_SPEAKING_Y-"]'));
+    const understandY = yOf(document.querySelector('[id*="flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-"]'));
+    return {
+      exists: !!rect,
+      height: rect && Number(rect.getAttribute('height')),
+      bottom: rect && Number(rect.getAttribute('y')) + Number(rect.getAttribute('height')),
+      doneSpeakingYY,
+      understandY,
+    };
   })())`).then(JSON.parse);
-  assert.equal(separator.exists, true);
-  assert.ok(separator.y1 > separator.leadInY);
-  assert.ok(separator.y1 < separator.topDpY);
-  // Step: there are now two separators, one for the slice and one for the pending decision.
-  const separatorCount = await evaluate(
-    "JSON.stringify(document.querySelectorAll('#diagram svg line.separator').length)"
-  );
-  assert.equal(separatorCount, "2");
+  assert.equal(mask.exists, true);
+  assert.ok(mask.height > 0);
+  assert.ok(mask.bottom > mask.doneSpeakingYY);
+  assert.ok(mask.bottom < mask.understandY);
   // Step: the unchosen "No" answer shows dimmed instead of disappearing.
   const unchosenNode = await evaluate(
     "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"].unchosen'))"
@@ -257,7 +278,7 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
   // Step: no stray dashed arrow reaches the "don't understand" question except from its real predecessor.
   const understandTargets = await evaluate(`JSON.stringify(
     Array.from(document.querySelectorAll('#diagram path.flowchart-link'))
-      .map(el => el.id.match(/^L_(.+?)_Q_ANYTHING_I_DO_NOT_UNDERSTAND_\\d/))
+      .map(el => el.id.match(/^L_(.+?)_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_\\d/))
       .filter(Boolean)
       .map(m => m[1])
   )`).then(JSON.parse);
@@ -267,6 +288,15 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
     "JSON.stringify(Array.from(document.querySelectorAll('#diagram g.node')).filter(el => !el.classList.contains('stub')).length)"
   );
   assert.ok(JSON.parse(realNodeCount) <= 8);
+  // Step: clicking a sibling of the last decision point does nothing; it is no longer clickable.
+  await evaluate(
+    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+  );
+  await sleep(100);
+  const idsAfterSiblingClick = await nodeIds();
+  assert.deepEqual(idsAfterSiblingClick, AFTER_Y_SLICE);
+  const logAfterSiblingClick = await evaluate("document.getElementById('logBox').textContent");
+  assert.equal(logAfterSiblingClick.split("\n").length - 1, 1);
 });
 
 test("test_reset_returns_to_the_start_slice", async () => {
@@ -278,13 +308,13 @@ test("test_reset_returns_to_the_start_slice", async () => {
 });
 
 test("test_back_button_undoes_one_choice_at_a_time", async () => {
-  // Step: click "Yes" under "done speaking", then "Yes" under "anything I don't understand".
+  // Step: click "Yes" under "done speaking", then "No" under "do I understand everything they said".
   await evaluate(
     "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(START_SLICE);
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   const deeperSlice = await waitForNodeIds(AFTER_Y_SLICE);
   // Step: press Back once.
@@ -312,6 +342,9 @@ test("test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_ans
     "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"].unchosen'))"
   );
   assert.equal(unchosenNode, "true");
+  // Step: reset so later tests start clean, since a sibling click no longer replaces the path.
+  await evaluate("document.getElementById('resetBtn').click()");
+  await waitForNodeIds(AFTER_N_SLICE);
 });
 
 test("test_phone_view_handles_a_diagram_with_no_edges", async () => {
@@ -333,13 +366,13 @@ test("test_phone_view_handles_a_diagram_with_no_edges", async () => {
 });
 
 test("test_decision_log_reflects_choices_and_undo", async () => {
-  // Step: click "Yes" under "done speaking", then "Yes" under "anything I don't understand".
+  // Step: click "Yes" under "done speaking", then "No" under "do I understand everything they said".
   await evaluate(
     "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(START_SLICE);
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(AFTER_Y_SLICE);
   // Step: open the decision log.
@@ -349,7 +382,7 @@ test("test_decision_log_reflects_choices_and_undo", async () => {
     logAfterTwo,
     "-- Decision Log for <issue> (<timestamp>) --\n" +
       "[1] in my head: are they done speaking?: Yes\n" +
-      "[2] in my head: is there anything said that I don't understand?: Yes"
+      "[2] Do I understand everything they said?: No"
   );
   const isOpen = await evaluate("document.getElementById('logBox').classList.contains('open')");
   assert.equal(isOpen, true);
@@ -432,13 +465,13 @@ test("test_font_size_is_the_same_in_every_view", async () => {
 });
 
 test("test_clicking_a_decision_node_scrolls_the_new_choices_into_view", async () => {
-  // Step: click "Yes" under "done speaking", then "Yes" under "anything I don't understand".
+  // Step: click "Yes" under "done speaking", then "No" under "do I understand everything they said".
   await evaluate(
     "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await sleep(200);
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   const clarifySlice = await waitForNodeIds(AFTER_Y_SLICE);
   // Step: the new slice overflows the phone frame, so this test actually exercises scrolling.
@@ -464,4 +497,42 @@ test("test_clicking_a_decision_node_scrolls_the_new_choices_into_view", async ()
   await waitForNodeIds(clarifySlice);
   const scrollTop = await evaluate("JSON.stringify(document.getElementById('diagram').scrollTop)");
   assert.equal(scrollTop, "0");
+});
+
+test("test_syntax_error_keeps_last_good_diagram_and_shows_error_log", async () => {
+  // Step: open the drawer if it is closed, so the editor is interactable.
+  const drawerClosed = await evaluate("document.getElementById('drawer').classList.contains('closed')");
+  if (drawerClosed) {
+    await evaluate("document.getElementById('drawerToggle').click()");
+  }
+  // Step: set valid diagram text and confirm it renders.
+  await evaluate(
+    "codeBox.value = 'flowchart TD\\n  A[ok] --> B[good]'; codeBox.dispatchEvent(new Event('input'))"
+  );
+  await sleep(300);
+  const hasSvg = await evaluate("!!document.querySelector('#diagram svg')");
+  assert.equal(hasSvg, true);
+  // Step: set broken diagram text; the last good svg stays and the error log opens.
+  await evaluate(
+    "codeBox.value = 'flowchart TD\\n  A[ok] --> '; codeBox.dispatchEvent(new Event('input'))"
+  );
+  await sleep(500);
+  const stillHasSvg = await evaluate("!!document.querySelector('#diagram svg')");
+  assert.equal(stillHasSvg, true);
+  const hasNodeB = await evaluate('!!document.querySelector(\'[id*="flowchart-B-"]\')');
+  assert.equal(hasNodeB, true);
+  const errorLogOpen = await evaluate("document.getElementById('errorLog').classList.contains('open')");
+  assert.equal(errorLogOpen, true);
+  const errorLogText = await evaluate("document.getElementById('errorLog').textContent");
+  assert.ok(errorLogText.length > 0);
+  // Step: fix the diagram text; the error log closes again.
+  await evaluate(
+    "codeBox.value = 'flowchart TD\\n  A[ok] --> B[good]'; codeBox.dispatchEvent(new Event('input'))"
+  );
+  await sleep(300);
+  const errorLogClosed = await evaluate("document.getElementById('errorLog').classList.contains('open')");
+  assert.equal(errorLogClosed, false);
+  // Step: restore the accountability diagram so later runs start clean.
+  await evaluate("loadDiagram('accountability.mmd')");
+  await sleep(300);
 });

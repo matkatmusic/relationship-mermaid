@@ -1,8 +1,9 @@
 // viewer.ts
-mermaid.initialize({ startOnLoad: false });
+mermaid.initialize({ startOnLoad: false, suppressErrorRendering: true });
 var codeBox = document.getElementById("code");
 var diagramBox = document.getElementById("diagram");
 var errorBox = document.getElementById("error");
+var errorLog = document.getElementById("errorLog");
 var statusBox = document.getElementById("status");
 var selectBox = document.getElementById("diagramSelect");
 var drawer = document.getElementById("drawer");
@@ -16,6 +17,7 @@ var logBox = document.getElementById("logBox");
 var renderId = 0;
 var currentName = null;
 var watcher = null;
+var currentBottomQ;
 var chosenAnswers = new Set;
 var phonePath = [];
 var MAX_PHONE_NODES = 8;
@@ -32,7 +34,7 @@ async function baseScale(edges) {
   phonePath.push(...saved);
   const { svg } = await mermaid.render("diagram-scale-" + renderId++, source);
   const box = viewBoxOf(svg);
-  return Math.min(PHONE_INNER.width / box.width, PHONE_INNER.height / box.height);
+  return Math.min(PHONE_INNER.width / box.width, diagramBox.clientHeight / box.height);
 }
 function parentOf(id, edges) {
   let found;
@@ -142,6 +144,14 @@ function siblingIds(ids, edges) {
     const isNotSecond = to !== ids[1];
     const isSibling = isFromFirst && isNotSecond;
     if (isSibling)
+      found.push(to);
+  }
+  return found;
+}
+function choicesOf(id, edges) {
+  const found = [];
+  for (const [from, to] of edges) {
+    if (from === id)
       found.push(to);
   }
   return found;
@@ -341,13 +351,10 @@ outputBox.addEventListener("click", (event) => {
   if (!isAnswerId(clicked, edges))
     return;
   if (phoneToggle.checked) {
-    const last = phonePath[phonePath.length - 1];
-    let sameParentAsLast = false;
-    if (last) {
-      sameParentAsLast = parentOf(clicked, edges) === parentOf(last, edges);
-    }
-    if (sameParentAsLast)
-      phonePath.pop();
+    const openChoices = currentBottomQ ? choicesOf(currentBottomQ, edges) : [];
+    const isOpenChoice = openChoices.includes(clicked);
+    if (!isOpenChoice)
+      return;
     phonePath.push(clicked);
     render();
     return;
@@ -358,7 +365,7 @@ outputBox.addEventListener("click", (event) => {
     chosenAnswers.add(clicked);
   highlightPath();
 });
-function drawSeparatorBetween(topId, belowIds) {
+function drawSeparatorBetween(topId, belowIds, label) {
   const svg = diagramBox.querySelector("svg");
   const nodeEl = (id) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]');
   const yOf = (el) => Number(el.getAttribute("transform").match(/translate\([^,]+,\s*([^)]+)\)/)[1]);
@@ -386,60 +393,72 @@ function drawSeparatorBetween(topId, belowIds) {
   const [x, , width] = viewBoxNumbers;
   const y = (topBottom + belowTop) / 2;
   const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("x1", String(x));
-  line.setAttribute("x2", String(x + width));
-  line.setAttribute("y1", String(y));
-  line.setAttribute("y2", String(y));
-  line.setAttribute("stroke", "#888");
-  line.setAttribute("stroke-width", "2");
-  line.setAttribute("stroke-dasharray", "8 6");
+  const lineAttrs = [
+    ["x1", String(x - 1e4)],
+    ["x2", String(x + width + 1e4)],
+    ["y1", String(y)],
+    ["y2", String(y)],
+    ["stroke", "#888"],
+    ["stroke-width", "2"],
+    ["stroke-dasharray", "8 6"]
+  ];
+  for (const [name, value] of lineAttrs) {
+    line.setAttribute(name, value);
+  }
   line.setAttribute("class", "separator");
   svg.appendChild(line);
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  const screenToSvg = svg.getScreenCTM().inverse();
+  const svgLeft = new DOMPoint(svg.getBoundingClientRect().left, 0).matrixTransform(screenToSvg).x;
+  text.setAttribute("x", String(svgLeft + 8));
+  text.setAttribute("y", String(y - 6));
+  const isOpenDecision = label === "open decision";
+  const fill = isOpenDecision ? "#2e7d32" : "#c62828";
+  text.setAttribute("fill", fill);
+  text.setAttribute("stroke", "#000");
+  text.setAttribute("stroke-width", "0.6");
+  text.setAttribute("paint-order", "stroke");
+  text.setAttribute("font-weight", "bold");
+  text.setAttribute("font-size", "16");
+  text.setAttribute("font-family", "sans-serif");
+  text.setAttribute("class", "separator-label");
+  text.textContent = label;
+  svg.appendChild(text);
 }
-function drawSeparator(ids, leadIns) {
+function drawLastDecisionMask(ids, edges) {
   const svg = diagramBox.querySelector("svg");
   const nodeEl = (id) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]');
   const yOf = (el) => Number(el.getAttribute("transform").match(/translate\([^,]+,\s*([^)]+)\)/)[1]);
-  const topDp = nodeEl(ids[0]);
-  if (!topDp)
-    return;
-  const topOfDp = yOf(topDp) - topDp.getBBox().height / 2;
-  const leadInEls = [];
-  for (const id of leadIns) {
+  const top = nodeEl(ids[0]);
+  const choiceEls = [];
+  for (const id of choicesOf(ids[0], edges)) {
     const el = nodeEl(id);
     if (el)
-      leadInEls.push(el);
+      choiceEls.push(el);
   }
-  const above = [];
-  for (const el of leadInEls) {
-    const isAboveTop = yOf(el) + el.getBBox().height / 2 < topOfDp;
-    if (isAboveTop)
-      above.push(el);
-  }
-  if (above.length === 0)
+  const hasTopAndChoices = top && choiceEls.length;
+  if (!hasTopAndChoices)
     return;
-  const aboveBottoms = [];
-  for (const el of above) {
-    aboveBottoms.push(yOf(el) + el.getBBox().height / 2);
+  const bottoms = [];
+  for (const el of choiceEls) {
+    bottoms.push(yOf(el) + el.getBBox().height / 2);
   }
-  const aboveBottom = Math.max(...aboveBottoms);
-  const y = (aboveBottom + topOfDp) / 2;
+  const maskBottom = Math.max(...bottoms) + 12;
   const viewBoxParts = svg.getAttribute("viewBox").split(" ");
   const viewBoxNumbers = [];
   for (const part of viewBoxParts) {
     viewBoxNumbers.push(Number(part));
   }
-  const [x, , width] = viewBoxNumbers;
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("x1", String(x));
-  line.setAttribute("x2", String(x + width));
-  line.setAttribute("y1", String(y));
-  line.setAttribute("y2", String(y));
-  line.setAttribute("stroke", "#888");
-  line.setAttribute("stroke-width", "2");
-  line.setAttribute("stroke-dasharray", "8 6");
-  line.setAttribute("class", "separator");
-  svg.appendChild(line);
+  const [x, y, width] = viewBoxNumbers;
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("x", String(x - 1e4));
+  rect.setAttribute("y", String(y));
+  rect.setAttribute("width", String(width + 20000));
+  rect.setAttribute("height", String(maskBottom - y));
+  rect.setAttribute("fill", "rgba(0,0,0,0.25)");
+  rect.setAttribute("class", "last-decision-mask");
+  rect.setAttribute("pointer-events", "none");
+  svg.appendChild(rect);
 }
 function scrollChoicesIntoView(bottomQ, edges) {
   const atStart = phonePath.length === 0;
@@ -483,6 +502,7 @@ async function render() {
         break;
       }
     }
+    currentBottomQ = bottomQ;
     const source = phone ? chunkSource(shown, siblings, edges) : codeBox.value;
     const { svg } = await mermaid.render(id, source);
     diagramBox.innerHTML = svg;
@@ -490,28 +510,32 @@ async function render() {
       const scale = await baseScale(edges);
       const svgEl = diagramBox.querySelector("svg");
       const box = viewBoxOf(svg);
-      svgEl.style.width = box.width * scale + "px";
+      const phoneWidth = phone ? Math.max(box.width * scale, PHONE_INNER.width) : box.width * scale;
+      svgEl.style.width = phoneWidth + "px";
       svgEl.style.height = box.height * scale + "px";
     }
     if (phone)
       renderLog(edges);
-    if (phone)
-      drawSeparator(ids, leadIns);
+    const shouldDrawLastDecision = phone && phonePath.length > 0;
+    if (shouldDrawLastDecision)
+      drawLastDecisionMask(ids, edges);
+    if (shouldDrawLastDecision)
+      drawSeparatorBetween(ids[0], choicesOf(ids[0], edges), "last decision");
     const shouldDrawBottomSeparator = phone && bottomQ;
-    if (shouldDrawBottomSeparator) {
-      const bottomQTargets = [];
-      for (const [from, to] of edges) {
-        if (from === bottomQ)
-          bottomQTargets.push(to);
-      }
-      drawSeparatorBetween(bottomQ, bottomQTargets);
-    }
+    if (shouldDrawBottomSeparator)
+      drawSeparatorBetween(bottomQ, choicesOf(bottomQ, edges), "open decision");
     if (phone)
       scrollChoicesIntoView(bottomQ, edges);
     if (!phone)
       highlightPath();
+    errorLog.textContent = "";
+    errorLog.classList.remove("open");
   } catch (err) {
     errorBox.textContent = err.message;
+    errorLog.textContent += err.message + `
+`;
+    errorLog.classList.add("open");
+    errorLog.scrollTop = errorLog.scrollHeight;
   }
 }
 function setStatus(text) {

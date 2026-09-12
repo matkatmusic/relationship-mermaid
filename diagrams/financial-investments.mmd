@@ -1,0 +1,28 @@
+flowchart TD
+  A[financial investment]
+  B[what's the cost?]
+  C[Do we have enough money?]
+  C_Y[Yes]
+  C_N[No]
+  NEED_MONEY_ROUTE{What is the fastest way to get the money?}
+E_BORROW[Borrow from someone]
+E_NEW_JOB["get a (better) job"]
+E_SECOND_JOB[Get a second job]
+E_JOB_PROMOTION[get a promotion]
+  ARE_TERMS_REASONABLE[are the terms of the investment reasonable?]
+
+ARE_TERMS_REASONABLE_Y[Yes]
+ARE_TERMS_REASONABLE_N[No]
+
+A --> B --> C 
+C --> C_Y --> ARE_TERMS_REASONABLE
+C --> C_N --> NEED_MONEY_ROUTE
+
+NEED_MONEY_ROUTE --> E_BORROW
+NEED_MONEY_ROUTE --> E_NEW_JOB
+NEED_MONEY_ROUTE --> E_JOB_PROMOTION
+NEED_MONEY_ROUTE --> E_SECOND_JOB
+
+ARE_TERMS_REASONABLE --> ARE_TERMS_REASONABLE_Y
+
+ARE_TERMS_REASONABLE --> ARE_TERMS_REASONABLE_N
