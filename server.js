@@ -13,6 +13,10 @@ if (import.meta.main) Bun.serve({
       return new Response(Bun.file("index.html"));
     }
 
+    if (url.pathname === "/viewer.js") {
+      return new Response(Bun.file("viewer.js"), { headers: { "Content-Type": "text/javascript" } });
+    }
+
     if (url.pathname === "/api/diagrams" && req.method === "GET") {
       const glob = new Bun.Glob("*.mmd");
       const names = await Array.fromAsync(glob.scan({ cwd: "diagrams" }));

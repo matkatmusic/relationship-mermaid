@@ -1,6 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -87,6 +87,7 @@ async function labelLineHeight(id: string) {
 
 before(async () => {
   // Scenario: start the real server and headless Chrome, then connect via CDP to drive the page like a user.
+  spawnSync("bun", ["build", "viewer.ts", "--outfile", "viewer.js"], { stdio: "inherit" });
   serverProc = spawn("bun", ["server.js"], { stdio: "ignore" });
   await waitForPort(SERVER_PORT);
 
@@ -243,16 +244,24 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
     "JSON.stringify(!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"].stub'))"
   );
   assert.equal(siblingNotStub, "true");
-  // Step: RAISE_ISSUE falls outside the 8-node budget, so it becomes a hidden stub.
-  const raiseIssueStub = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-RAISE_ISSUE-\"].stub'))"
+  // Step: "Me: Listen" already has a real predecessor (the "No" loop-back), so RAISE_ISSUE's stub arrow is dropped.
+  const raiseIssueNode = await evaluate(
+    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-RAISE_ISSUE-\"]'))"
   );
-  assert.equal(raiseIssueStub, "true");
+  assert.equal(raiseIssueNode, "false");
   // Step: the dimmed "No" answer still has a real dashed arrow into "Me: Listen".
   const noToListenEdge = await evaluate(
     "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_N_SELF_LISTEN'))?.classList.contains('edge-pattern-dotted'))"
   );
   assert.equal(noToListenEdge, "true");
+  // Step: no stray dashed arrow reaches the "don't understand" question except from its real predecessor.
+  const understandTargets = await evaluate(`JSON.stringify(
+    Array.from(document.querySelectorAll('#diagram path.flowchart-link'))
+      .map(el => el.id.match(/^L_(.+?)_Q_ANYTHING_I_DO_NOT_UNDERSTAND_\\d/))
+      .filter(Boolean)
+      .map(m => m[1])
+  )`).then(JSON.parse);
+  for (const source of understandTargets) assert.equal(source, "Q_THEM_DONE_SPEAKING_Y");
   // Step: the 8-node budget caps how many real (non-stub) nodes are shown.
   const realNodeCount = await evaluate(
     "JSON.stringify(Array.from(document.querySelectorAll('#diagram g.node')).filter(el => !el.classList.contains('stub')).length)"
