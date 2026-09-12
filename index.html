@@ -16,13 +16,19 @@
   #drawerToggle { width: 24px; border: none; border-left: 1px solid #ccc; background: #f5f5f5; cursor: pointer; }
   #drawer.closed #drawerToggle { border-left: none; }
   #output { flex: 1; height: 100%; overflow: auto; padding: 12px; box-sizing: border-box; }
-  #output.phone { flex: none; width: 375px; height: 600px; margin: 16px auto; border: 12px solid #333; border-radius: 30px; overflow: hidden; }
-  #output.phone #diagram { height: 100%; }
-  #output.phone svg { width: 100% !important; height: 100% !important; max-width: none !important; }
+  #output.phone { flex: none; width: 375px; height: 600px; margin: 16px auto; border: 12px solid #333; border-radius: 30px; overflow: hidden; display: flex; flex-direction: column; }
+  #output.phone #diagram { flex: 1; min-height: 0; overflow: auto; }
+  #output.phone svg { /* width: 100% !important; height: 100% !important; */ max-width: none !important; }
+  #diagram svg { max-width: none !important; }
   #output.phone #error:empty { padding: 0; }
   #undoBtn { display: none; }
+  #logBtn, #logBox { display: none; }
+  #phoneBar { display: none; }
   #output.phone { position: relative; }
-  #output.phone #undoBtn { display: block; position: absolute; top: 12px; left: 12px; /* bottom: 12px; left: 50%; transform: translateX(-50%); */ }
+  #output.phone #phoneBar { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #ccc; flex: none; }
+  #output.phone #undoBtn { display: block; /* position: absolute; bottom: 12px; left: 16px; transform: none; z-index: 2; */ /* top: 12px; left: 12px; */ /* bottom: 12px; left: 50%; transform: translateX(-50%); */ }
+  #output.phone #logBtn { display: block; /* position: absolute; bottom: 12px; right: 16px; z-index: 2; */ }
+  #output.phone #logBox.open { display: block; position: absolute; left: 0; right: 0; bottom: 0; top: 45%; /* inset: auto; */ /* inset: 0; */ margin: 0; padding: 16px; padding-bottom: 16px; overflow: auto; background: #fff; white-space: pre-wrap; font: 14px/1.5 system-ui, sans-serif; border-top: 2px solid #333; box-shadow: 0 -4px 12px rgba(0,0,0,.15); z-index: 1; }
   #error { color: red; white-space: pre-wrap; padding: 12px; }
   #status { font-size: 12px; color: #666; padding: 0 12px; }
   #diagram .node[id*="_Y-"], #diagram .node[id*="_N-"], #diagram .node[id*="_ONCE-"], #diagram .node[id*="_NONE-"], #diagram .node[id*="_MULTIPLE-"] { cursor: pointer; }
@@ -49,9 +55,13 @@
     <button id="drawerToggle" title="Show/hide editor">&#9776;</button>
   </div>
   <div id="output">
+    <div id="phoneBar">
+      <button id="undoBtn">Undo decision</button>
+      <button id="logBtn">Log</button>
+    </div>
     <div id="diagram"></div>
     <div id="error"></div>
-    <button id="undoBtn">Undo decision</button>
+    <pre id="logBox"></pre>
   </div>
 </div>
 
@@ -68,14 +78,44 @@
   const openFileInput = document.getElementById('openFileInput');
   const outputBox = document.getElementById('output');
   const phoneToggle = document.getElementById('phoneToggle');
+  const logBtn = document.getElementById('logBtn');
+  const logBox = document.getElementById('logBox');
   let renderId = 0;
   let currentName = null;
   let watcher = null;
   const chosenAnswers = new Set();
   const phonePath = []; // decision node ids clicked in phone view, in order
+  const MAX_PHONE_NODES = 8;
+  const PHONE_INNER = { width: 327, height: 514 };
+
+  function viewBoxOf(svgText) {
+    const [, w, h] = svgText.match(/viewBox="[^"]*?\s([\d.]+)\s([\d.]+)"/);
+    return { width: Number(w), height: Number(h) };
+  }
+
+  async function baseScale(edges) {
+    const saved = phonePath.splice(0);
+    const ids = sliceIds(edges);
+    const source = chunkSource(new Set(ids), [], edges);
+    phonePath.push(...saved);
+    const { svg } = await mermaid.render('diagram-scale-' + (renderId++), source);
+    const box = viewBoxOf(svg);
+    return Math.min(PHONE_INNER.width / box.width, PHONE_INNER.height / box.height);
+  }
 
   function parentOf(id, edges) {
     return edges.find(([, to]) => to === id)[0];
+  }
+
+  function labelOf(id) {
+    const line = codeBox.value.split('\n').map(s => s.trim()).find(s => s.startsWith(id) && /^[\[{(]/.test(s.slice(id.length)));
+    if (!line) return id;
+    return line.slice(id.length).replace(/^[\[{(]+|[\]})]+$/g, '').replace(/"/g, '');
+  }
+
+  function renderLog(edges) {
+    const rows = phonePath.map((id, i) => `[${i + 1}] ${labelOf(parentOf(id, edges))}: ${labelOf(id)}`);
+    logBox.textContent = ['-- Decision Log for <issue> (<timestamp>) --', ...rows].join('\n');
   }
 
   function sliceIds(edges) {
@@ -91,28 +131,46 @@
     }
   }
 
-  function stubIds(ids, edges) {
-    return ids
-      .flatMap(id => isAnswerId(id, edges) ? edges.filter(([from]) => from === id).map(([, to]) => to) : [])
-      .filter(to => !ids.includes(to));
-  }
+  // function stubIds(ids, edges) {
+  //   return ids
+  //     .flatMap(id => isAnswerId(id, edges) ? edges.filter(([from]) => from === id).map(([, to]) => to) : [])
+  //     .filter(to => !ids.includes(to));
+  // }
 
-  function topStubIds(ids, edges, leadIns) {
-    if (!phonePath.length) return [];
-    const visible = new Set([...ids, ...leadIns]);
-    const targets = [ids[0], ...leadIns];
-    return [...new Set(edges.filter(([, to]) => targets.includes(to)).map(([from]) => from).filter(from => !visible.has(from)))];
-  }
+  // function topStubIds(ids, edges, leadIns) {
+  //   if (!phonePath.length) return [];
+  //   const visible = new Set([...ids, ...leadIns]);
+  //   const targets = [ids[0], ...leadIns];
+  //   return [...new Set(edges.filter(([, to]) => targets.includes(to)).map(([from]) => from).filter(from => !visible.has(from)))];
+  // }
 
-  function leadInIds(ids, edges) {
+  // function leadInIds(ids, edges) {
+  //   if (!phonePath.length) return [];
+  //   const found = [];
+  //   const queue = [...ids];
+  //   while (queue.length) {
+  //     const node = queue.shift();
+  //     for (const [from] of edges.filter(([, to]) => to === node)) {
+  //       const isStatic = !isAnswerId(from, edges) && edges.filter(([f]) => f === from).length <= 1;
+  //       if (!isStatic || ids.includes(from) || found.includes(from)) continue;
+  //       found.push(from);
+  //       queue.push(from);
+  //     }
+  //   }
+  //   return found;
+  // }
+
+  function leadInIds(ids, siblings, edges) {
     if (!phonePath.length) return [];
+    const budget = MAX_PHONE_NODES - new Set([...ids, ...siblings]).size;
     const found = [];
     const queue = [...ids];
-    while (queue.length) {
+    while (queue.length && found.length < budget) {
       const node = queue.shift();
       for (const [from] of edges.filter(([, to]) => to === node)) {
+        if (found.length >= budget) break;
         const isStatic = !isAnswerId(from, edges) && edges.filter(([f]) => f === from).length <= 1;
-        if (!isStatic || ids.includes(from) || found.includes(from)) continue;
+        if (!isStatic || ids.includes(from) || siblings.includes(from) || found.includes(from)) continue;
         found.push(from);
         queue.push(from);
       }
@@ -125,12 +183,46 @@
     return edges.filter(([from, to]) => from === ids[0] && to !== ids[1]).map(([, to]) => to);
   }
 
-  function sliceSource(ids, stubs, topStubs, siblings, leadIns, bottomQ) {
-    const visible = new Set([...ids, ...leadIns]);
-    const keep = new Set([...ids, ...stubs, ...topStubs, ...siblings, ...leadIns]);
-    const top = new Set(topStubs);
-    const allStubs = [...stubs, ...topStubs];
-    const stubSet = new Set(allStubs);
+  // function sliceSource(ids, stubs, topStubs, siblings, leadIns, bottomQ) {
+  //   const visible = new Set([...ids, ...leadIns]);
+  //   const keep = new Set([...ids, ...stubs, ...topStubs, ...siblings, ...leadIns]);
+  //   const top = new Set(topStubs);
+  //   const allStubs = [...stubs, ...topStubs];
+  //   const stubSet = new Set(allStubs);
+  //   const idOf = (line) => line.split(/[\[{(\s]/)[0];
+  //   const lines = [];
+  //   for (const raw of codeBox.value.split('\n')) {
+  //     const line = raw.trim();
+  //     if (line.startsWith('flowchart') || line.startsWith('classDef')) lines.push(line);
+  //     else if (line.startsWith('class ')) {
+  //       const [, list, name] = line.split(' ');
+  //       const kept = list.split(',').filter(id => visible.has(id));
+  //       if (kept.length) lines.push(`class ${kept.join(',')} ${name}`);
+  //     } else if (line.includes('-->')) {
+  //       const chain = line.split('-->').map(s => s.trim());
+  //       for (let i = 0; i + 1 < chain.length; i++) {
+  //         const a = chain[i], b = chain[i + 1];
+  //         if ((visible.has(a) && keep.has(b)) || (top.has(a) && visible.has(b)))
+  //           lines.push(stubs.includes(b) ? `${a} -.-> ${b}` : `${a} --> ${b}`);
+  //       }
+  //     } else if (keep.has(idOf(line)) && !stubSet.has(idOf(line))) lines.push(line);
+  //   }
+  //   for (const sibling of siblings) lines.push(`${ids[0]} -.-> ${sibling}`);
+  //   for (const id of allStubs) lines.push(`${id}[" "]`);
+  //   if (allStubs.length) {
+  //     lines.push('classDef stub fill:transparent,stroke:transparent,color:transparent');
+  //     lines.push(`class ${allStubs.join(',')} stub`);
+  //   }
+  //   if (siblings.length) {
+  //     lines.push('classDef unchosen fill:#eee,stroke:#bbb,color:#999');
+  //     lines.push(`class ${siblings.join(',')} unchosen`);
+  //   }
+  //   return lines.join('\n');
+  // }
+
+  function chunkSource(shown, siblings, edges) {
+    const hidden = new Set(edges.flatMap(([a, b]) => shown.has(a) !== shown.has(b) ? [shown.has(a) ? b : a] : []));
+    const dashed = (a, b) => siblings.includes(a) || siblings.includes(b) || hidden.has(a) || hidden.has(b);
     const idOf = (line) => line.split(/[\[{(\s]/)[0];
     const lines = [];
     for (const raw of codeBox.value.split('\n')) {
@@ -138,22 +230,20 @@
       if (line.startsWith('flowchart') || line.startsWith('classDef')) lines.push(line);
       else if (line.startsWith('class ')) {
         const [, list, name] = line.split(' ');
-        const kept = list.split(',').filter(id => visible.has(id));
+        const kept = list.split(',').filter(id => shown.has(id) && !siblings.includes(id));
         if (kept.length) lines.push(`class ${kept.join(',')} ${name}`);
       } else if (line.includes('-->')) {
         const chain = line.split('-->').map(s => s.trim());
         for (let i = 0; i + 1 < chain.length; i++) {
           const a = chain[i], b = chain[i + 1];
-          if ((visible.has(a) && keep.has(b)) || (top.has(a) && visible.has(b)))
-            lines.push(stubs.includes(b) ? `${a} -.-> ${b}` : `${a} --> ${b}`);
+          if (shown.has(a) || shown.has(b)) lines.push(`${a} ${dashed(a, b) ? '-.->' : '-->'} ${b}`);
         }
-      } else if (keep.has(idOf(line)) && !stubSet.has(idOf(line))) lines.push(line);
+      } else if (shown.has(idOf(line))) lines.push(line);
     }
-    for (const sibling of siblings) lines.push(`${ids[0]} -.-> ${sibling}`);
-    for (const id of allStubs) lines.push(`${id}[" "]`);
-    if (allStubs.length) {
+    for (const id of hidden) lines.push(`${id}[" "]`);
+    if (hidden.size) {
       lines.push('classDef stub fill:transparent,stroke:transparent,color:transparent');
-      lines.push(`class ${allStubs.join(',')} stub`);
+      lines.push(`class ${[...hidden].join(',')} stub`);
     }
     if (siblings.length) {
       lines.push('classDef unchosen fill:#eee,stroke:#bbb,color:#999');
@@ -300,6 +390,26 @@
     svg.appendChild(line);
   }
 
+  function drawSeparator(ids, leadIns) {
+    const svg = diagramBox.querySelector('svg');
+    const nodeEl = (id) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]');
+    const yOf = (el) => Number(el.getAttribute('transform').match(/translate\([^,]+,\s*([^)]+)\)/)[1]);
+    const topDp = nodeEl(ids[0]);
+    if (!topDp) return;
+    const topOfDp = yOf(topDp) - topDp.getBBox().height / 2;
+    const above = leadIns.map(nodeEl).filter(Boolean).filter(el => yOf(el) + el.getBBox().height / 2 < topOfDp);
+    if (above.length === 0) return;
+    const aboveBottom = Math.max(...above.map(el => yOf(el) + el.getBBox().height / 2));
+    const y = (aboveBottom + topOfDp) / 2;
+    const [x, , width] = svg.getAttribute('viewBox').split(' ').map(Number);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x); line.setAttribute('x2', x + width);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#888'); line.setAttribute('stroke-width', '2'); line.setAttribute('stroke-dasharray', '8 6');
+    line.setAttribute('class', 'separator');
+    svg.appendChild(line);
+  }
+
   async function render() {
     const id = 'diagram-' + (renderId++);
     errorBox.textContent = '';
@@ -307,14 +417,22 @@
       const edges = parseEdges(codeBox.value);
       const phone = phoneToggle.checked && edges.length > 0;
       const ids = phone ? sliceIds(edges) : [];
-      const leadIns = leadInIds(ids, edges);
       const siblings = siblingIds(ids, edges);
-      const topStubs = topStubIds(ids, edges, leadIns).filter(id => !siblings.includes(id));
+      const leadIns = leadInIds(ids, siblings, edges);
+      const shown = new Set([...ids, ...siblings, ...leadIns]);
       const bottomQ = [...ids].reverse().find(id => edges.filter(([from]) => from === id).length > 1);
-      const source = phone ? sliceSource(ids, stubIds(ids, edges), topStubs, siblings, leadIns, bottomQ) : codeBox.value;
+      const source = phone ? chunkSource(shown, siblings, edges) : codeBox.value;
       const { svg } = await mermaid.render(id, source);
       diagramBox.innerHTML = svg;
-      if (phone && phonePath.length && ids.length > 2) drawSeparatorBetween(ids[1], [ids[2]]);
+      if (edges.length > 0) {
+        const scale = await baseScale(edges);
+        const svgEl = diagramBox.querySelector('svg');
+        const box = viewBoxOf(svg);
+        svgEl.style.width = box.width * scale + 'px';
+        svgEl.style.height = box.height * scale + 'px';
+      }
+      if (phone) renderLog(edges);
+      if (phone) drawSeparator(ids, leadIns);
       if (phone && bottomQ) drawSeparatorBetween(bottomQ, edges.filter(([from]) => from === bottomQ).map(([, to]) => to));
       if (!phone) highlightPath();
       // updateSvgSizingForPhoneMode();
@@ -399,6 +517,11 @@
     event.stopPropagation();
     phonePath.pop();
     render();
+  });
+  logBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = logBox.classList.toggle('open');
+    logBtn.textContent = open ? 'Log ▼' : 'Log ▲';
   });
   drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
   selectBox.addEventListener('change', () => loadDiagram(selectBox.value));

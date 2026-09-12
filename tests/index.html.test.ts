@@ -74,6 +74,17 @@ async function waitForNodeIds(notEqualTo: string[], timeoutMs = 3000) {
   return ids;
 }
 
+async function labelLineHeight(id: string) {
+  // One line's height, not the whole label: labels wrap to different line counts.
+  const json = await evaluate(`JSON.stringify((() => {
+    const p = document.querySelector('[id*="flowchart-${id}-"] .nodeLabel p');
+    const range = document.createRange();
+    range.selectNodeContents(p);
+    return { height: range.getClientRects()[0].height, fontSize: getComputedStyle(p).fontSize };
+  })())`);
+  return JSON.parse(json);
+}
+
 before(async () => {
   // Scenario: start the real server and headless Chrome, then connect via CDP to drive the page like a user.
   serverProc = spawn("bun", ["server.js"], { stdio: "ignore" });
@@ -100,6 +111,8 @@ before(async () => {
   });
   await send("Page.enable");
   await send("Runtime.enable");
+  // Tall viewport so the phone frame's bottom buttons aren't below the fold for elementFromPoint checks.
+  await send("Emulation.setDeviceMetricsOverride", { width: 900, height: 1000, deviceScaleFactor: 1, mobile: false });
   await send("Page.navigate", { url: `http://localhost:${SERVER_PORT}` });
   await waitForFunction("loadDiagram");
   // Step: on a fresh page load, the default diagram is already showing.
@@ -128,10 +141,21 @@ test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
   const rect = await evaluate("JSON.stringify(document.getElementById('output').getBoundingClientRect())").then(JSON.parse);
   assert.equal(rect.width, 375);
   assert.equal(rect.height, 600);
+  // Step: the phone bar sits above the diagram, with the buttons inside it.
+  const bar = await evaluate(`JSON.stringify((() => {
+    const svgTop = document.querySelector('#diagram svg').getBoundingClientRect().top;
+    const barBottom = document.getElementById('phoneBar').getBoundingClientRect().bottom;
+    const logTop = document.getElementById('logBtn').getBoundingClientRect().top;
+    const undoTop = document.getElementById('undoBtn').getBoundingClientRect().top;
+    return { barAboveSvg: svgTop >= barBottom, logAboveSvg: logTop < svgTop, undoAboveSvg: undoTop < svgTop };
+  })())`).then(JSON.parse);
+  assert.equal(bar.barAboveSvg, true);
+  assert.equal(bar.logAboveSvg, true);
+  assert.equal(bar.undoAboveSvg, true);
 });
 
 const START_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_THEM_DONE_SPEAKING_N"].sort();
-const AFTER_Y_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_N"].sort();
+const AFTER_Y_SLICE = ["SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y", "Q_ANYTHING_I_DO_NOT_UNDERSTAND_N"].sort();
 const AFTER_N_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_N"].sort();
 
 test("test_phone_view_shows_the_start_slice", async () => {
@@ -164,9 +188,13 @@ test("test_phone_view_shows_the_start_slice", async () => {
     "JSON.stringify(document.querySelectorAll('#diagram svg line.separator').length)"
   );
   assert.equal(separatorCount, "1");
-  // Step: the edge from the bottom decision point to its "Yes" answer is dotted.
+  // Step: the edge from the bottom decision point into its stub target is dotted.
+  // const dottedEdge = await evaluate(
+  //   "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Q_THEM_DONE_SPEAKING_Y_'))?.classList.contains('edge-pattern-dotted'))"
+  // );
+  // assert.equal(dottedEdge, "true");
   const dottedEdge = await evaluate(
-    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Q_THEM_DONE_SPEAKING_Y_'))?.classList.contains('edge-pattern-dotted'))"
+    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_ANYTHING_I_DO_NOT_UNDERSTAND'))?.classList.contains('edge-pattern-dotted'))"
   );
   assert.equal(dottedEdge, "true");
 });
@@ -189,17 +217,17 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
     "JSON.stringify(!!document.querySelector('[id*=\"flowchart-SELF_TAKE_NOTES-\"].stub'))"
   );
   assert.equal(topStubNode, "false");
-  // Step: a dashed separator line sits between the chosen node and the next decision point.
+  // Step: a dashed separator line sits between the lead-in nodes and the top decision point.
   const separator = await evaluate(`JSON.stringify((() => {
     const line = document.querySelector('#diagram svg line.separator');
     const yOf = (el) => Number(el.getAttribute('transform').match(/translate\\([^,]+,\\s*([^)]+)\\)/)[1]);
-    const chosenY = yOf(document.querySelector('[id*="flowchart-Q_THEM_DONE_SPEAKING_Y-"]'));
-    const nextY = yOf(document.querySelector('[id*="flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND-"]'));
-    return { exists: !!line, y1: line && Number(line.getAttribute('y1')), chosenY, nextY };
+    const leadInY = yOf(document.querySelector('[id*="flowchart-SELF_TAKE_NOTES-"]'));
+    const topDpY = yOf(document.querySelector('[id*="flowchart-Q_THEM_DONE_SPEAKING-"]'));
+    return { exists: !!line, y1: line && Number(line.getAttribute('y1')), leadInY, topDpY };
   })())`).then(JSON.parse);
   assert.equal(separator.exists, true);
-  assert.ok(separator.y1 > separator.chosenY);
-  assert.ok(separator.y1 < separator.nextY);
+  assert.ok(separator.y1 > separator.leadInY);
+  assert.ok(separator.y1 < separator.topDpY);
   // Step: there are now two separators, one for the slice and one for the pending decision.
   const separatorCount = await evaluate(
     "JSON.stringify(document.querySelectorAll('#diagram svg line.separator').length)"
@@ -215,6 +243,21 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
     "JSON.stringify(!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"].stub'))"
   );
   assert.equal(siblingNotStub, "true");
+  // Step: RAISE_ISSUE falls outside the 8-node budget, so it becomes a hidden stub.
+  const raiseIssueStub = await evaluate(
+    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-RAISE_ISSUE-\"].stub'))"
+  );
+  assert.equal(raiseIssueStub, "true");
+  // Step: the dimmed "No" answer still has a real dashed arrow into "Me: Listen".
+  const noToListenEdge = await evaluate(
+    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_N_SELF_LISTEN'))?.classList.contains('edge-pattern-dotted'))"
+  );
+  assert.equal(noToListenEdge, "true");
+  // Step: the 8-node budget caps how many real (non-stub) nodes are shown.
+  const realNodeCount = await evaluate(
+    "JSON.stringify(Array.from(document.querySelectorAll('#diagram g.node')).filter(el => !el.classList.contains('stub')).length)"
+  );
+  assert.ok(JSON.parse(realNodeCount) <= 8);
 });
 
 test("test_reset_returns_to_the_start_slice", async () => {
@@ -277,5 +320,104 @@ test("test_phone_view_handles_a_diagram_with_no_edges", async () => {
   assert.equal(hasNodeA, "true");
   // Step: restore the accountability diagram for any tests that follow.
   await evaluate("loadDiagram('accountability.mmd')");
+  await sleep(300);
+});
+
+test("test_decision_log_reflects_choices_and_undo", async () => {
+  // Step: click "Yes" under "done speaking", then "Yes" under "anything I don't understand".
+  await evaluate(
+    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+  );
+  await waitForNodeIds(START_SLICE);
+  await evaluate(
+    "document.querySelector('[id*=\"flowchart-Q_ANYTHING_I_DO_NOT_UNDERSTAND_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+  );
+  await waitForNodeIds(AFTER_Y_SLICE);
+  // Step: open the decision log.
+  await evaluate("document.getElementById('logBtn').click()");
+  const logAfterTwo = await evaluate("document.getElementById('logBox').textContent");
+  assert.equal(
+    logAfterTwo,
+    "-- Decision Log for <issue> (<timestamp>) --\n" +
+      "[1] in my head: are they done speaking?: Yes\n" +
+      "[2] in my head: is there anything said that I don't understand?: Yes"
+  );
+  const isOpen = await evaluate("document.getElementById('logBox').classList.contains('open')");
+  assert.equal(isOpen, true);
+  // Step: the drawer reaches up into the phone frame.
+  const drawerRect = await evaluate(`JSON.stringify((() => {
+    const logBox = document.getElementById('logBox');
+    const output = document.getElementById('output');
+    const logRect = logBox.getBoundingClientRect();
+    const outputRect = output.getBoundingClientRect();
+    return {
+      reachesUp: logRect.top < outputRect.top + 0.6 * outputRect.height,
+      tallEnough: logRect.height > 100,
+    };
+  })())`).then(JSON.parse);
+  assert.equal(drawerRect.reachesUp, true);
+  assert.equal(drawerRect.tallEnough, true);
+  // Step: the log button stays clickable above the open drawer.
+  const btnHit = await evaluate(`JSON.stringify((() => {
+    const btn = document.getElementById('logBtn');
+    const r = btn.getBoundingClientRect();
+    const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return { insideBtn: btn === el || btn.contains(el) };
+  })())`).then(JSON.parse);
+  assert.equal(btnHit.insideBtn, true);
+  // Step: press Back once; the log drops the most recent entry.
+  await evaluate("document.getElementById('undoBtn').click()");
+  await waitForNodeIds(AFTER_Y_SLICE);
+  const logAfterUndo = await evaluate("document.getElementById('logBox').textContent");
+  assert.equal(
+    logAfterUndo,
+    "-- Decision Log for <issue> (<timestamp>) --\n" +
+      "[1] in my head: are they done speaking?: Yes"
+  );
+  // Step: press Reset; the log returns to just the header.
+  await evaluate("document.getElementById('resetBtn').click()");
+  await waitForNodeIds(AFTER_Y_SLICE);
+  const logAfterReset = await evaluate("document.getElementById('logBox').textContent");
+  assert.equal(logAfterReset, "-- Decision Log for <issue> (<timestamp>) --");
+  // Step: clicking the log button again closes the drawer and reveals the diagram.
+  await evaluate("document.getElementById('logBtn').click()");
+  const isClosed = await evaluate("document.getElementById('logBox').classList.contains('open')");
+  assert.equal(isClosed, false);
+  const svgVisible = await evaluate(`JSON.stringify((() => {
+    const svg = document.querySelector('#diagram svg');
+    const r = svg.getBoundingClientRect();
+    const el = document.elementFromPoint(r.left + r.width / 2, r.bottom - 10);
+    return { insideSvg: svg === el || svg.contains(el) };
+  })())`).then(JSON.parse);
+  assert.equal(svgVisible.insideSvg, true);
+});
+
+test("test_font_size_is_the_same_in_every_view", async () => {
+  // Step: measure one line of RAISE_ISSUE's label in the phone start slice.
+  const startLabel = await labelLineHeight("RAISE_ISSUE");
+  // Step: click "Yes" under "done speaking" to slice to the next decision point.
+  await evaluate(
+    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+  );
+  await waitForNodeIds(START_SLICE);
+  // Step: measure one line of Q_THEM_DONE_SPEAKING's label in the new phone slice.
+  const afterYLabel = await labelLineHeight("Q_THEM_DONE_SPEAKING");
+  // Step: the label line height stays the same across phone slices.
+  assert.ok(Math.abs(afterYLabel.height - startLabel.height) < 1);
+  // Step: the svg is not shrunk smaller than its set style size.
+  const svgFit = await evaluate(`JSON.stringify((() => {
+    const svg = document.querySelector('#diagram svg');
+    return { rendered: svg.getBoundingClientRect().width, styled: parseFloat(svg.style.width) };
+  })())`).then(JSON.parse);
+  assert.ok(Math.abs(svgFit.rendered - svgFit.styled) < 1);
+  // Step: untick phone view.
+  await evaluate("document.getElementById('phoneToggle').click()");
+  await sleep(300);
+  // Step: measure one line of RAISE_ISSUE's label in the full web view.
+  const webLabel = await labelLineHeight("RAISE_ISSUE");
+  // Step: the same label line height shows in the web view as in phone view.
+  assert.ok(Math.abs(webLabel.height - startLabel.height) < 1);
+  // Step: re-enable phone view so later tests are unaffected.
+  await evaluate("document.getElementById('phoneToggle').click()");
   await sleep(300);
 });
