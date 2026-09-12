@@ -738,5 +738,41 @@
         "reason": "Pages has no server, so the viewer fallback must be in place before the page can work there"
       }
     ]
+  },
+  {
+    "taskNumber": 21,
+    "version": "762edf51bd831480ed3c6d79119b35192791ee83",
+    "title": "Interactive node editor in web view that rewrites the .mmd file",
+    "userDescription": "An interactive GUI editor mode: you select a node and  can do things like:\n- add a question after\n- add a block after\n- remove a question\n- remove a block\n- add a choice to a question\n- remove a choice to a question. \n- double-click a block to change the text\nThe editor should be smart about how it handles nodes being removed/inserted into the graph.\nThe changes made to the graph are written into the .mmd file.",
+    "goal": [
+      "- In web view (phone view off), clicking a node selects it and shows actions: add question after, add block after, remove question, remove block, add choice, remove choice; double-click on a node opens inline text editing.",
+      "- Removing a question shows a preview of each candidate replacement path (one per choice) that the user can cycle through, with a cancel button; confirming reconnects the parent to the chosen path.",
+      "- Removing a choice removes only that choice node; everything reachable from it stays in the file as an orphaned path.",
+      "- After every action the diagrams/<name>.mmd file on disk contains the change, and reloading the page shows the same drawing.",
+      "- After every action the saved .mmd parses with mermaid with no syntax error.",
+      "- Undo and redo of editor actions work, and each undo/redo is written to the .mmd file.",
+      "- The e2e tests in the tests field pass on diagrams/say-something-or-let-it-go.mmd, and the existing 11 tests in tests/index.html.test.ts still pass."
+    ],
+    "notInScope": [
+      "- Editing in phone view; phone view stays read-only (no owning task yet).",
+      "- Drag to move or re-link nodes (no owning task yet).",
+      "- Cleaning up orphaned paths left by removing a choice (no owning task yet)."
+    ],
+    "problemSolvedByTask": "Editing diagrams by hand is slow and error-prone",
+    "description": "Editor mode is always on in web view (phone view off); no new toggle. viewer.ts only renders mermaid source from the codeBox textarea and handles answer-node clicks (outputBox click listener, nodeIdOf, isAnswerId, choicesOf, parentOf); nothing mutates graph structure yet. Diagram files under diagrams/*.mmd use flowchart TD: questions are ID{\"label\"} diamonds with choice nodes ID_Y/ID_N/ID_ONCE/ID_NONE/ID_MULTIPLE, blocks are ID[\"label\"] or ID[label], edges are A --> B, parsed by parseEdges. Saving exists end to end: saveBtn PUTs codeBox.value to /api/diagrams/:name and server.js writes diagrams/<name>.mmd, so the editor should rewrite codeBox.value (node lines, edge lines, class lines) and reuse that save path. Removing a node must reconnect predecessors to successors; removing a question offers a cycling preview of each choice's path plus cancel; removing a choice orphans its subtree without deleting it; inserting a node splices into the edge chain. Undo/redo of editor actions is required and each step is saved. Tests drive the app over the Chrome DevTools Protocol against server.js on port 3000 (tests/index.html.test.ts); no existing test exercises node or edge mutation.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts",
+      "server.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Using 'say-something-or-let-it-go.mmd' as the test base, a test that adds a new question at the end with 2 choices, a test that inserts a question in the middle of the graph with 2 choices, a test that inserts static blocks at the end, a test that inserts static blocks in the middle, a test that removes a choice, and test that adds a new choice to an existing question, a test that modifies the text of a question, a test that modifies the text of a static block.  Each test should also verify that the syntax of the resulting .mmd diagram is 100% valid, in addition to what the test is already verifying.",
+    "difficulty": 8
   }
 ]
