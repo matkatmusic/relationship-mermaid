@@ -973,5 +973,42 @@
         "reason": "Only needs the floating inspector shell (DOM/render-per-kind, commit/history/save pipeline) from step 1 of this split, not the Destination select or Remove wiring from steps 2-4."
       }
     ]
+  },
+  {
+    "taskNumber": 28,
+    "version": "8eedf3d9665da0c5e8a230228f9c206eed0c1313",
+    "title": "Add-choice action on the Decision inspector",
+    "userDescription": "Step 6 of the task-22 node-inspector split: add a choice to a decision block. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-5 of this split and is the final step, completing task 22's full inspector behavior.\n\nScope: wire the Decision inspector's 'add choice' button, which adds one additional branch to an existing Decision. It creates one explicit terminal choice, moves the inspector to the new choice with Destination focused (using the Destination/creation implementation from steps 2-3). This is distinct from 'insert Decision & leading choice before' (step 5, which creates a new Decision) and from add-after (step 3, which extends a single outgoing edge on static/choice blocks) -- add choice specifically appends a new branch to a Decision that already exists. Each addition is one immediate undoable save, validated with Mermaid. This step also closes out the full task 22 spec: confirm the complete inspector (all six steps) validates every committed source with Mermaid, passes the full existing suite, and that a rebuilt viewer.js matches viewer.ts.\n\nOut of scope: nothing further in this split -- this is the last step.\n\nTests: tests/index.html.test.ts coverage for add-choice creating a new terminal choice, moving focus to its Destination, coexisting correctly with a Decision's other choices, and a final full-suite/build-parity check across all six steps' combined behavior.",
+    "goal": [
+      "- The Decision inspector's `add choice` button adds one new branch to an existing Decision by creating one explicit terminal choice.",
+      "- After creation, the inspector moves to the new choice with Destination focused, reusing the Destination/creation implementation from step 3 of this split.",
+      "- `add choice` is distinct from `insert Decision & leading choice before` (creates a new Decision) and from add-after (extends a single outgoing edge on static/choice blocks): it always grows an existing Decision's branch count by one, even when the Decision currently has only labelled edges rather than explicit choice nodes.",
+      "- Each addition is one immediate Mermaid-validated undoable save.",
+      "- With all six steps of this split complete: every committed source validates with Mermaid, the full existing suite passes, and a freshly rebuilt viewer.js matches viewer.ts."
+    ],
+    "notInScope": [
+      "- Nothing further in this split; this is the last step. Any future task-22 follow-on work is out of scope here."
+    ],
+    "problemSolvedByTask": "Decisions can currently only gain new branches through ad hoc source edits or a normalization path that doesn't guarantee a net-new branch; this step gives Decisions a direct, reliable 'add one more branch' action in the inspector.",
+    "description": "Task 22's inspector work lives only on the staging branch; develop has no editorGraph, commitEditorSource, or inspector scaffolding yet. Staging's viewer.ts already defines addChoice(), which either normalizes a Decision's sole labelled outgoing edge into an explicit choice or appends a New-choice node/edge when no labelled edge exists -- per the plan this normalization path does not satisfy 'add choice', which must always append one net-new branch even when the Decision currently has only labelled edges. This step wires the Decision inspector's add-choice control to a corrected add-choice commit that always grows branch count by one, then moves selection/focus to the new choice's Destination select, reusing the same commit/history/save path and step 3's destination-creation code. Final acceptance also requires re-running mermaid.parse validation across all committed diagram fixtures, the full existing suite, and confirming a fresh viewer.js build matches the committed bundle.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "tests/index.html.test.ts coverage for: add-choice always creating one new terminal choice (even when the Decision currently has only labelled edges) and focusing its Destination; add-choice coexisting correctly with a Decision's other existing choices; and a final full-suite/build-parity check (mermaid.parse across fixtures, full suite, viewer.js rebuilt from viewer.ts) covering all six split steps together.",
+    "difficulty": 6,
+    "blockedBy": [
+      {
+        "taskNumber": 25,
+        "reason": "Reuses the Destination/creation implementation and commit path built in step 3 of this split to focus the new choice's Destination select."
+      }
+    ]
   }
 ]
