@@ -37,6 +37,13 @@
   #status { font-size: 12px; color: #666; padding: 0 12px; }
   #diagram .node[id*="_Y-"], #diagram .node[id*="_N-"], #diagram .node[id*="_ONCE-"], #diagram .node[id*="_NONE-"], #diagram .node[id*="_MULTIPLE-"] { cursor: pointer; }
   #diagram .dim { opacity: 0.15; }
+  #nodeActions { display: none; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid #ccc; }
+  #nodeActions.open { display: flex; }
+  #nodeActions .removal-only { display: none; }
+  #nodeActions.removing .removal-only { display: inline-block; }
+  #diagram g.node.editor-selected rect, #diagram g.node.editor-selected path, #diagram g.node.editor-selected polygon { stroke: #1565c0 !important; stroke-width: 4px !important; }
+  #diagram g.node.editor-preview rect, #diagram g.node.editor-preview path, #diagram g.node.editor-preview polygon { stroke: #ef6c00 !important; stroke-width: 4px !important; stroke-dasharray: 6 4; }
+  #diagram .nodeLabel[contenteditable="true"] { outline: 2px solid #1565c0; background: #fff; }
 </style>
 </head>
 <body>
@@ -60,6 +67,20 @@
       <pre id="errorLog"></pre>
     </div>
     <button id="drawerToggle" title="Show/hide editor">&#9776;</button>
+  </div>
+  <div id="nodeActions" aria-live="polite">
+    <span id="selectedNode"></span>
+    <button id="addQuestionAfterBtn">Add question after</button>
+    <button id="addBlockAfterBtn">Add block after</button>
+    <button id="removeQuestionBtn">Remove question</button>
+    <button id="removeBlockBtn">Remove block</button>
+    <button id="addChoiceBtn">Add choice</button>
+    <button id="removeChoiceBtn">Remove choice</button>
+    <button id="nextRemovalPathBtn" class="removal-only">Next replacement path</button>
+    <button id="confirmRemoveQuestionBtn" class="removal-only">Confirm removal</button>
+    <button id="cancelRemoveQuestionBtn" class="removal-only">Cancel removal</button>
+    <button id="editorUndoBtn">Undo edit</button>
+    <button id="editorRedoBtn">Redo edit</button>
   </div>
   <div id="output">
     <div id="phoneBar">
