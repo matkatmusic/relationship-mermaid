@@ -898,5 +898,43 @@
         "reason": "Extends the Destination select built in step 2 of this split with New static/New Decision options, and reuses its edge-replacement logic."
       }
     ]
+  },
+  {
+    "taskNumber": 26,
+    "version": "bf4a75ee50087e9a163a09c5924e63951906ae5e",
+    "title": "Remove and Remove-choices actions on the inspector",
+    "userDescription": "Step 4 of the task-22 node-inspector split: remove an existing node. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-3 of this split.\n\nScope: wire the inspector's Remove button per node kind, preserving task 21's existing removal semantics: Decision Remove uses the replacement-path preview/cycle/confirm flow (the temporary preview may replace the normal controls and retains its own confirm/cycle/cancel controls); static Remove reconnects every predecessor to every successor; choice Remove removes the choice and its incident edges while leaving its downstream path orphaned. Also wire Decision's Remove choices button: it removes every outgoing Decision branch representation-independently -- delete labelled outgoing branch edges, and delete immediate explicit choice nodes plus their incident edges -- while retaining downstream nodes and paths as orphans. Removing the selected node closes its inspector. Each removal is one immediate undoable save, validated with Mermaid.\n\nOut of scope: add-choice, add-after/New-block creation, insert-before, Destination select behavior (already covered in steps 2-3).\n\nTests: tests/index.html.test.ts coverage for Decision Remove's preview/cycle/confirm flow, static Remove's predecessor/successor reconnection, choice Remove's orphaning, Remove choices' branch/choice-node deletion with orphan retention, and the inspector closing after removing the selected node.",
+    "goal": [
+      "- The inspector's Remove button is wired per node kind, preserving existing removal semantics: Decision Remove uses a replacement-path preview/cycle/confirm flow; static Remove reconnects every predecessor to every successor; choice Remove removes the choice and its incident edges while leaving its downstream path orphaned.",
+      "- The Decision inspector's Remove choices button removes every outgoing branch representation-independently: it deletes labelled outgoing branch edges, and deletes immediate explicit choice nodes plus their incident edges, while retaining downstream nodes and paths as orphans.",
+      "- The temporary Decision-removal preview may replace the inspector's normal controls and keeps its own confirm/cycle/cancel controls.",
+      "- Removing the selected node closes its inspector.",
+      "- Each removal is one immediate Mermaid-validated undoable save."
+    ],
+    "notInScope": [
+      "- add-choice, add-after/New-block creation, and insert-before — steps 3, 5, and 6 of this split own them.",
+      "- Destination select behavior — step 2 of this split owns it."
+    ],
+    "problemSolvedByTask": "Node removal today has no consistent per-node-kind entry point in the new inspector surface; this step wires the inspector's Remove/Remove-choices controls to the existing removal behaviors so deleting or pruning a path stays a one-click, undoable action.",
+    "description": "Implements from the task-22 baseline on staging (merge commit ab41fb0); develop's viewer.ts/index.html have none of this editor code yet. Task 21's baseline viewer.ts defines the semantics to preserve: removeQuestion/advanceRemovalPreview/confirmQuestionRemoval/cancelQuestionRemoval implement the Decision preview/cycle/confirm flow via pendingRemoval; removeBlock reconnects every predecessor to every successor; removeChoice deletes a choice node plus its incident edges and orphans its downstream. There is no existing Remove-choices (remove-all-branches) implementation in task 21 -- it must be built new, deleting labelled outgoing edges directly and deleting immediate explicit choice nodes plus incident edges. This step reuses step 1's floating #nodeInspector to host per-kind Remove/Remove-choices controls in place of the old shared #nodeActions toolbar, routes all four removals through commitEditorSource, and closes the inspector on removing the selected node.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "tests/index.html.test.ts coverage for: Decision Remove's preview/cycle/confirm flow; static Remove's predecessor-to-successor reconnection; choice Remove's incident-edge deletion and orphaning; Remove choices' branch-edge and choice-node deletion with orphan retention; and the inspector closing after removing the selected node.",
+    "difficulty": 6,
+    "blockedBy": [
+      {
+        "taskNumber": 23,
+        "reason": "Wires Remove/Remove-choices into the floating inspector shell built in step 1 of this split; does not need the Destination select from steps 2-3."
+      }
+    ]
   }
 ]
