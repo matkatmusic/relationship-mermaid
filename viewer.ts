@@ -1277,9 +1277,13 @@ async function loadDiagram(name: string) {
 function watchDiagram(name: string) {
   if (watcher)
     watcher.close();
-  watcher = new EventSource('/api/watch/' + encodeURIComponent(name));
-  watcher.onmessage = async () => {
+  const source = new EventSource('/api/watch/' + encodeURIComponent(name));
+  watcher = source;
+  source.onmessage = async () => {
     const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
+    const isStaleWatcher = watcher !== source;
+    if (isStaleWatcher)
+      return;
     if (text !== codeBox.value) {
       codeBox.value = text;
       resetEditorHistory(text);
