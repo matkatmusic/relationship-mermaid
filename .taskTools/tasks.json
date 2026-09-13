@@ -860,5 +860,43 @@
         "reason": "Needs the floating inspector shell (Text edit, Cancel/Close, per-kind title) from step 1 of this split before the Destination select can be added to it."
       }
     ]
+  },
+  {
+    "taskNumber": 25,
+    "version": "19a2995d21f8400d066efea8e5f59e79e9dea84f",
+    "title": "Add-after actions and New static/Decision creation via Destination",
+    "userDescription": "Step 3 of the task-22 node-inspector split: add a new node after a selected node. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-2 of this split (floating inspector with Text edit and Destination select for existing nodes).\n\nScope: static block's 'add Decision block after' button; choice block's 'add Decision block after' and 'add static block after' buttons; and the Destination select's 'New static block' and 'New Decision block' options (added to the option list ahead of existing-node options), which must use the same implementation and produce identical source/selection/focus/save/history results as the equivalent add-after button. Choosing New static block immediately replaces the selected block's outgoing edge with 'selected --> NewStatic'; NewStatic is terminal; the former destination remains orphaned; the inspector moves to NewStatic with Text focused. Choosing New Decision block immediately replaces the outgoing edge with 'selected --> NewDecision --> NewChoice', where NewDecision has exactly one explicit terminal choice; the former destination remains orphaned; focus NewDecision's Text first, Enter commits it and advances to NewChoice with Destination focused. Each creation is one immediate undoable save, validated with Mermaid.\n\nOut of scope: Remove/Remove-choices, insert-before, add-choice-to-Decision (adding an additional branch to an existing Decision, step 6), and the existing-node Destination options already covered in step 2.\n\nTests: tests/index.html.test.ts coverage for add-after buttons and their Destination-menu equivalents producing identical results, New static block and New Decision block creation flows, focus/selection sequencing (NewDecision Text then NewChoice Destination), orphaning of the former destination, and history entries.",
+    "goal": [
+      "- static block's `add Decision block after` button, and choice block's `add Decision block after` and `add static block after` buttons, are wired and available per the mockup's control grid.",
+      "- The Destination select gains `New static block` and `New Decision block` options ahead of existing-node options; choosing either uses the same implementation and produces identical source, selection, focus, save, and history results as the equivalent add-after button.",
+      "- Choosing/clicking New static block immediately replaces the selected block's outgoing edge with `selected --> NewStatic`; NewStatic is terminal; the former destination remains orphaned; the inspector moves to NewStatic with Text focused.",
+      "- Choosing/clicking New Decision block immediately replaces the outgoing edge with `selected --> NewDecision --> NewChoice`, where NewDecision has exactly one explicit terminal choice; the former destination remains orphaned; focus moves to NewDecision's Text first, and Enter commits it and advances to NewChoice with Destination focused.",
+      "- Each creation is one immediate Mermaid-validated undoable save."
+    ],
+    "notInScope": [
+      "- Existing-node Destination options and rewiring to them — step 2 of this split owns it.",
+      "- Remove/Remove-choices, insert-before, and add-choice-to-an-existing-Decision — steps 4-6 of this split own them."
+    ],
+    "problemSolvedByTask": "The editor currently guesses whether to splice a new block into an existing path; this step gives an explicit, consistent way (button or Destination menu) to grow a path by one new terminal static or Decision block without disturbing the former destination.",
+    "description": "Builds on the staging branch's task-21 baseline (merge commit ab41fb0) plus Steps 1-2 of this split, which add the floating #nodeInspector, its Text input, and the Destination select for existing nodes in viewer.ts/index.html; none of that exists yet on develop. Implement commitNewStaticAfter and commitNewDecisionAfter in viewer.ts per the plan's applyDestination/replaceOutgoing pseudocode, reusing editorGraph(), nextEditorId(), sourceWithLinesReplaced(), and commitEditorSource() from the task-21 baseline so add-after buttons and the Destination select's new-block options invoke identical logic. Each creation replaces only the selected node's outgoing edge, leaves the former destination orphaned, validates with mermaid.parse before committing, and records exactly one history/save entry. New Decision creation sequences focus: Enter commits NewDecision's Text as its own history entry, then moves the inspector to NewChoice with Destination focused.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "tests/index.html.test.ts coverage for: add-after buttons and their Destination-menu equivalents producing identical resulting source/selection/focus/history; New static block creation and focus; New Decision block creation with NewDecision-Text-then-NewChoice-Destination focus sequencing; and orphaning of the former destination in both flows.",
+    "difficulty": 7,
+    "blockedBy": [
+      {
+        "taskNumber": 24,
+        "reason": "Extends the Destination select built in step 2 of this split with New static/New Decision options, and reuses its edge-replacement logic."
+      }
+    ]
   }
 ]
