@@ -1,7 +1,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -128,7 +128,8 @@ before(async () => {
   await sleep(300);
 });
 
-after(() => {
+after(async () => {
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`, { method: "PUT", body: editorFixtureSource });
   ws?.close();
   chromeProc?.kill();
   serverProc?.kill();
@@ -535,4 +536,187 @@ test("test_syntax_error_keeps_last_good_diagram_and_shows_error_log", async () =
   // Step: restore the accountability diagram so later runs start clean.
   await evaluate("loadDiagram('accountability.mmd')");
   await sleep(300);
+});
+
+const EDITOR_FIXTURE_NAME = "say-something-or-let-it-go.mmd";
+const editorFixtureSource = readFileSync(join(process.cwd(), "diagrams", EDITOR_FIXTURE_NAME), "utf8");
+
+async function resetEditorFixture() {
+  // Scenario: put the editor fixture back to its original bytes and load it fresh in web view.
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`, {
+    method: "PUT",
+    body: editorFixtureSource,
+  });
+  await evaluate(
+    `phoneToggle.checked = false; phoneToggle.dispatchEvent(new Event('change')); loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`
+  );
+  await sleep(300);
+}
+
+async function selectEditorNode(id: string | null) {
+  await evaluate(`window.selectEditorNode(${JSON.stringify(id)})`);
+}
+
+async function runEditorAction(name: string) {
+  await evaluate(`window.${name}(); window.editorActionPromise`);
+}
+
+async function assertEditorSourceIsSavedAndValid() {
+  // Scenario: the in-memory source, the file on disk, and the reloaded textarea all agree, and Mermaid accepts it.
+  const source = await evaluate("codeBox.value");
+  const saved = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`).then((r) => r.text());
+  assert.equal(saved, source);
+  await evaluate(`mermaid.parse(${JSON.stringify(source)})`);
+  await evaluate(`loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`);
+  await sleep(300);
+  const reloaded = await evaluate("codeBox.value");
+  assert.equal(reloaded, source);
+}
+
+test("test_add_question_after_terminal_block_creates_two_choices", async () => {
+  await resetEditorFixture();
+  // Step: select the terminal block "Have the conversation" and add a question after it.
+  await selectEditorNode("HaveConvo");
+  await runEditorAction("addQuestionAfter");
+  const source = await evaluate("codeBox.value");
+  // Step: the new question is spliced in with two default choices.
+  assert.ok(source.includes("HaveConvo --> Q_NEW_1"));
+  assert.ok(source.includes('Q_NEW_1{"New question"}'));
+  assert.ok(source.includes('Q_NEW_1_Y["Yes"]'));
+  assert.ok(source.includes('Q_NEW_1_N["No"]'));
+  assert.ok(source.includes("Q_NEW_1 --> Q_NEW_1_Y"));
+  assert.ok(source.includes("Q_NEW_1 --> Q_NEW_1_N"));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_add_question_in_middle_splices_each_former_successor", async () => {
+  await resetEditorFixture();
+  // Step: select the start node and add a question after it.
+  await selectEditorNode("Start");
+  await runEditorAction("addQuestionAfter");
+  const source = await evaluate("codeBox.value");
+  // Step: the new question sits between Start and the former successor Q1, reached by both choices.
+  assert.ok(source.includes("Start --> Q_NEW_1"));
+  assert.ok(source.includes("Q_NEW_1_Y --> Q1"));
+  assert.ok(source.includes("Q_NEW_1_N --> Q1"));
+  assert.ok(!source.includes("Start --> Q1"));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_add_block_after_terminal_block", async () => {
+  await resetEditorFixture();
+  // Step: select the terminal block "Let it go" and add a block after it.
+  await selectEditorNode("LetGo");
+  await runEditorAction("addBlockAfter");
+  const source = await evaluate("codeBox.value");
+  // Step: the new block is appended after it.
+  assert.ok(source.includes("LetGo --> B_NEW_1"));
+  assert.ok(source.includes('B_NEW_1["New block"]'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_add_block_in_middle_splices_the_edge", async () => {
+  await resetEditorFixture();
+  // Step: select the start node and add a block after it.
+  await selectEditorNode("Start");
+  await runEditorAction("addBlockAfter");
+  const source = await evaluate("codeBox.value");
+  // Step: the new block sits between Start and the former successor Q1.
+  assert.ok(source.includes("Start --> B_NEW_1"));
+  assert.ok(source.includes("B_NEW_1 --> Q1"));
+  assert.ok(!source.includes("Start --> Q1"));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_remove_choice_orphans_its_downstream_path", async () => {
+  await resetEditorFixture();
+  // Step: normalize Q1's "No" branch into an explicit choice node.
+  await selectEditorNode("Q1");
+  await runEditorAction("addChoice");
+  await assertEditorSourceIsSavedAndValid();
+  // Step: remove that choice node; its downstream path (Let it go) is orphaned, not deleted.
+  await selectEditorNode("Q1_NO");
+  await runEditorAction("removeChoice");
+  const source = await evaluate("codeBox.value");
+  assert.ok(!source.includes("Q1_NO"));
+  assert.ok(source.includes('LetGo["Let it go"]'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_add_choice_normalizes_the_first_labelled_question_branch", async () => {
+  await resetEditorFixture();
+  // Step: select Q1 and add a choice; its first labelled branch becomes an explicit choice node.
+  await selectEditorNode("Q1");
+  await runEditorAction("addChoice");
+  const source = await evaluate("codeBox.value");
+  assert.ok(source.includes('Q1_NO["No"]'));
+  assert.ok(source.includes("Q1 --> Q1_NO"));
+  assert.ok(source.includes("Q1_NO --> LetGo"));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_inline_question_text_edit_persists", async () => {
+  await resetEditorFixture();
+  // Step: double-click the Q1 question node and replace its label text.
+  await evaluate(`(() => {
+    document.querySelector('[id*="flowchart-Q1-"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const label = document.querySelector('[id*="flowchart-Q1-"] .nodeLabel');
+    label.textContent = 'Can I stay calm?';
+    label.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  })()`);
+  await evaluate("window.editorActionPromise");
+  const source = await evaluate("codeBox.value");
+  // Step: the question's declaration is rewritten with brace syntax.
+  assert.ok(source.includes('Q1{"Can I stay calm?"}'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_inline_static_block_text_edit_persists", async () => {
+  await resetEditorFixture();
+  // Step: double-click the LetGo block node and replace its label text.
+  await evaluate(`(() => {
+    document.querySelector('[id*="flowchart-LetGo-"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    const label = document.querySelector('[id*="flowchart-LetGo-"] .nodeLabel');
+    label.textContent = 'Pause the conversation';
+    label.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  })()`);
+  await evaluate("window.editorActionPromise");
+  const source = await evaluate("codeBox.value");
+  // Step: the block's declaration is rewritten with rectangle syntax.
+  assert.ok(source.includes('LetGo["Pause the conversation"]'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_question_removal_preview_cancel_confirm_undo_and_redo_persist", async () => {
+  await resetEditorFixture();
+  // Step: start removing Q1, cycle to the other candidate path, then cancel; nothing changes.
+  await selectEditorNode("Q1");
+  await runEditorAction("removeQuestion");
+  await evaluate("document.getElementById('nextRemovalPathBtn').click()");
+  await evaluate("document.getElementById('cancelRemoveQuestionBtn').click()");
+  let source = await evaluate("codeBox.value");
+  assert.ok(source.includes('Q1{"Can I be calm?"}'));
+
+  // Step: remove Q1 again, cycle to the other candidate path, and confirm.
+  await selectEditorNode("Q1");
+  await runEditorAction("removeQuestion");
+  await evaluate("document.getElementById('nextRemovalPathBtn').click()");
+  await evaluate("document.getElementById('confirmRemoveQuestionBtn').click()");
+  await evaluate("window.editorActionPromise");
+  source = await evaluate("codeBox.value");
+  // Step: Q1 is gone, and the source is saved to disk and parses cleanly.
+  assert.ok(!source.includes('Q1{"Can I be calm?"}'));
+  const savedAfterConfirm = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`).then((r) => r.text());
+  assert.equal(savedAfterConfirm, source);
+  await evaluate(`mermaid.parse(${JSON.stringify(source)})`);
+
+  // Step: undo brings Q1 back.
+  await evaluate("window.undoEditorAction(); window.editorActionPromise");
+  source = await evaluate("codeBox.value");
+  assert.ok(source.includes('Q1{"Can I be calm?"}'));
+
+  // Step: redo removes it again.
+  await evaluate("window.redoEditorAction(); window.editorActionPromise");
+  source = await evaluate("codeBox.value");
+  assert.ok(!source.includes('Q1{"Can I be calm?"}'));
 });

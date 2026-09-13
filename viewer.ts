@@ -25,6 +25,13 @@ const chosenAnswers = new Set();
 const phonePath: string[] = []; // decision node ids clicked in phone view, in order
 const MAX_PHONE_NODES = 8;
 const PHONE_INNER = { width: 327, height: 514 };
+const nodeActions = document.getElementById('nodeActions')!;
+const selectedNodeBox = document.getElementById('selectedNode')!;
+let selectedEditorNodeId: string | null = null;
+let pendingRemoval: PendingRemoval | null = null;
+let editorHistory: string[] = [codeBox.value];
+let editorHistoryIndex = 0;
+let editorActionPromise: Promise<void>;
 
 function viewBoxOf(svgText: string) {
   const match = svgText.match(/viewBox="[^"]*?\s([\d.]+)\s([\d.]+)"/)!;
@@ -449,40 +456,504 @@ function scrollToNextQuestion(edges: Edge[]) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+type EditorNodeKind = 'question' | 'block' | 'choice';
+
+interface EditorNode {
+  id: string;
+  kind: EditorNodeKind;
+  label: string;
+  lineIndex: number;
+}
+
+interface EditorEdge {
+  from: string;
+  to: string;
+  label?: string;
+  lineIndex: number;
+}
+
+interface EditorGraph {
+  lines: string[];
+  nodes: Map<string, EditorNode>;
+  edges: EditorEdge[];
+}
+
+interface PendingRemoval {
+  questionId: string;
+  choices: string[];
+  index: number;
+}
+
+function setEditorActionPromise(promise: Promise<void>) {
+  editorActionPromise = promise;
+  (window as any).editorActionPromise = promise;
+}
+
+setEditorActionPromise(Promise.resolve());
+
+function stripEditorQuotes(text: string) {
+  return text.replace(/^"(.*)"$/, '$1');
+}
+
+function parseEditorToken(token: string) {
+  const match = token.match(/^([A-Za-z0-9_]+)([\s\S]*)$/);
+  if (!match)
+    return { id: token, shape: null as null | 'brace' | 'rect' | 'other', label: '' };
+  const id = match[1];
+  const rest = match[2].trim();
+  if (rest.startsWith('{') && rest.endsWith('}'))
+    return { id, shape: 'brace' as const, label: stripEditorQuotes(rest.slice(1, -1)) };
+  if (rest.startsWith('([') && rest.endsWith('])'))
+    return { id, shape: 'other' as const, label: stripEditorQuotes(rest.slice(2, -2)) };
+  if (rest.startsWith('[') && rest.endsWith(']'))
+    return { id, shape: 'rect' as const, label: stripEditorQuotes(rest.slice(1, -1)) };
+  return { id, shape: null as null | 'brace' | 'rect' | 'other', label: '' };
+}
+
+function parseEditorEdgeLine(line: string) {
+  const labelled = line.match(/^(.+?)\s--\s(?:"([^"]*)"|(\S.*?))\s-->\s(.+)$/);
+  if (labelled)
+    return { fromToken: labelled[1], label: labelled[2] ?? labelled[3], toToken: labelled[4] };
+  const plain = line.match(/^(.+?)\s-->\s(.+)$/);
+  if (plain)
+    return { fromToken: plain[1], label: undefined as string | undefined, toToken: plain[2] };
+  return null;
+}
+
+function declarationSuffixOf(node: EditorNode) {
+  return node.kind === 'question' ? `{"${node.label}"}` : `["${node.label}"]`;
+}
+
+function editorGraph(): EditorGraph {
+  const lines = codeBox.value.split('\n');
+  const declLines = new Map<string, { shape: 'brace' | 'rect' | 'other'; label: string; lineIndex: number }>();
+  const edges: EditorEdge[] = [];
+  const recordDecl = (token: ReturnType<typeof parseEditorToken>, lineIndex: number) => {
+    if (token.shape && !declLines.has(token.id))
+      declLines.set(token.id, { shape: token.shape, label: token.label, lineIndex });
+  };
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex].trim();
+    const isSkippable = !line || line.startsWith('flowchart') || line.startsWith('classDef') || line.startsWith('class ') || line.startsWith('%%');
+    if (isSkippable)
+      continue;
+    const edge = parseEditorEdgeLine(line);
+    if (edge) {
+      const from = parseEditorToken(edge.fromToken);
+      const to = parseEditorToken(edge.toToken);
+      recordDecl(from, lineIndex);
+      recordDecl(to, lineIndex);
+      edges.push({ from: from.id, to: to.id, label: edge.label, lineIndex });
+    }
+    else {
+      const decl = parseEditorToken(line);
+      recordDecl(decl, lineIndex);
+    }
+  }
+  const nodes = new Map<string, EditorNode>();
+  for (const [id, decl] of declLines) {
+    const kind: EditorNodeKind = decl.shape === 'brace'
+      ? 'question'
+      : edges.some(e => e.to === id && !e.label && id.startsWith(e.from + '_'))
+        ? 'choice'
+        : 'block';
+    nodes.set(id, { id, kind, label: decl.label, lineIndex: decl.lineIndex });
+  }
+  return { lines, nodes, edges };
+}
+
+function editorNodeKind(id: string, graph: EditorGraph) {
+  return graph.nodes.get(id)?.kind;
+}
+
+function sourceWithLinesReplaced(graph: EditorGraph, removedLineIndexes: Set<number>, newLines: string[]) {
+  const kept = graph.lines.filter((_, lineIndex) => !removedLineIndexes.has(lineIndex));
+  return [...kept, ...newLines].join('\n');
+}
+
+function nextEditorId(prefix: string, graph: EditorGraph) {
+  let n = 1;
+  while (graph.nodes.has(`${prefix}_${n}`))
+    n++;
+  return `${prefix}_${n}`;
+}
+
+function choiceId(questionId: string, suffix: string) {
+  return `${questionId}_${suffix}`;
+}
+
+function preserveInlineDecl(edge: EditorEdge, keepEndpointId: string, graph: EditorGraph, newLines: string[]) {
+  const node = graph.nodes.get(keepEndpointId);
+  if (node && node.lineIndex === edge.lineIndex)
+    newLines.push(`  ${keepEndpointId}${declarationSuffixOf(node)}`);
+}
+
+async function commitEditorSource(source: string, options?: { recordHistory?: boolean }) {
+  await mermaid.parse(source);
+  codeBox.value = source;
+  const recordHistory = options?.recordHistory !== false;
+  if (recordHistory) {
+    editorHistory = editorHistory.slice(0, editorHistoryIndex + 1);
+    editorHistory.push(source);
+    editorHistoryIndex = editorHistory.length - 1;
+  }
+  await render();
+  await saveDiagram();
+  selectEditorNode(null);
+}
+
+function runEditorAction(action: () => Promise<void>) {
+  setEditorActionPromise(action());
+}
+
+function selectEditorNode(id: string | null) {
+  selectedEditorNodeId = id;
+  pendingRemoval = null;
+  nodeActions.classList.remove('removing');
+  nodeActions.classList.toggle('open', !!id);
+  selectedNodeBox.textContent = id ?? '';
+  renderEditorSelection();
+}
+
+function renderEditorSelection() {
+  for (const el of diagramBox.querySelectorAll('.editor-selected'))
+    el.classList.remove('editor-selected');
+  for (const el of diagramBox.querySelectorAll('.editor-preview'))
+    el.classList.remove('editor-preview');
+  if (selectedEditorNodeId) {
+    const el = diagramBox.querySelector('[id*="flowchart-' + selectedEditorNodeId + '-"]');
+    if (el)
+      el.classList.add('editor-selected');
+  }
+  if (pendingRemoval) {
+    const target = pendingRemoval.choices[pendingRemoval.index];
+    const el = diagramBox.querySelector('[id*="flowchart-' + target + '-"]');
+    if (el)
+      el.classList.add('editor-preview');
+  }
+}
+
+function showRemovalPreview() {
+  renderEditorSelection();
+}
+
+function addQuestionAfter() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const selected = selectedEditorNodeId;
+  const removedLineIndexes = new Set<number>();
+  const successors: string[] = [];
+  for (const edge of graph.edges) {
+    if (edge.from !== selected)
+      continue;
+    successors.push(edge.to);
+    removedLineIndexes.add(edge.lineIndex);
+  }
+  const qId = nextEditorId('Q_NEW', graph);
+  const yesId = choiceId(qId, 'Y');
+  const noId = choiceId(qId, 'N');
+  const newLines = [
+    `  ${selected} --> ${qId}`,
+    `  ${qId}{"New question"}`,
+    `  ${yesId}["Yes"]`,
+    `  ${noId}["No"]`,
+    `  ${qId} --> ${yesId}`,
+    `  ${qId} --> ${noId}`,
+  ];
+  for (const edge of graph.edges) {
+    if (edge.from !== selected)
+      continue;
+    preserveInlineDecl(edge, edge.to, graph, newLines);
+  }
+  for (const successor of successors) {
+    newLines.push(`  ${yesId} --> ${successor}`);
+    newLines.push(`  ${noId} --> ${successor}`);
+  }
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
+function addBlockAfter() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const selected = selectedEditorNodeId;
+  const removedLineIndexes = new Set<number>();
+  const successors: string[] = [];
+  const newLines: string[] = [];
+  for (const edge of graph.edges) {
+    if (edge.from !== selected)
+      continue;
+    successors.push(edge.to);
+    removedLineIndexes.add(edge.lineIndex);
+    preserveInlineDecl(edge, edge.to, graph, newLines);
+  }
+  const bId = nextEditorId('B_NEW', graph);
+  newLines.unshift(`  ${selected} --> ${bId}`, `  ${bId}["New block"]`);
+  for (const successor of successors)
+    newLines.push(`  ${bId} --> ${successor}`);
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
+function choiceSuffixFromLabel(label: string) {
+  return label.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'CHOICE';
+}
+
+function addChoice() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const questionId = selectedEditorNodeId;
+  const labelled = graph.edges.find(e => e.from === questionId && e.label);
+  const removedLineIndexes = new Set<number>();
+  const newLines: string[] = [];
+  if (labelled) {
+    removedLineIndexes.add(labelled.lineIndex);
+    const suffix = choiceSuffixFromLabel(labelled.label!);
+    const cid = choiceId(questionId, suffix);
+    const targetSuffix = (() => {
+      const node = graph.nodes.get(labelled.to);
+      return node && node.lineIndex === labelled.lineIndex ? declarationSuffixOf(node) : '';
+    })();
+    newLines.push(
+      `  ${cid}["${labelled.label}"]`,
+      `  ${questionId} --> ${cid}`,
+      `  ${cid} --> ${labelled.to}${targetSuffix}`,
+    );
+  }
+  else {
+    let suffix = 'NEW';
+    let n = 1;
+    while (graph.nodes.has(choiceId(questionId, suffix)))
+      suffix = 'NEW' + (++n);
+    const cid = choiceId(questionId, suffix);
+    newLines.push(`  ${cid}["New choice"]`, `  ${questionId} --> ${cid}`);
+  }
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
+function removeChoice() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const id = selectedEditorNodeId;
+  const node = graph.nodes.get(id);
+  const removedLineIndexes = new Set<number>();
+  const newLines: string[] = [];
+  if (node)
+    removedLineIndexes.add(node.lineIndex);
+  for (const edge of graph.edges) {
+    const touchesRemoved = edge.from === id || edge.to === id;
+    if (!touchesRemoved)
+      continue;
+    removedLineIndexes.add(edge.lineIndex);
+    const otherEndpoint = edge.from === id ? edge.to : edge.from;
+    if (otherEndpoint !== id)
+      preserveInlineDecl(edge, otherEndpoint, graph, newLines);
+  }
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
+function removeBlock() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const id = selectedEditorNodeId;
+  const node = graph.nodes.get(id);
+  const removedLineIndexes = new Set<number>();
+  const newLines: string[] = [];
+  const predecessors: string[] = [];
+  const successors: string[] = [];
+  if (node)
+    removedLineIndexes.add(node.lineIndex);
+  for (const edge of graph.edges) {
+    const touchesRemoved = edge.from === id || edge.to === id;
+    if (!touchesRemoved)
+      continue;
+    removedLineIndexes.add(edge.lineIndex);
+    if (edge.from === id) {
+      successors.push(edge.to);
+      preserveInlineDecl(edge, edge.to, graph, newLines);
+    }
+    else {
+      predecessors.push(edge.from);
+      preserveInlineDecl(edge, edge.from, graph, newLines);
+    }
+  }
+  for (const predecessor of predecessors)
+    for (const successor of successors)
+      newLines.push(`  ${predecessor} --> ${successor}`);
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
+function removeQuestion() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const questionId = selectedEditorNodeId;
+  const choices: string[] = [];
+  for (const edge of graph.edges) {
+    if (edge.from === questionId)
+      choices.push(edge.to);
+  }
+  if (!choices.length)
+    return;
+  pendingRemoval = { questionId, choices, index: 0 };
+  nodeActions.classList.add('removing');
+  showRemovalPreview();
+}
+
+function advanceRemovalPreview() {
+  if (!pendingRemoval)
+    return;
+  pendingRemoval.index = (pendingRemoval.index + 1) % pendingRemoval.choices.length;
+  showRemovalPreview();
+}
+
+function cancelQuestionRemoval() {
+  selectEditorNode(null);
+}
+
+function confirmQuestionRemoval() {
+  if (!pendingRemoval)
+    return;
+  const { questionId, choices, index } = pendingRemoval;
+  const graph = editorGraph();
+  const removedLineIndexes = new Set<number>();
+  const newLines: string[] = [];
+  const qNode = graph.nodes.get(questionId);
+  if (qNode)
+    removedLineIndexes.add(qNode.lineIndex);
+  const predecessors: string[] = [];
+  for (const edge of graph.edges) {
+    if (edge.to !== questionId)
+      continue;
+    predecessors.push(edge.from);
+    removedLineIndexes.add(edge.lineIndex);
+    preserveInlineDecl(edge, edge.from, graph, newLines);
+  }
+  let keepSuccessor = choices[index];
+  for (const edge of graph.edges) {
+    if (edge.from !== questionId)
+      continue;
+    removedLineIndexes.add(edge.lineIndex);
+    const targetNode = graph.nodes.get(edge.to);
+    const isImmediateChoice = targetNode?.kind === 'choice';
+    if (!isImmediateChoice) {
+      preserveInlineDecl(edge, edge.to, graph, newLines);
+      continue;
+    }
+    removedLineIndexes.add(targetNode!.lineIndex);
+    for (const inner of graph.edges) {
+      if (inner.from !== edge.to)
+        continue;
+      removedLineIndexes.add(inner.lineIndex);
+      if (edge.to === keepSuccessor) {
+        preserveInlineDecl(inner, inner.to, graph, newLines);
+        keepSuccessor = inner.to;
+      }
+    }
+  }
+  for (const predecessor of predecessors)
+    newLines.push(`  ${predecessor} --> ${keepSuccessor}`);
+  runEditorAction(() => commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
+function undoEditorAction() {
+  if (editorHistoryIndex <= 0)
+    return;
+  editorHistoryIndex--;
+  runEditorAction(() => commitEditorSource(editorHistory[editorHistoryIndex], { recordHistory: false }));
+}
+
+function redoEditorAction() {
+  if (editorHistoryIndex >= editorHistory.length - 1)
+    return;
+  editorHistoryIndex++;
+  runEditorAction(() => commitEditorSource(editorHistory[editorHistoryIndex], { recordHistory: false }));
+}
+
+function replaceDeclarationInLine(line: string, id: string, newToken: string) {
+  const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`${escapedId}(\\{[^}]*\\}|\\[[^\\]]*\\]|\\(\\[[^\\]]*\\]\\))`);
+  return line.replace(re, newToken);
+}
+
+function beginInlineEdit(nodeEl: Element, id: string, kind: EditorNodeKind) {
+  const label = nodeEl.querySelector('.nodeLabel') as HTMLElement | null;
+  if (!label)
+    return;
+  label.contentEditable = 'true';
+  label.focus();
+  let committed = false;
+  const commit = () => {
+    if (committed)
+      return;
+    committed = true;
+    label.contentEditable = 'false';
+    const text = (label.textContent ?? '').trim();
+    const graph = editorGraph();
+    const node = graph.nodes.get(id);
+    if (!node)
+      return;
+    const newToken = kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
+    const lines = graph.lines.slice();
+    lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
+    runEditorAction(() => commitEditorSource(lines.join('\n')));
+  };
+  label.addEventListener('keydown', (event) => {
+    if ((event as KeyboardEvent).key !== 'Enter')
+      return;
+    event.preventDefault();
+    commit();
+  });
+  label.addEventListener('blur', commit, { once: true });
+}
+
 outputBox.addEventListener('click', (event) => {
   const nodeEl = (event.target as HTMLElement).closest('g.node');
-  if (!nodeEl) {
-    chosenAnswers.clear();
-    highlightPath();
+  if (!phoneToggle.checked) {
+    selectEditorNode(nodeEl ? nodeIdOf(nodeEl) : null);
     return;
   }
+  if (!nodeEl)
+    return;
   const clicked = nodeIdOf(nodeEl);
   const edges = parseEdges(codeBox.value);
   if (!isAnswerId(clicked, edges))
     return;
-  if (phoneToggle.checked) {
-    const openChoices = currentBottomQ ? choicesOf(currentBottomQ, edges) : [];
-    const isOpenChoice = openChoices.includes(clicked);
-    if (!isOpenChoice)
-      return;
-      // const last = phonePath[phonePath.length - 1];
-      // let sameParentAsLast = false;
-      // if (last) {
-      //   sameParentAsLast = parentOf(clicked, edges) === parentOf(last, edges);
-      // }
-      // if (sameParentAsLast)
-      //   phonePath.pop();
-    phonePath.push(clicked);
-    render();
+  const openChoices = currentBottomQ ? choicesOf(currentBottomQ, edges) : [];
+  if (!openChoices.includes(clicked))
     return;
-  }
-  if (chosenAnswers.has(clicked))
-    chosenAnswers.delete(clicked);
-  else
-    chosenAnswers.add(clicked);
-  highlightPath();
-  // if (phoneToggle.checked && chosenAnswers.size) scrollToNextQuestion(edges);
+  phonePath.push(clicked);
+  render();
 });
+
+outputBox.addEventListener('dblclick', (event) => {
+  if (phoneToggle.checked)
+    return;
+  const nodeEl = (event.target as HTMLElement).closest('g.node');
+  if (!nodeEl)
+    return;
+  const id = nodeIdOf(nodeEl);
+  const graph = editorGraph();
+  const kind = editorNodeKind(id, graph);
+  if (!kind || kind === 'choice')
+    return;
+  beginInlineEdit(nodeEl, id, kind);
+});
+
+document.getElementById('addQuestionAfterBtn')!.addEventListener('click', addQuestionAfter);
+document.getElementById('addBlockAfterBtn')!.addEventListener('click', addBlockAfter);
+document.getElementById('removeQuestionBtn')!.addEventListener('click', removeQuestion);
+document.getElementById('removeBlockBtn')!.addEventListener('click', removeBlock);
+document.getElementById('addChoiceBtn')!.addEventListener('click', addChoice);
+document.getElementById('removeChoiceBtn')!.addEventListener('click', removeChoice);
+document.getElementById('nextRemovalPathBtn')!.addEventListener('click', advanceRemovalPreview);
+document.getElementById('confirmRemoveQuestionBtn')!.addEventListener('click', confirmQuestionRemoval);
+document.getElementById('cancelRemoveQuestionBtn')!.addEventListener('click', cancelQuestionRemoval);
+document.getElementById('editorUndoBtn')!.addEventListener('click', undoEditorAction);
+document.getElementById('editorRedoBtn')!.addEventListener('click', redoEditorAction);
 
 // function updateSvgSizingForPhoneMode() {
 //   const svg = diagramBox.querySelector('svg');
@@ -723,6 +1194,7 @@ async function render() {
     const source = phone ? chunkSource(shown, siblings, edges) : codeBox.value;
     const { svg } = await mermaid.render(id, source);
     diagramBox.innerHTML = svg;
+    renderEditorSelection();
     if (edges.length > 0) {
       const scale = await baseScale(edges);
       const svgEl = diagramBox.querySelector('svg')!;
@@ -786,10 +1258,17 @@ async function loadList() {
   }
 }
 
+function resetEditorHistory(text: string) {
+  editorHistory = [text];
+  editorHistoryIndex = 0;
+  selectEditorNode(null);
+}
+
 async function loadDiagram(name: string) {
   const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
   currentName = name;
   codeBox.value = text;
+  resetEditorHistory(text);
   render();
   loadList();
   watchDiagram(name);
@@ -798,9 +1277,17 @@ async function loadDiagram(name: string) {
 function watchDiagram(name: string) {
   if (watcher)
     watcher.close();
-  watcher = new EventSource('/api/watch/' + encodeURIComponent(name));
-  watcher.onmessage = async () => {
-    codeBox.value = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
+  const source = new EventSource('/api/watch/' + encodeURIComponent(name));
+  watcher = source;
+  source.onmessage = async () => {
+    const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
+    const isStaleWatcher = watcher !== source;
+    if (isStaleWatcher)
+      return;
+    if (text !== codeBox.value) {
+      codeBox.value = text;
+      resetEditorHistory(text);
+    }
     render();
   };
 }
@@ -829,6 +1316,7 @@ document.getElementById('newBtn')!.addEventListener('click', () => {
     watcher.close();
   currentName = null;
   codeBox.value = 'flowchart TD\n  A[New idea]';
+  resetEditorHistory(codeBox.value);
   render();
   loadList();
   setDrawerOpen(true);
@@ -854,6 +1342,8 @@ logBtn.addEventListener('click', (event) => {
 drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
 selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
 phoneToggle.addEventListener('change', () => {
+  if (phoneToggle.checked)
+    selectEditorNode(null);
   outputBox.classList.toggle('phone', phoneToggle.checked);
   render();
 });
@@ -867,6 +1357,7 @@ openFileInput.addEventListener('change', async () => {
     watcher.close();
   currentName = null;
   codeBox.value = await file.text();
+  resetEditorHistory(codeBox.value);
   selectBox.value = '';
   render();
   loadList();
@@ -874,9 +1365,12 @@ openFileInput.addEventListener('change', async () => {
   openFileInput.value = '';
 });
 
-codeBox.addEventListener('input', render);
+codeBox.addEventListener('input', () => {
+  resetEditorHistory(codeBox.value);
+  render();
+});
 // render();
 // loadList();
 loadDiagram('accountability.mmd');
 
-Object.assign(window, { loadDiagram, codeBox, nodeIdOf });
+Object.assign(window, { loadDiagram, codeBox, nodeIdOf, selectEditorNode, addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, undoEditorAction, redoEditorAction });
