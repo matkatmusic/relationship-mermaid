@@ -936,5 +936,42 @@
         "reason": "Wires Remove/Remove-choices into the floating inspector shell built in step 1 of this split; does not need the Destination select from steps 2-3."
       }
     ]
+  },
+  {
+    "taskNumber": 27,
+    "version": "d3dba5189dc62975ef10ad5771485945b21675ce",
+    "title": "Insert-before actions on Decision and static inspectors",
+    "userDescription": "Step 5 of the task-22 node-inspector split: insert a node before a selected node. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-4 of this split.\n\nScope: wire 'insert static block before' (available on Decision and static inspectors) and 'insert Decision & leading choice before' (available on Decision and static inspectors). 'insert static block before' redirects every incoming edge through one new static block and then to the selected node; with no predecessor the new block becomes a root leading to the selected node. 'insert Decision & leading choice before' creates one new Decision and one explicit leading choice between that Decision and the selected node, preserving the rule that a Decision points directly only to choices. Both automatically splice incoming edges and do not open Destination. Each insertion is one immediate undoable save, validated with Mermaid.\n\nOut of scope: Remove/Remove-choices, add-after/New-block creation, add-choice-to-Decision, Destination select behavior.\n\nTests: tests/index.html.test.ts coverage for insert-before on nodes with and without predecessors (root case), fan-in incoming-edge splicing, the Decision-points-only-to-choices invariant after inserting Decision & leading choice, and that Destination is not opened by these actions.",
+    "goal": [
+      "- `insert static block before` (available on Decision and static inspectors) redirects every incoming edge through one new static block and then to the selected node; with no predecessor the new block becomes a root leading to the selected node.",
+      "- `insert Decision & leading choice before` (available on Decision and static inspectors) creates one new Decision and one explicit leading choice between that Decision and the selected node, preserving the rule that a Decision points directly only to choices.",
+      "- Both actions automatically splice incoming edges and do not open Destination.",
+      "- Each insertion is one immediate Mermaid-validated undoable save."
+    ],
+    "notInScope": [
+      "- Remove/Remove-choices, add-after/New-block creation, and add-choice-to-an-existing-Decision — steps 4 and 6 of this split own them (add-after lands in step 3).",
+      "- Destination select behavior — step 2 of this split owns it."
+    ],
+    "problemSolvedByTask": "There is currently no GUI way to splice a new static block or a new Decision-and-choice pair immediately ahead of an existing node without hand-editing the incoming edges in the Mermaid source.",
+    "description": "Confirmed on develop that none of the task-22 inspector work exists yet. Per plans/task-22-node-inspector-and-destinations.md's 'Insert-before and removal workflows' section, this step implements two automatic, non-Destination actions on the Decision/static inspectors that splice every incoming P-->Target edge through the new node(s) (or become a new root when Target has no predecessor), preserving the Decision-points-only-to-choices invariant, each as one mermaid.parse-validated undoable save. This depends only on the floating #nodeInspector shell from step 1 (DOM/render-per-kind and the commit/history/save pipeline), not on the Destination select (steps 2-3) or Remove wiring (step 4).",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "tests/index.html.test.ts coverage for: insert-before on a node with predecessors (incoming-edge fan-in splicing) and with none (new root case); the Decision-points-only-to-choices invariant holding after inserting Decision & leading choice; and that neither action opens the Destination select.",
+    "difficulty": 6,
+    "blockedBy": [
+      {
+        "taskNumber": 23,
+        "reason": "Only needs the floating inspector shell (DOM/render-per-kind, commit/history/save pipeline) from step 1 of this split, not the Destination select or Remove wiring from steps 2-4."
+      }
+    ]
   }
 ]
