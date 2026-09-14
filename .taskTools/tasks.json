@@ -912,5 +912,35 @@
     "hasTests": true,
     "tests": "Build A --> B --> C, select B, click 'insert static block after', assert the result is A --> B --> NEW --> C (old B-->C edge gone, A-->B untouched). Repeat selecting a choice node.",
     "difficulty": 5
+  },
+  {
+    "taskNumber": 35,
+    "version": "65fd33189b4b5881d6f22b472daa05f65b5d82fe",
+    "title": "Add 'Insert decision block after' inspector action with an asymmetric two-choice splice for choice and block nodes",
+    "userDescription": "Feature: new button 'Insert decision block after' for choice blocks and static blocks.  It should splice into the graph.  Example: Graph is `A --> B --> C`. I select `B`.  I choose `Insert static block after`.  I expect: `A --> B --> Q_NEW --> Q_NEW_CHOICE_Y --> C`, and `Q_NEW --> Q_NEW_CHOICE_N`.",
+    "goal": [
+      "- Selecting a static or choice node and choosing 'insert decision block after' produces source --> Q_NEW, with Q_NEW's first choice reconnected to source's old destination and a second choice added as a fresh terminal branch — the old destination is never dropped",
+      "- The action is available in the inspector for both node.kind === 'choice' and node.kind === 'block'",
+      "- Inserting after a terminal node (no existing destination) creates Q_NEW with two fresh terminal choices, matching the existing 'add Decision block after' behavior for that case",
+      "- `npm test` passes"
+    ],
+    "notInScope": [
+      "- The existing legacy 'add-decision-after' button and commitNewDecisionAfter (same drop-the-tail bug as commitNewStaticAfter) are left untouched — this is a new, separate action",
+      "- Task #34's 'insert static block after' is a separate sibling task, not depended on here",
+      "- Task #32's shared single-line `A --> B --> C` chained-edge parser bug — this task's tests should not rely on that being fixed"
+    ],
+    "problemSolvedByTask": "No way to branch mid-chain without losing the tail",
+    "description": "viewer.ts holds three non-matching precedents: commitNewDecisionAfter (~line 1167-1175) uses replaceOutgoing(sourceId, decisionId, graph) to splice in Q_NEW with one choice, dropping the old destination (same bug as commitNewStaticAfter); insertDecisionBefore (~line 782-811) correctly preserves predecessors/successors via removedLineIndexes + preserveInlineDecl but only builds one leading choice, in the 'before' direction; addQuestionAfter (~line 698-732, bound only to the hidden/dead addQuestionAfterBtn, not reachable from nodeInspectorActions) builds a Yes/No choice pair but reconnects BOTH choices to every old successor, which is not the wanted asymmetric shape. The new action needs insertDecisionBefore's after-direction splice mechanics (successors collected from outgoing edges of selected, removedLineIndexes, preserveInlineDecl for inline declarations) combined with a Yes/No-style choice pair where only one new choice id (via choiceId(decisionId, suffix)) gets `--> successor` and the second choice gets no outgoing edge. Wire a new 'insert-decision-after' inspectorActionButton into the node.kind === 'choice' (~line 1101-1105) and node.kind === 'block' (~line 1095-1100) branches of renderNodeInspector's action list, and add its branch in the nodeInspectorActions click listener (~line 1306-1330) next to the insert-decision-before handler. tests/index.html.test.ts is the DOM-driven suite (via inspectorActions() and clickInspectorAction()) that already covers add-decision-after and insert-decision-before with this same helper pattern, and is where new coverage belongs.",
+    "modifiableFiles": [
+      "viewer.ts",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Build A --> B --> C, select B, click 'insert decision block after', assert the result has B --> Q_NEW, Q_NEW --> Q_NEW_CHOICE_Y --> C, and Q_NEW --> Q_NEW_CHOICE_N (a terminal second choice). Repeat selecting a choice node.",
+    "difficulty": 6
   }
 ]
