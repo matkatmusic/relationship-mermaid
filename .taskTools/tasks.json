@@ -1023,5 +1023,42 @@
         "reason": "editorGraph() builds its node/edge model via the same parseEditorEdgeLine/parseEditorToken functions task 32 fixes, and that parser currently drops the trailing node and corrupts the middle node's label on any chained `A --> B --> C` line. This task's strict validation and decl/edge line-separation enforcement operate on that same parsed model, so turning on strict validation before the chained-edge parser bug is fixed will misparse existing diagrams and produce false invalid-diagram errors."
       }
     ]
+  },
+  {
+    "taskNumber": 38,
+    "version": "858f3699fbfd90e9cef18f867860dcc08b128355",
+    "title": "Rename accountability.mmd, financial-investments.mmd, and say-something-or-let-it-go.mmd to the Q_/Q_CHOICE/B_ convention",
+    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"diagrams/accountability.mmd\",\"diagrams/financial-investments.mmd\",\"diagrams/say-something-or-let-it-go.mmd\"]. Feature/migration: rename every node id in these 3 diagrams to comply with the new strict naming convention being built in sibling task 37 — decision ids must start with `Q_` (brace shape `{}`), choice ids must start with `Q_CHOICE` (bracket shape `[]`), static/block ids must start with `B_` (bracket shape `[]`). Also reformat these files so every node declaration is on its own standalone line, never inline on an edge line. Depends on task 32 (shared chained-edge parser bug) landing first.",
+    "goal": [
+      "- Every node id in accountability.mmd, financial-investments.mmd, and say-something-or-let-it-go.mmd starts with the correct Q_/Q_CHOICE/B_ prefix for its kind",
+      "- No inline node declarations remain on edge lines in these 3 files; every edge is plain, with decls declared separately",
+      "- The renamed diagrams describe the exact same nodes, edges, shapes, connectivity, and labels as before — only ids and line layout changed",
+      "- Each renamed file loads and renders correctly under the current (pre-strict) parser"
+    ],
+    "notInScope": [
+      "- stop-causing-harms.mmd and the tests/*.test.ts assertion updates are owned by the sibling task that also handles the 4th diagram",
+      "- No reusable auto-rename tooling is built; these 3 files are renamed by hand",
+      "- The parser/nav-button implementation is owned by sibling task 37 — this task only touches the diagram files"
+    ],
+    "problemSolvedByTask": "Diagrams don't follow the convention the new parser will require",
+    "description": "financial-investments.mmd has 13 unprefixed ids: decisions `NEED_MONEY_ROUTE` and `ARE_TERMS_REASONABLE` need `Q_`, their yes/no answers (`C_Y`, `C_N`, `ARE_TERMS_REASONABLE_Y/N`) need `Q_CHOICE`, and blocks (`A`, `B`, `C`, `E_BORROW`, `E_NEW_JOB`, `E_SECOND_JOB`, `E_JOB_PROMOTION`) need `B_`; its `A --> B --> C` chained edge must split into standalone declarations. say-something-or-let-it-go.mmd's entry node `Start([\"...\"])` is a stadium shape declared inline on the `Start --> Q1{...}` edge line and must become a standalone `B_`-prefixed bracket node; `Q1`-`Q4` need `Q_`, and `LetGo`/`HaveConvo` need `B_`. accountability.mmd already uses `Q_` for its ~20 decision nodes and bracket blocks for `SELF_*`/`RAISE_ISSUE` actions, but its 6 `GOAL_*` nodes are unprefixed brackets needing `B_`, and every decision's yes/no/count answer node (e.g. `Q_THEM_DONE_SPEAKING_Y`) is missing the `Q_CHOICE` prefix; it has dozens of `A --> B --> C` chained single-line edges (e.g. `RAISE_ISSUE --> SELF_LISTEN --> SELF_TAKE_NOTES --> Q_THEM_DONE_SPEAKING`) needing separate lines. accountability.mmd also ends with `classDef`/`class` styling blocks that list node ids by name (goal/forwards/decision/backwards groups) — those id lists must be updated to the new ids too, or the styling breaks even though structure stays intact. All three files currently parse and render fine under the existing lenient parser; renamed ids must keep identical graph structure, labels, and connectivity.",
+    "modifiableFiles": [
+      "diagrams/accountability.mmd",
+      "diagrams/financial-investments.mmd",
+      "diagrams/say-something-or-let-it-go.mmd"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "For each of the 3 renamed diagrams, load it in the editor and assert it renders with no invalid-diagram error, every old id no longer appears, and the graph's node/edge count matches the original (nothing was dropped or merged by accident).",
+    "difficulty": 6,
+    "blockedBy": [
+      {
+        "taskNumber": 32,
+        "reason": "This task must rename node ids in accountability.mmd, which has 47+ chained single-line `A --> B --> C` edges, and split them into standalone declaration lines. The shared parseEditorEdgeLine/parseEditorToken functions that task 32 fixes currently drop the trailing node and corrupt the middle node's label on any chained edge line, so those chained lines cannot be correctly read or rewritten by the tool until task 32 lands."
+      }
+    ]
   }
 ]
