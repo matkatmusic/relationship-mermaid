@@ -50,6 +50,8 @@
   .inspector-text-row input { flex: 1; min-width: 0; padding: 6px 8px; border: 2px solid #555; border-radius: 4px; font: inherit; }
   .inspector-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .inspector-grid button { padding: 6px 10px; }
+  .inspector-destination-row { display: flex; align-items: center; gap: 6px; }
+  .inspector-destination-row select { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; }
   .span-2 { grid-column: 1 / -1; }
 </style>
 </head>
@@ -104,7 +106,10 @@
 <aside id="nodeInspector" role="dialog" aria-labelledby="nodeInspectorTitle" hidden>
   <h2 id="nodeInspectorTitle"></h2>
   <label class="inspector-text-row"><span>Text:</span><input id="nodeTextInput" type="text"></label>
-  <div class="inspector-grid"><button id="nodeInspectorDismissBtn" class="span-2">Cancel</button></div>
+  <div class="inspector-grid">
+    <button id="nodeInspectorDismissBtn" class="span-2">Cancel</button>
+    <label id="destinationRow" class="inspector-destination-row span-2"><span>Destination:</span><select id="destinationSelect"></select></label>
+  </div>
 </aside>
 
 <script src="viewer.js"></script>

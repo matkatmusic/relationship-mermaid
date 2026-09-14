@@ -886,3 +886,105 @@ test("test_inspector_keeps_the_diagram_scroll_position", async () => {
   // Step: put the accountability file back to its original bytes.
   await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
 });
+
+async function destinationState() {
+  return evaluate(`JSON.stringify((() => {
+    const row = document.getElementById('destinationRow');
+    const select = document.getElementById('destinationSelect');
+    return { hidden: row.hidden, value: select.value, dismiss: document.getElementById('nodeInspectorDismissBtn').textContent, options: Array.from(select.options).map(option => ({ value: option.value, text: option.textContent })) };
+  })())`).then(JSON.parse);
+}
+
+async function setEditorSource(source: string) {
+  await evaluate(`codeBox.value = ${JSON.stringify('PLACEHOLDER')}; codeBox.dispatchEvent(new Event('input'))`.replace(JSON.stringify('PLACEHOLDER'), JSON.stringify(source)));
+  await sleep(300);
+}
+
+async function chooseDestination(value: string) {
+  await evaluate(`(() => { const select = document.getElementById('destinationSelect'); select.value = ${JSON.stringify('PLACEHOLDER')}; select.dispatchEvent(new Event('change', { bubbles: true })); })()`.replace(JSON.stringify('PLACEHOLDER'), JSON.stringify(value)));
+  await evaluate('window.editorActionPromise');
+}
+
+test("test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order", async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  Start["Start"] --> Decision{"Decide"}\n  Decision --> Decision_Y["Yes"]\n  Decision_Y --> Later["Later"]\n  Later --> Decision');
+  await clickNode('Decision_Y');
+  assert.deepEqual((await destinationState()).options, [
+    { value: '', text: 'Terminal' },
+    { value: 'Start', text: 'Start (Start)' },
+    { value: 'Decision', text: 'Decide (Decision)' },
+    { value: 'Later', text: 'Later (Later)' },
+  ]);
+});
+
+test("test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice", async () => {
+  await resetEditorFixture();
+  await clickNode('Q1');
+  assert.equal((await destinationState()).hidden, true);
+  await clickNode('LetGo');
+  assert.equal((await destinationState()).dismiss, 'Close');
+  await selectEditorNode('Q1');
+  await runEditorAction('addChoice');
+  await clickNode('Q1_NO');
+  assert.equal((await destinationState()).dismiss, 'Cancel');
+});
+
+test("test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan", async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  A["A"] --> B["B"]\n  B --> C["C"]\n  C --> D{"D"}');
+  await clickNode('A');
+  await chooseDestination('C');
+  const source = await evaluate('codeBox.value');
+  assert.ok(source.includes('A --> C'));
+  assert.ok(!source.includes('A["A"] --> B["B"]'));
+  assert.ok(source.includes('B["B"]'));
+  assert.ok(source.includes('B --> C'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_destination_terminal_removes_only_the_selected_outgoing_edge", async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  A["A"] --> B["B"]\n  B --> C["C"]');
+  await clickNode('A');
+  await chooseDestination('');
+  const source = await evaluate('codeBox.value');
+  assert.ok(!source.includes('A["A"] --> B["B"]'));
+  assert.ok(source.includes('A["A"]'));
+  assert.ok(source.includes('B["B"]'));
+  assert.ok(source.includes('B --> C'));
+  await clickNode('A');
+  assert.equal((await destinationState()).dismiss, 'Close');
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_destination_accepts_descendants_and_current_value_is_a_no_op", async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  A["A"] --> B["B"]\n  B --> C["C"]');
+  await clickNode('A');
+  const current = await evaluate('codeBox.value');
+  await chooseDestination('B');
+  assert.equal(await evaluate('codeBox.value'), current);
+  await chooseDestination('C');
+  await clickNode('C');
+  await chooseDestination('A');
+  assert.ok((await evaluate('codeBox.value')).includes('C --> A'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_dirty_text_then_destination_creates_two_ordered_undo_entries", async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  A["A"] --> B["B"]\n  B --> C{"C"}');
+  await clickNode('A');
+  await evaluate("document.getElementById('nodeTextInput').value = 'Renamed A'");
+  await chooseDestination('C');
+  let source = await evaluate('codeBox.value');
+  assert.ok(source.includes('A["Renamed A"]'));
+  assert.ok(source.includes('A --> C'));
+  await evaluate('window.undoEditorAction(); window.editorActionPromise');
+  source = await evaluate('codeBox.value');
+  assert.ok(source.includes('A["Renamed A"] --> B["B"]'));
+  await evaluate('window.undoEditorAction(); window.editorActionPromise');
+  source = await evaluate('codeBox.value');
+  assert.ok(source.includes('A["A"] --> B["B"]'));
+  await assertEditorSourceIsSavedAndValid();
+});
