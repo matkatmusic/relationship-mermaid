@@ -852,5 +852,35 @@
     "hasTests": true,
     "tests": "Build a minimal diagram A --> B --> C, select B, click 'insert static block before', assert the resulting source is A --> NEW --> B --> C (old A-->B edge gone, B-->C untouched).",
     "difficulty": 7
+  },
+  {
+    "taskNumber": 33,
+    "version": "43bef77f3112f052fe23f388964af3e6837653da",
+    "title": "Persist last-selected-node and scroll position in a generated %%%%==== metadata header on save/load",
+    "userDescription": "Feature: add a header comment block to the loaded .mmd file, which will store meta data used by the viewer to control things like 'last viewed position', 'last selected node', etc.  Use a comment fence like `%%%%====` to mark the start/end of this automatically generated header comment block, and include a warning at the start of the block that says something like \"DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE\".",
+    "goal": [
+      "- Every commit to the .mmd file (commitEditorSource) appends a %%%%==== ... %%%%==== block at the end of the file with the 'DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE' warning line and one JSON object containing lastSelectedNodeId, outputScrollLeft, and outputScrollTop",
+      "- Re-saving a file that already has a header block replaces it in place, it is never duplicated",
+      "- Opening a .mmd file (loadDiagram) re-selects lastSelectedNodeId via selectEditorNode if that node id still exists in the parsed graph, and restores outputBox.scrollLeft/scrollTop to the saved values",
+      "- The header block is invisible to editorGraph()'s node/edge parsing and to mermaid's own rendering; `npm test` passes"
+    ],
+    "notInScope": [
+      "- No metadata fields beyond lastSelectedNodeId, outputScrollLeft, and outputScrollTop — any other field is a separate task",
+      "- Existing .mmd files are not batch-migrated to add a header; they get one the next time they're saved",
+      "- No UI or CLI is added for a human to hand-edit the metadata block; it is purely viewer-generated and viewer-consumed"
+    ],
+    "problemSolvedByTask": "Editor loses your place between sessions",
+    "description": "commitEditorSource (viewer.ts ~line 639-651) is the single save path that generates/replaces the header block on every write, before saveDiagram() PUTs the source to /api/diagrams/:name — server.js needs no changes, it just persists whatever text it's given. loadDiagram (viewer.ts ~line 1658-1666) fetches the .mmd text and assigns it straight to codeBox.value before resetEditorHistory/render; parsing the header and restoring lastSelectedNodeId (via selectEditorNode) and outputBox.scrollLeft/scrollTop belongs there. The graph parser already skips lines starting with '%%' in two places (viewer.ts editorGraph's isSkippable check, and render()'s separate parseEdges), both operating per-line after trim, so a multi-line %%%%==== fence is already invisible to both as long as every line inside it (including the %%%%==== markers) starts with %%, which holds for this format — verify rather than assume for this exact fence. Header goes at the END of the file, after the diagram body, since 'flowchart TD' must stay the first line.",
+    "modifiableFiles": [
+      "viewer.ts",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Select a node and scroll the output panel, trigger a save, assert the saved .mmd ends with a %%%%==== block containing correct JSON; reload the file and assert the same node gets re-selected and the panel scrolls back to the same position.",
+    "difficulty": 5
   }
 ]
