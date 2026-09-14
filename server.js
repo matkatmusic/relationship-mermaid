@@ -4,8 +4,11 @@ export function isValidName(name) {
   return /^[a-zA-Z0-9_-]+\.mmd$/.test(name);
 }
 
+const portFlagIndex = process.argv.indexOf("--port");
+const PORT = portFlagIndex === -1 ? 3000 : Number(process.argv[portFlagIndex + 1]);
+
 if (import.meta.main) Bun.serve({
-  port: 3000,
+  port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
 
@@ -74,4 +77,4 @@ if (import.meta.main) Bun.serve({
   },
 });
 
-if (import.meta.main) console.log("Mermaid viewer running at http://localhost:3000");
+if (import.meta.main) console.log(`Mermaid viewer running at http://localhost:${PORT}`);

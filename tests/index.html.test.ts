@@ -5,8 +5,8 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const SERVER_PORT = 3000;
-const CDP_PORT = 9333;
+const SERVER_PORT = Number(process.env.SERVER_PORT) || 3000;
+const CDP_PORT = Number(process.env.CDP_PORT) || 9333;
 const CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 let serverProc: ChildProcess;
@@ -88,7 +88,7 @@ async function labelLineHeight(id: string) {
 before(async () => {
   // Scenario: start the real server and headless Chrome, then connect via CDP to drive the page like a user.
   spawnSync("bun", ["build", "viewer.ts", "--outfile", "viewer.js"], { stdio: "inherit" });
-  serverProc = spawn("bun", ["server.js"], { stdio: "ignore" });
+  serverProc = spawn("bun", ["server.js", "--port", String(SERVER_PORT)], { stdio: "ignore" });
   await waitForPort(SERVER_PORT);
 
   const userDataDir = mkdtempSync(join(tmpdir(), "phone-view-test-"));
