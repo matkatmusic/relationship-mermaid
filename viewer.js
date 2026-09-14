@@ -24,6 +24,9 @@ var MAX_PHONE_NODES = 8;
 var nodeActions = document.getElementById("nodeActions");
 var selectedNodeBox = document.getElementById("selectedNode");
 var selectedEditorNodeId = null;
+var nodeInspector = document.getElementById("nodeInspector");
+var nodeInspectorTitle = document.getElementById("nodeInspectorTitle");
+var nodeTextInput = document.getElementById("nodeTextInput");
 var pendingRemoval = null;
 var editorHistory = [codeBox.value];
 var editorHistoryIndex = 0;
@@ -350,6 +353,7 @@ function isAnswerId(id, edges) {
   }
   return matched;
 }
+var INSPECTOR_TITLES = { question: "Decision block", block: "static block", choice: "choice block" };
 function setEditorActionPromise(promise) {
   editorActionPromise = promise;
   window.editorActionPromise = promise;
@@ -417,9 +421,6 @@ function editorGraph() {
   }
   return { lines, nodes, edges };
 }
-function editorNodeKind(id, graph) {
-  return graph.nodes.get(id)?.kind;
-}
 function sourceWithLinesReplaced(graph, removedLineIndexes, newLines) {
   const kept = graph.lines.filter((_, lineIndex) => !removedLineIndexes.has(lineIndex));
   return [...kept, ...newLines].join(`
@@ -462,6 +463,7 @@ function selectEditorNode(id) {
   nodeActions.classList.toggle("open", !!id);
   selectedNodeBox.textContent = id ?? "";
   renderEditorSelection();
+  renderNodeInspector();
 }
 function renderEditorSelection() {
   for (const el of diagramBox.querySelectorAll(".editor-selected"))
@@ -706,36 +708,49 @@ function replaceDeclarationInLine(line, id, newToken) {
   const re = new RegExp(`${escapedId}(\\{[^}]*\\}|\\[[^\\]]*\\]|\\(\\[[^\\]]*\\]\\))`);
   return line.replace(re, newToken);
 }
-function beginInlineEdit(nodeEl, id, kind) {
-  const label = nodeEl.querySelector(".nodeLabel");
-  if (!label)
+function renderNodeInspector() {
+  const graph = editorGraph();
+  const node = graph.nodes.get(selectedEditorNodeId ?? "");
+  nodeInspector.hidden = !node;
+  if (!node)
     return;
-  label.contentEditable = "true";
-  label.focus();
-  let committed = false;
-  const commit = () => {
-    if (committed)
-      return;
-    committed = true;
-    label.contentEditable = "false";
-    const text = (label.textContent ?? "").trim();
-    const graph = editorGraph();
-    const node = graph.nodes.get(id);
-    if (!node)
-      return;
-    const newToken = kind === "question" ? `${id}{"${text}"}` : `${id}["${text}"]`;
-    const lines = graph.lines.slice();
-    lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
-    runEditorAction(() => commitEditorSource(lines.join(`
+  nodeInspectorTitle.textContent = INSPECTOR_TITLES[node.kind];
+  nodeTextInput.value = node.label;
+  positionNodeInspector();
+}
+function positionNodeInspector() {
+  if (nodeInspector.hidden)
+    return;
+  const nodeEl = diagramBox.querySelector('[id*="flowchart-' + selectedEditorNodeId + '-"]');
+  if (!nodeEl)
+    return;
+  const node = nodeEl.getBoundingClientRect();
+  const output = outputBox.getBoundingClientRect();
+  const gap = 12;
+  const maxWidth = 320;
+  const spaceRight = output.right - node.right - gap;
+  const spaceLeft = node.left - output.left - gap;
+  const fitsRight = spaceRight >= maxWidth;
+  nodeInspector.style.width = Math.max(0, Math.min(maxWidth, Math.max(spaceRight, spaceLeft))) + "px";
+  const card = nodeInspector.getBoundingClientRect();
+  const preferredLeft = fitsRight || spaceRight >= spaceLeft ? node.right + gap : node.left - gap - card.width;
+  nodeInspector.style.left = Math.max(output.left, Math.min(preferredLeft, output.right - card.width)) + "px";
+  nodeInspector.style.top = Math.max(output.top, Math.min(node.top, output.bottom - card.height)) + "px";
+}
+function commitNodeText() {
+  const id = selectedEditorNodeId;
+  if (!id)
+    return;
+  const graph = editorGraph();
+  const node = graph.nodes.get(id);
+  if (!node)
+    return;
+  const text = nodeTextInput.value.trim();
+  const newToken = node.kind === "question" ? `${id}{"${text}"}` : `${id}["${text}"]`;
+  const lines = graph.lines.slice();
+  lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
+  runEditorAction(() => commitEditorSource(lines.join(`
 `)));
-  };
-  label.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter")
-      return;
-    event.preventDefault();
-    commit();
-  });
-  label.addEventListener("blur", commit, { once: true });
 }
 outputBox.addEventListener("click", (event) => {
   const nodeEl = event.target.closest("g.node");
@@ -761,12 +776,9 @@ outputBox.addEventListener("dblclick", (event) => {
   const nodeEl = event.target.closest("g.node");
   if (!nodeEl)
     return;
-  const id = nodeIdOf(nodeEl);
-  const graph = editorGraph();
-  const kind = editorNodeKind(id, graph);
-  if (!kind || kind === "choice")
-    return;
-  beginInlineEdit(nodeEl, id, kind);
+  selectEditorNode(nodeIdOf(nodeEl));
+  nodeTextInput.focus();
+  nodeTextInput.select();
 });
 document.getElementById("addQuestionAfterBtn").addEventListener("click", addQuestionAfter);
 document.getElementById("addBlockAfterBtn").addEventListener("click", addBlockAfter);
@@ -779,6 +791,20 @@ document.getElementById("confirmRemoveQuestionBtn").addEventListener("click", co
 document.getElementById("cancelRemoveQuestionBtn").addEventListener("click", cancelQuestionRemoval);
 document.getElementById("editorUndoBtn").addEventListener("click", undoEditorAction);
 document.getElementById("editorRedoBtn").addEventListener("click", redoEditorAction);
+document.getElementById("nodeInspectorDismissBtn").addEventListener("click", () => selectEditorNode(null));
+nodeTextInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter")
+    return;
+  event.preventDefault();
+  commitNodeText();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape")
+    return;
+  selectEditorNode(null);
+});
+outputBox.addEventListener("scroll", positionNodeInspector);
+window.addEventListener("resize", positionNodeInspector);
 function drawSeparatorBetween(topId, belowIds, label) {
   const svg = diagramBox.querySelector("svg");
   const nodeEl = (id) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]');
@@ -919,6 +945,7 @@ async function render() {
     currentBottomQ = bottomQ;
     const source = phone ? chunkSource(shown, siblings, edges) : codeBox.value;
     const { svg } = await mermaid.render(id, source);
+    const viewport = { left: outputBox.scrollLeft, top: outputBox.scrollTop };
     diagramBox.innerHTML = svg;
     renderEditorSelection();
     if (edges.length > 0) {
@@ -929,6 +956,8 @@ async function render() {
       svgEl.style.width = phoneWidth + "px";
       svgEl.style.height = box.height * scale + "px";
     }
+    outputBox.scrollLeft = viewport.left;
+    outputBox.scrollTop = viewport.top;
     if (phone)
       renderLog(edges);
     const shouldDrawLastDecision = phone && phonePath.length > 0;
@@ -943,6 +972,7 @@ async function render() {
       scrollChoicesIntoView(bottomQ, edges);
     if (!phone)
       highlightPath();
+    positionNodeInspector();
     errorLog.textContent = "";
     errorLog.classList.remove("open");
   } catch (err) {
