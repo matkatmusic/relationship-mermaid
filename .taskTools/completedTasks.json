@@ -184,5 +184,1248 @@
       "814c430cf1d4e3e64083b9f4420eaf32f46cb111"
     ],
     "closureNote": "Task 20 completed.\n\nCommits:\n  655a51a3d20a0238cf4e1837c246c0dcc1501873  (root)   work\n  0d4fa351a8046a616a453835d1d9add5c3d83e0c  (root)   repair\n  814c430cf1d4e3e64083b9f4420eaf32f46cb111  (root)   merge\nModified files: index.html, tests/index.html.test.ts\nTask tests: 1 files, green\nFull suite: green"
+  },
+  {
+    "taskNumber": 21,
+    "version": "762edf51bd831480ed3c6d79119b35192791ee83",
+    "title": "Interactive node editor in web view that rewrites the .mmd file",
+    "userDescription": "An interactive GUI editor mode: you select a node and  can do things like:\n- add a question after\n- add a block after\n- remove a question\n- remove a block\n- add a choice to a question\n- remove a choice to a question. \n- double-click a block to change the text\nThe editor should be smart about how it handles nodes being removed/inserted into the graph.\nThe changes made to the graph are written into the .mmd file.",
+    "goal": [
+      "- In web view (phone view off), clicking a node selects it and shows actions: add question after, add block after, remove question, remove block, add choice, remove choice; double-click on a node opens inline text editing.",
+      "- Removing a question shows a preview of each candidate replacement path (one per choice) that the user can cycle through, with a cancel button; confirming reconnects the parent to the chosen path.",
+      "- Removing a choice removes only that choice node; everything reachable from it stays in the file as an orphaned path.",
+      "- After every action the diagrams/<name>.mmd file on disk contains the change, and reloading the page shows the same drawing.",
+      "- After every action the saved .mmd parses with mermaid with no syntax error.",
+      "- Undo and redo of editor actions work, and each undo/redo is written to the .mmd file.",
+      "- The e2e tests in the tests field pass on diagrams/say-something-or-let-it-go.mmd, and the existing 11 tests in tests/index.html.test.ts still pass."
+    ],
+    "notInScope": [
+      "- Editing in phone view; phone view stays read-only (no owning task yet).",
+      "- Drag to move or re-link nodes (no owning task yet).",
+      "- Cleaning up orphaned paths left by removing a choice (no owning task yet)."
+    ],
+    "problemSolvedByTask": "Editing diagrams by hand is slow and error-prone",
+    "description": "This task builds a functional, not pretty, MVP of a mermaidflow.app-style visual editor for this project's diagrams; editor mode is always on in web view (phone view off), with no new toggle. viewer.ts only renders mermaid source from the codeBox textarea and handles answer-node clicks (outputBox click listener, nodeIdOf, isAnswerId, choicesOf, parentOf); nothing mutates graph structure yet. Diagram files under diagrams/*.mmd use flowchart TD: a \"question\" is a decision diamond, ID{\"label\"}, with choice nodes ID_Y/ID_N/ID_ONCE/ID_NONE/ID_MULTIPLE, and a \"block\" is a static rectangle, ID[\"label\"] or ID[label]; edges are A --> B, parsed by parseEdges -- mermaidflow.app has no separate term for a branch/condition node, so these project terms stay. mermaidflow.app's \"add nodes and edges\" maps to this task's \"add node after\": inserting a question or block after a selected node splices into the edge chain. mermaidflow.app has no documented term for \"delete node\"; here it means removing a question (with a cycling preview of each choice's replacement path plus a cancel button) or removing a block, always reconnecting predecessors to successors, while removing a choice only orphans its subtree without deleting it. mermaidflow.app's \"Label: Edit text content\" maps to this task's \"edit label\": double-click on a question or block opens inline text editing. mermaidflow.app's \"Undo and Redo buttons\" map directly to this task's undo/redo requirement: every editor action, and its undo/redo, is written to the .mmd file. Saving exists end to end via saveBtn PUTing codeBox.value to /api/diagrams/:name, which server.js writes to diagrams/<name>.mmd; the editor should rewrite codeBox.value (node lines, edge lines, class lines) and reuse that path so mermaidflow.app's \"Text Tab and visual editor work together in real-time\" -- code and diagram stay in sync -- and reloading the page shows the same drawing. Tests drive the app over the Chrome DevTools Protocol against server.js on port 3000 (tests/index.html.test.ts); no existing test exercises node or edge mutation.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts",
+      "tests/viewer.test.ts",
+      "tests/viewer.js.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Using 'say-something-or-let-it-go.mmd' as the test base, a test that adds a new question at the end with 2 choices, a test that inserts a question in the middle of the graph with 2 choices, a test that inserts static blocks at the end, a test that inserts static blocks in the middle, a test that removes a choice, and test that adds a new choice to an existing question, a test that modifies the text of a question, a test that modifies the text of a static block.  Each test should also verify that the syntax of the resulting .mmd diagram is 100% valid, in addition to what the test is already verifying.",
+    "difficulty": 8,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21",
+      "leaseRunId": "bf7516e7-158b-46a6-ad6d-9359ae9503d4",
+      "history": [
+        {
+          "runId": "bf7516e7-158b-46a6-ad6d-9359ae9503d4",
+          "startedAt": "2026-09-12T15:41:25-07:00",
+          "endedAt": "2026-09-12T19:59:24-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "index.html",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts",
+            "plans/implementation-notes-21.md",
+            "tests/viewer.js.test.ts",
+            "tests/viewer.test.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "de363f623a4c00cc0760e7f06e9a8354c30b92e8",
+              "kind": "work",
+              "stepId": "implement"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "60f3975a1c265d7fce99118d8b0de1945c6748ba",
+              "kind": "repair",
+              "stepId": "fix-test-2"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "ab41fb00f11cef42056c0eb9ca15af55338cf073",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": {
+            "stepId": "RUN_TASK_TESTS",
+            "passed": true,
+            "testFiles": [
+              "tests/index.html.test.ts",
+              "tests/viewer.js.test.ts",
+              "tests/viewer.test.ts"
+            ],
+            "createdTestFiles": [
+              "tests/viewer.js.test.ts",
+              "tests/viewer.test.ts"
+            ],
+            "deletedTestFiles": [],
+            "missingTests": false,
+            "output": "all passing\n",
+            "newFailingTests": [],
+            "knownFailingTests": [],
+            "checkedAt": "2026-09-12T19:56:55-07:00"
+          },
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 878ms\n\n  viewer.js  36.15 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [740.00ms]\n(node:93624) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 2208ms\n\n  viewer.js  36.15 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (4661.867ms)\n✔ test_phone_view_shows_the_start_slice (25.367459ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (207.077583ms)\n✔ test_reset_returns_to_the_start_slice (79.472458ms)\n✔ test_back_button_undoes_one_choice_at_a_time (290.287708ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (113.565167ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (833.828334ms)\n✔ test_decision_log_reflects_choices_and_undo (3374.671917ms)\n✔ test_font_size_is_the_same_in_every_view (1189.566667ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (372.089209ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1515.667792ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (1055.185584ms)\n✔ test_add_question_in_middle_splices_each_former_successor (811.137083ms)\n✔ test_add_block_after_terminal_block (790.137125ms)\n✔ test_add_block_in_middle_splices_the_edge (792.754209ms)\n✔ test_remove_choice_orphans_its_downstream_path (1248.125375ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (818.83525ms)\n✔ test_inline_question_text_edit_persists (783.5425ms)\n✔ test_inline_static_block_text_edit_persists (758.680625ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (635.125ms)\n(node:93625) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (2072.554083ms)\n(node:93626) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-21/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (2326.756833ms)\nℹ tests 22\nℹ suites 0\nℹ pass 22\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 23418.955833",
+            "checkedAt": "2026-09-12T19:59:15-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "60f3975a1c265d7fce99118d8b0de1945c6748ba"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  21
+                ],
+                "skipped": [],
+                "unblocked": [],
+                "ambiguous": []
+              }
+            }
+          ],
+          "tailCursor": null,
+          "attempts": {
+            "testFixes": 2,
+            "testReviews": 1
+          },
+          "countedPasses": {
+            "testFixes": [
+              "3d1f4fa1-bf70-4224-a792-2bbff633e139",
+              "c270f3e8-91ff-4f87-8469-beef1535d1c1"
+            ],
+            "testReviews": [
+              "66c87c65-129d-4fac-a48a-39d3a6d7adbf"
+            ]
+          },
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "46b026f0d029b8bd5b0912a3d8fcfac665eae8d6"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "60f3975a1c265d7fce99118d8b0de1945c6748ba"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "46b026f0d029b8bd5b0912a3d8fcfac665eae8d6"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "codexReviewNotes": "A reviewer flagged the task tests. Apply every fix below.\n\n[tests/viewer.test.ts] bun build viewer.ts succeeds and includes expected DOM ids\n\nThis newly created test contradicts the plan's test-file accounting, which directs editor behavior coverage to tests/index.html.test.ts and calls for no test in this path. Its build/string checks are not a requested editor behavior assertion.\n\nFix: Remove this test and keep editor behavior coverage in tests/index.html.test.ts.\n\n[tests/viewer.js.test.ts] committed viewer.js matches a fresh build of viewer.ts byte for byte\n\nThis newly created test contradicts the plan's test-file accounting, which directs editor behavior coverage to tests/index.html.test.ts and calls for no test in this path. Byte-for-byte build-artifact equality is not required by the brief or plan.\n\nFix: Remove this test and keep editor behavior coverage in tests/index.html.test.ts.",
+    "createsFiles": [
+      "tests/viewer.test.ts",
+      "tests/viewer.js.test.ts"
+    ],
+    "completionDate": "2026-09-12",
+    "commitHashes": [
+      "de363f623a4c00cc0760e7f06e9a8354c30b92e8",
+      "60f3975a1c265d7fce99118d8b0de1945c6748ba",
+      "ab41fb00f11cef42056c0eb9ca15af55338cf073"
+    ],
+    "closureNote": "Task 21 completed.\n\nCommits:\n  de363f623a4c00cc0760e7f06e9a8354c30b92e8  (root)   work\n  60f3975a1c265d7fce99118d8b0de1945c6748ba  (root)   repair\n  ab41fb00f11cef42056c0eb9ca15af55338cf073  (root)   merge\nModified files: index.html, tests/index.html.test.ts, viewer.js, viewer.ts, plans/implementation-notes-21.md, tests/viewer.js.test.ts, tests/viewer.test.ts\nTask tests: 3 files, green\nFull suite: green"
+  },
+  {
+    "taskNumber": 22,
+    "version": "46b026f0d029b8bd5b0912a3d8fcfac665eae8d6",
+    "title": "Floating node inspectors with explicit destination selection",
+    "userDescription": "Follow plans/task-22-node-inspector-and-destinations.md as the decision-complete implementation specification. Replace task 21's shared action bar with the three floating node inspectors in the supplied mockup and add an explicit Destination workflow so graph editing never has to guess where a new or existing path should lead. Every inspector has a bordered Text field plus Undo, Redo, and Cancel/Close. Decision block: [Remove][Remove choices] / [add choice] / [insert static block before] / [insert Decision & leading choice before] / [Undo][Redo] / [Cancel]. static block: [Remove] / [insert static block before] / [add Decision block after] / [insert Decision & leading choice before] / [Undo][Redo] / [Cancel or Close] / [Destination]. choice block: [Remove] / [add Decision block after] / [add static block after] / [Undo][Redo] / [Cancel or Close] / [Destination]. Destination is always present for static and choice blocks and offers, in order: Terminal, New static block, New Decision block, then every viable existing static or Decision block. It shows the current connection and lets the user terminate, create, or rewire a path. Every committed text, graph, undo, or redo change is validated and persisted to the current .mmd file. ",
+    "chainGoal": [
+      "- Tasks 21 and 22 together deliver a usable GUI editor for .mmd diagrams in web view: task 21 supplies graph rewriting, persistence, and history; task 22 provides the floating inspectors and explicit destination selection needed to build, terminate, splice, and reconnect paths without hand-editing Mermaid text."
+    ],
+    "goal": [
+      "- In web view, clicking a node opens one rounded floating inspector beside its SVG node, over the drawing and clamped inside the visible diagram area. Selecting, retargeting, dismissing, or rerendering the inspector preserves both scrollLeft and scrollTop of the diagram container.",
+      "- The inspector's normal state matches the mockup: a centered title exactly identifying `Decision block`, `static block`, or `choice block`; one `Text:` row with an obvious bordered input containing the current label; a two-column control grid in the exact row order from userDescription; Undo and Redo share a row; and Cancel/Close spans both columns. Controls not listed for that node kind are absent, not merely disabled.",
+      "- Decision block exposes Remove, Remove choices, add choice, insert static block before, and insert Decision & leading choice before. static block exposes Remove, insert static block before, add Decision block after, and insert Decision & leading choice before. choice block exposes Remove, add Decision block after, and add static block after.",
+      "- The Text input edits Decision, static, and choice labels. Enter validates and writes the input value into the selected node in the loaded .mmd file; double-clicking a node opens its inspector and focuses/selects the input. Cancel/Close, Escape, or clicking empty drawing space discards uncommitted input and closes the inspector; clicking another node discards uncommitted input, moves the inspector, and retargets every action.",
+      "- Every static and choice inspector shows a `Destination:` select below Cancel/Close, even when already connected. Its options are exactly Terminal, New static block, New Decision block, then every existing static and Decision node in .mmd source order. Existing-node options always display `label (node ID)`, exclude the selected node, and are deduplicated by ID. Descendants remain eligible so intentional cycles are allowed without warning. Decisions never show Destination because they connect through choices.",
+      "- A static or choice has at most one outgoing edge. Destination selects its current target or Terminal; selecting the current value is a no-op. Choosing another existing target replaces the sole outgoing edge. Choosing Terminal removes it. In both cases the former target and its downstream path remain in the source as an orphaned branch.",
+      "- Choosing New static block, from either Destination or an add-after button, immediately replaces the selected block's outgoing edge with `selected --> NewStatic`; NewStatic is terminal, the former destination remains orphaned, and the inspector moves to NewStatic with Text focused. This does not automatically splice NewStatic into the former path.",
+      "- Choosing New Decision block, from either entry point, immediately replaces the outgoing edge with `selected --> NewDecision --> NewChoice`, where NewDecision has exactly one explicit terminal choice. The former destination remains orphaned. Focus NewDecision's Text first; Enter commits it and advances to NewChoice with Destination focused. `add choice` likewise creates one terminal explicit choice, moves to it, and focuses Destination.",
+      "- Add-after buttons and their Destination-menu equivalents use the same implementation and produce identical source, selection, focus, save, and history behavior. Each structural or Destination change is one immediate undoable save. If Text is dirty when Destination changes, commit Text first and Destination second as two ordered undo entries.",
+      "- A terminal static or choice labels the dismissal button Close; connected static/choice blocks and Decisions label it Cancel. Dismissal never reverses a committed creation or connection; Undo does. Before-insertion actions continue to splice incoming edges automatically and do not open Destination.",
+      "- `insert static block before` redirects every incoming edge through one new static block and then to the selected node; with no predecessor the new block becomes a root leading to the selected node. `insert Decision & leading choice before` similarly creates one new Decision and one explicit leading choice between that Decision and the selected node, preserving the rule that a Decision points directly only to choices.",
+      "- Keep task 21's Remove behaviors: Decision Remove uses the replacement-path preview/cycle/confirm flow; static Remove reconnects every predecessor to every successor; choice Remove removes the choice and its incident edges while leaving its downstream path orphaned. Remove choices removes every outgoing Decision branch representation-independently: delete labelled outgoing branch edges, and delete immediate explicit choice nodes plus their incident edges, while retaining downstream nodes and paths as orphans. The temporary Decision-removal preview may replace the normal controls and retains its confirm/cycle/cancel controls.",
+      "- Inspector Undo/Redo and two always-visible web-header Undo/Redo buttons share task 21's source history and accurately reflect availability. Every commit truncates the redo tail; every action, undo, and redo validates with Mermaid before updating the textarea, rerendering, and saving diagrams/<name>.mmd. Reloading reproduces the same graph.",
+      "- A committed text or before-insertion action keeps the original node selected and reanchors its inspector after rerender; add-after and add-choice actions retarget it as described above; removing the selected node closes it. Undo/Redo keeps and reanchors the selection when that node still exists, otherwise it closes the inspector.",
+      "- Rewrites preserve valid existing Mermaid source forms used by the project, including standalone and inline node declarations, chained edges, labelled branches, dotted edges, class directives, fan-in, and fan-out; generated IDs are unique and edited labels are safely escaped. The existing suite and the task 22 end-to-end coverage pass."
+    ],
+    "notInScope": [
+      "- Editing in phone view; phone view stays read-only (no owning task yet).",
+      "- Dragging nodes, manually drawing/relinking edges, or changing layout direction.",
+      "- Automatically cleaning up orphaned downstream paths after removing a choice or all choices.",
+      "- Pixel-perfect reproduction of the mockup's font and colors; its inspector structure, labels, relative spans, ordering, rounded floating-card treatment, and behavior are required."
+    ],
+    "problemSolvedByTask": "When adding or editing a non-terminal path, the editor currently guesses whether to splice into the old path and gives the user no simple GUI for making the new block terminal, creating its next block, or connecting it to an existing destination.",
+    "description": "The authoritative, decision-complete specification is plans/task-22-node-inspector-and-destinations.md; implement every behavior and test in it. Build from task 21's completed implementation on the staging branch at merge commit ab41fb0, which is not present in the current develop tree. On that baseline, index.html's #nodeActions is a static flex row showing every action, and viewer.ts provides EditorGraph/editorGraph, editorNodeKind, selection rendering, add/remove operations, commitEditorSource, editorHistory undo/redo, and SVG contenteditable label editing. Replace #nodeActions with one fixed-position, node-kind-specific inspector; replace contenteditable with its Text input; add the static/choice Destination select and the specified creation/rewiring flows; preserve viewport and selection across renders; and serialize validate-render-save history actions. Do not preserve task 21's automatic add-after splicing: a new after-node becomes the selected source's new terminal destination and the former destination path becomes orphaned. Keep before-insertion splicing and existing removal semantics. Make editor parsing/rewriting lossless for chained, labelled, and dotted edges, inline declarations, class directives, fan-in/fan-out, orphan paths, and intentional cycles before extending mutation logic. Browser behavior tests belong in tests/index.html.test.ts; viewer.js remains the committed build output of viewer.ts, while task 21's build/parity tests already exist on staging.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Implement all cases in the `Required browser tests` section of plans/task-22-node-inspector-and-destinations.md using tests/index.html.test.ts and restored fixtures. This includes exact per-kind inspector layout, Destination contents/order/current value, terminal and rewiring behavior, intentional cycles, orphan preservation, equivalent button/menu creation, one-choice Decision flow, selection/focus transitions, separate dirty-Text and Destination history entries, Cancel/Close labeling, before-insertion and removal regressions, viewport preservation, persistence/reload, and lossless Mermaid syntax variants. Validate every committed source with Mermaid, run the full existing suite, rebuild viewer.js, and confirm it matches viewer.ts.",
+    "difficulty": 9,
+    "completionDate": "2026-09-13",
+    "commitHashes": [],
+    "closureNote": "Split into 23, 24, 25, 26, 27, 28"
+  },
+  {
+    "taskNumber": 23,
+    "version": "9d5bc6c81e99671aa8ae634467beaa531925f05a",
+    "title": "Floating node-inspector shell with Text edit and Cancel/Close",
+    "userDescription": "Step 1 of the task-22 node-inspector split: build the floating node-inspector widget shell. Follow plans/task-22-node-inspector-and-destinations.md (the decision-complete specification) and plans/task-22-mockup.png for the visual reference. Build from task 21's completed implementation on the staging branch at merge commit ab41fb0 (not present in current develop): index.html's #nodeActions is a static flex row, and viewer.ts provides EditorGraph/editorGraph, editorNodeKind, selection rendering, commitEditorSource, editorHistory undo/redo, and SVG contenteditable label editing.\n\nScope for this step only: replace task 21's #nodeActions bar and SVG-contenteditable label editing with one rounded floating inspector that opens beside the selected node's SVG element, clamped inside the visible diagram area, and preserves the diagram container's scrollLeft/scrollTop across selection, retargeting, and rerender. The inspector shows a centered title exactly naming the node kind (Decision block, static block, or choice block) and one Text: row with an obvious bordered input holding the current label. Enter validates the input with Mermaid and commits it into the selected node in the loaded .mmd file, then rerenders and saves diagrams/<name>.mmd through task 21's existing history/undo-redo plumbing. Double-clicking a node opens its inspector and focuses/selects the Text input. A Cancel/Close control discards uncommitted Text and closes the inspector; Escape and clicking empty drawing space do the same; clicking a different node discards uncommitted Text, closes the current inspector, and opens/retargets to the new node preserving scroll position. Keep the two always-visible header Undo/Redo buttons from task 21 wired to the same history.\n\nOut of scope for this step (later steps in this split cover them): every per-kind action button (Remove, Remove choices, add choice, insert-before, add-after), the Destination select and all rewiring/creation flows, and Close-vs-Cancel labeling logic.\n\nTests: add tests/index.html.test.ts coverage for opening the inspector per node kind, Text commit via Enter, double-click focus/select, Cancel/Escape/outside-click/other-node-click discard and retarget, and scroll position preservation.",
+    "goal": [
+      "- In web view, clicking a node opens one rounded floating inspector beside its SVG node, over the drawing and clamped inside the visible diagram area.",
+      "- Selecting, dismissing, or rerendering the inspector preserves both scrollLeft and scrollTop of the diagram container.",
+      "- The inspector shows a centered title exactly identifying `Decision block`, `static block`, or `choice block`, one `Text:` row with a bordered input containing the current label, and a Cancel/Close control spanning both columns, matching the mockup's shell structure.",
+      "- Enter validates the Text input with Mermaid and commits it into the selected node's label in the loaded .mmd file, then rerenders and saves diagrams/<name>.mmd through the existing history/undo-redo plumbing.",
+      "- Double-clicking a node opens its inspector with the Text input focused and its contents selected.",
+      "- Cancel/Close, Escape, or clicking empty drawing space discards uncommitted Text and closes the inspector; clicking another node discards uncommitted Text, closes the current inspector, and opens/retargets to the new node, preserving scroll position.",
+      "- The existing suite passes and a rebuilt viewer.js matches viewer.ts."
+    ],
+    "notInScope": [
+      "- Per-kind action buttons (Remove, Remove choices, add choice, insert-before, add-after) — steps 3-6 of this split own them.",
+      "- The Destination select and all rewiring/creation flows — steps 2-3 of this split own them.",
+      "- Close-vs-Cancel labeling logic based on terminal/connected state — step 2 of this split owns it (the dismissal button is unconditionally labeled Cancel for this step).",
+      "- Editing in phone view; phone view stays read-only (no owning task yet)."
+    ],
+    "problemSolvedByTask": "The editor currently has a static, always-visible action bar and edits node text via a plain SVG contenteditable label, with no dedicated per-node inspector surface to build the rest of the Destination/action workflow on top of.",
+    "description": "The `#output` element is the scrollable diagram container (plans/task-22-node-inspector-and-destinations.md line ~230 reads its scrollLeft/scrollTop into a viewport object before rerender and restores both after). The plan (line 90) specifies positioning the inspector card with getBoundingClientRect() against the selected node, preferring the node's right side, falling back to its left, then clamping both axes inside #output's visible bounds, and repositioning on selection, render, #output scroll, and window resize without ever writing scrollLeft/scrollTop as a side effect. Task 21 (merge commit ab41fb0, not on current develop) exposes EditorGraph/editorGraph, editorNodeKind, commitEditorSource, and editorHistory undo/redo in viewer.ts, and a static #nodeActions flex row plus SVG contenteditable label editing in index.html — both of which this step removes and replaces with the floating card. This step implements only the shell: title-by-kind, one bordered Text input, Enter-to-commit-through-commitEditorSource, dblclick-to-open-and-select, and Cancel/Escape/outside-click/other-node-click discard-and-retarget; per-kind action buttons and the Destination select are deferred to later split steps.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "skip",
+    "difficulty": 7,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23",
+      "leaseRunId": "89c47fa1-0fc2-446e-a9b5-cb453044a0f1",
+      "history": [
+        {
+          "runId": "89c47fa1-0fc2-446e-a9b5-cb453044a0f1",
+          "startedAt": "2026-09-13T15:07:22-07:00",
+          "endedAt": "2026-09-13T20:49:21-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "index.html",
+            "plans/implementation-notes-23.md",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "5b7503c56410d53df8e8434c1f4ebb194b3dd2a7",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "93967e2cf60e53e0d484eb230005a23b7becbf34",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 978ms\n\n  viewer.js  37.81 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [652.00ms]\n(node:12757) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 1570ms\n\n  viewer.js  37.81 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (3667.927916ms)\n✔ test_phone_view_shows_the_start_slice (6.244167ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (167.835667ms)\n✔ test_reset_returns_to_the_start_slice (51.900875ms)\n✔ test_back_button_undoes_one_choice_at_a_time (233.223833ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (108.125667ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (831.107583ms)\n✔ test_decision_log_reflects_choices_and_undo (3266.208166ms)\n✔ test_font_size_is_the_same_in_every_view (1057.665833ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (311.44775ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1485.652833ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (1049.205042ms)\n✔ test_add_question_in_middle_splices_each_former_successor (785.351417ms)\n✔ test_add_block_after_terminal_block (727.246875ms)\n✔ test_add_block_in_middle_splices_the_edge (772.013709ms)\n✔ test_remove_choice_orphans_its_downstream_path (1200.593417ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (766.573375ms)\n✔ test_inline_question_text_edit_persists (782.87075ms)\n✔ test_inline_static_block_text_edit_persists (766.442166ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (503.976625ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (346.435875ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (351.046375ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (408.247208ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (358.0385ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (356.349292ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (352.894291ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (358.639292ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (359.588792ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (1219.316167ms)\n(node:12758) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (1585.937958ms)\n(node:12759) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-23/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (1597.201625ms)\nℹ tests 31\nℹ suites 0\nℹ pass 31\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 24509.116375",
+            "checkedAt": "2026-09-13T20:49:17-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "5b7503c56410d53df8e8434c1f4ebb194b3dd2a7"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  23
+                ],
+                "skipped": [],
+                "unblocked": [
+                  24,
+                  26,
+                  27
+                ],
+                "ambiguous": []
+              }
+            }
+          ],
+          "tailCursor": null,
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "5ab3bb00227ef301aef5f2490bb8ce98dfba60c7"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "5b7503c56410d53df8e8434c1f4ebb194b3dd2a7"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "5ab3bb00227ef301aef5f2490bb8ce98dfba60c7"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "codexReviewNotes": "the task declares tests but the plan does not name: tests/test-viewer.ts or tests/viewer.test.ts or viewer.test.ts, tests/test-viewer.js or tests/viewer.test.js",
+    "clarifyRequest": "Codex hit its usage limit again before producing a plan (\"try again at 5:37 PM\"). No plan.json was written. Retry planning after the Codex quota resets.",
+    "completionDate": "2026-09-13",
+    "commitHashes": [
+      "5b7503c56410d53df8e8434c1f4ebb194b3dd2a7",
+      "93967e2cf60e53e0d484eb230005a23b7becbf34"
+    ],
+    "closureNote": "Task 23 completed.\n\nCommits:\n  5b7503c56410d53df8e8434c1f4ebb194b3dd2a7  (root)   work\n  93967e2cf60e53e0d484eb230005a23b7becbf34  (root)   merge\nModified files: index.html, plans/implementation-notes-23.md, tests/index.html.test.ts, viewer.js, viewer.ts\nTask tests: (not recorded)\nFull suite: green"
+  },
+  {
+    "taskNumber": 24,
+    "version": "f0e1d3698e43b5fd270a0a80e4736ec8b8c37779",
+    "title": "Destination select for static/choice inspectors (existing nodes)",
+    "userDescription": "Step 2 of the task-22 node-inspector split: add the Destination select to static and choice inspectors, listing only existing nodes (not new-block creation, which is a later step). Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Step 1's floating inspector widget (Text edit + Cancel/Close) from this same split.\n\nScope: every static and choice inspector shows a Destination: select below Cancel/Close, even when already connected. Its options are Terminal, then every existing static and Decision node in .mmd source order (New static block/New Decision block options are out of scope for this step). Existing-node options display 'label (node ID)', exclude the selected node, and are deduplicated by ID. Descendants remain eligible so intentional cycles are allowed without warning. Decisions never show Destination. A static or choice has at most one outgoing edge: Destination selects its current target or Terminal; selecting the current value is a no-op; choosing another existing target replaces the sole outgoing edge; choosing Terminal removes it; in both cases the former target and its downstream path remain in the source as an orphaned branch. Each Destination change is one immediate undoable save, validated with Mermaid, rerendered, and saved to diagrams/<name>.mmd. If Text is dirty when Destination changes, commit Text first and Destination second as two ordered undo entries. A terminal static/choice labels the dismissal button Close; connected ones label it Cancel.\n\nOut of scope: New static block/New Decision block creation options (step 3), add-after buttons, Remove/Remove-choices, insert-before, add-choice.\n\nTests: tests/index.html.test.ts coverage for Destination option list/order/labels/dedup per node kind, selecting existing targets, selecting Terminal, orphaning the former target, no-op on current value, Close-vs-Cancel labeling, and the two-ordered-undo-entries behavior when Text is dirty.",
+    "goal": [
+      "- Every static and choice inspector shows a `Destination:` select below Cancel/Close, even when already connected.",
+      "- Destination's options are exactly Terminal, then every existing static and Decision node in .mmd source order; existing-node options display `label (node ID)`, exclude the selected node, and are deduplicated by ID. Decisions never show Destination.",
+      "- Selecting the current value is a no-op; choosing another existing target replaces the block's sole outgoing edge; choosing Terminal removes it; in both cases the former target and its downstream path remain in the source as an orphaned branch.",
+      "- Descendants remain selectable as a Destination so intentional cycles are allowed without warning.",
+      "- A terminal static/choice labels the dismissal button Close; a connected one labels it Cancel.",
+      "- Each Destination change is one immediate Mermaid-validated undoable save; if Text is dirty when Destination changes, Text commits first and Destination second as two ordered undo entries."
+    ],
+    "notInScope": [
+      "- `New static block` and `New Decision block` creation options in the Destination list — step 3 of this split owns them.",
+      "- add-after buttons, Remove/Remove-choices, insert-before, and add-choice — steps 3-6 of this split own them."
+    ],
+    "problemSolvedByTask": "When adding or editing a non-terminal path, the editor currently guesses whether to splice into the old path and gives the user no simple GUI for making the new block terminal, creating its next block, or connecting it to an existing destination — this step adds the explicit Destination control for rewiring to already-existing nodes.",
+    "description": "Confirmed via rg that develop has no nodeInspector, destinationSelect, or DestinationValue code yet in index.html, viewer.ts, or viewer.js, so this task depends on Step 1 (the floating inspector shell with Text edit and Cancel/Close) landing first. Implementation touches viewer.ts's EditorGraph (must preserve source declaration/reference order for stable option ordering), replaceOutgoing/removeOutgoing edge-rewrite helpers, and enqueueEditorAction serialization so a dirty Text commit and a Destination commit land as two ordered undo entries. index.html needs destinationRow/select markup wired to inspector state (hidden for Decisions, shown for static/choice) and the Close-vs-Cancel label driven by terminal state. viewer.js must be rebuilt from viewer.ts to match.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "skip",
+    "difficulty": 7,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24",
+      "leaseRunId": "9cd83654-f1a8-4694-af56-1ddc5867edea",
+      "history": [
+        {
+          "runId": "9cd83654-f1a8-4694-af56-1ddc5867edea",
+          "startedAt": "2026-09-13T21:47:32-07:00",
+          "endedAt": "2026-09-13T22:11:59-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "index.html",
+            "plans/implementation-notes-24.md",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "469fbeac5e74fc3dd8c1eb216014f31b486f177c",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "3f612ffe6f96b3129d539a4a28998b927e7b070d",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 1108ms\n\n  viewer.js  40.67 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [729.00ms]\n(node:58429) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 1483ms\n\n  viewer.js  40.67 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (3670.860458ms)\n✔ test_phone_view_shows_the_start_slice (6.367333ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (165.274ms)\n✔ test_reset_returns_to_the_start_slice (49.297375ms)\n✔ test_back_button_undoes_one_choice_at_a_time (220.50075ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (103.8615ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (837.505791ms)\n✔ test_decision_log_reflects_choices_and_undo (3238.932208ms)\n✔ test_font_size_is_the_same_in_every_view (1026.368125ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (308.880334ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1469.04ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (1058.410583ms)\n✔ test_add_question_in_middle_splices_each_former_successor (734.694ms)\n✔ test_add_block_after_terminal_block (782.060958ms)\n✔ test_add_block_in_middle_splices_the_edge (733.228375ms)\n✔ test_remove_choice_orphans_its_downstream_path (1111.4755ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (725.570042ms)\n✔ test_inline_question_text_edit_persists (725.86375ms)\n✔ test_inline_static_block_text_edit_persists (731.072708ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (502.492375ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (347.621584ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (352.138416ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (403.280041ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (353.931958ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (356.469625ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (358.070458ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (354.725834ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (354.413625ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (885.070167ms)\n✔ test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order (1250.09925ms)\n✔ test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice (392.225834ms)\n✔ test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan (1025.071666ms)\n✔ test_destination_terminal_removes_only_the_selected_outgoing_edge (1032.12375ms)\n✔ test_destination_accepts_descendants_and_current_value_is_a_no_op (1038.692667ms)\n✔ test_dirty_text_then_destination_creates_two_ordered_undo_entries (1105.418291ms)\n(node:58430) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (1471.335417ms)\n(node:58431) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-24/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (1489.058041ms)\nℹ tests 37\nℹ suites 0\nℹ pass 37\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 29599.035083",
+            "checkedAt": "2026-09-13T22:11:55-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "469fbeac5e74fc3dd8c1eb216014f31b486f177c"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  24
+                ],
+                "skipped": [],
+                "unblocked": [
+                  25
+                ],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "93967e2cf60e53e0d484eb230005a23b7becbf34"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "469fbeac5e74fc3dd8c1eb216014f31b486f177c"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "93967e2cf60e53e0d484eb230005a23b7becbf34"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-13",
+    "commitHashes": [
+      "469fbeac5e74fc3dd8c1eb216014f31b486f177c",
+      "3f612ffe6f96b3129d539a4a28998b927e7b070d"
+    ],
+    "closureNote": "Task 24 completed.\n\nCommits:\n  469fbeac5e74fc3dd8c1eb216014f31b486f177c  (root)   work\n  3f612ffe6f96b3129d539a4a28998b927e7b070d  (root)   merge\nModified files: index.html, plans/implementation-notes-24.md, tests/index.html.test.ts, viewer.js, viewer.ts\nTask tests: (not recorded)\nFull suite: green"
+  },
+  {
+    "taskNumber": 25,
+    "version": "19a2995d21f8400d066efea8e5f59e79e9dea84f",
+    "title": "Add-after actions and New static/Decision creation via Destination",
+    "userDescription": "Step 3 of the task-22 node-inspector split: add a new node after a selected node. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-2 of this split (floating inspector with Text edit and Destination select for existing nodes).\n\nScope: static block's 'add Decision block after' button; choice block's 'add Decision block after' and 'add static block after' buttons; and the Destination select's 'New static block' and 'New Decision block' options (added to the option list ahead of existing-node options), which must use the same implementation and produce identical source/selection/focus/save/history results as the equivalent add-after button. Choosing New static block immediately replaces the selected block's outgoing edge with 'selected --> NewStatic'; NewStatic is terminal; the former destination remains orphaned; the inspector moves to NewStatic with Text focused. Choosing New Decision block immediately replaces the outgoing edge with 'selected --> NewDecision --> NewChoice', where NewDecision has exactly one explicit terminal choice; the former destination remains orphaned; focus NewDecision's Text first, Enter commits it and advances to NewChoice with Destination focused. Each creation is one immediate undoable save, validated with Mermaid.\n\nOut of scope: Remove/Remove-choices, insert-before, add-choice-to-Decision (adding an additional branch to an existing Decision, step 6), and the existing-node Destination options already covered in step 2.\n\nTests: tests/index.html.test.ts coverage for add-after buttons and their Destination-menu equivalents producing identical results, New static block and New Decision block creation flows, focus/selection sequencing (NewDecision Text then NewChoice Destination), orphaning of the former destination, and history entries.",
+    "goal": [
+      "- static block's `add Decision block after` button, and choice block's `add Decision block after` and `add static block after` buttons, are wired and available per the mockup's control grid.",
+      "- The Destination select gains `New static block` and `New Decision block` options ahead of existing-node options; choosing either uses the same implementation and produces identical source, selection, focus, save, and history results as the equivalent add-after button.",
+      "- Choosing/clicking New static block immediately replaces the selected block's outgoing edge with `selected --> NewStatic`; NewStatic is terminal; the former destination remains orphaned; the inspector moves to NewStatic with Text focused.",
+      "- Choosing/clicking New Decision block immediately replaces the outgoing edge with `selected --> NewDecision --> NewChoice`, where NewDecision has exactly one explicit terminal choice; the former destination remains orphaned; focus moves to NewDecision's Text first, and Enter commits it and advances to NewChoice with Destination focused.",
+      "- Each creation is one immediate Mermaid-validated undoable save."
+    ],
+    "notInScope": [
+      "- Existing-node Destination options and rewiring to them — step 2 of this split owns it.",
+      "- Remove/Remove-choices, insert-before, and add-choice-to-an-existing-Decision — steps 4-6 of this split own them."
+    ],
+    "problemSolvedByTask": "The editor currently guesses whether to splice a new block into an existing path; this step gives an explicit, consistent way (button or Destination menu) to grow a path by one new terminal static or Decision block without disturbing the former destination.",
+    "description": "Builds on the staging branch's task-21 baseline (merge commit ab41fb0) plus Steps 1-2 of this split, which add the floating #nodeInspector, its Text input, and the Destination select for existing nodes in viewer.ts/index.html; none of that exists yet on develop. Implement commitNewStaticAfter and commitNewDecisionAfter in viewer.ts per the plan's applyDestination/replaceOutgoing pseudocode, reusing editorGraph(), nextEditorId(), sourceWithLinesReplaced(), and commitEditorSource() from the task-21 baseline so add-after buttons and the Destination select's new-block options invoke identical logic. Each creation replaces only the selected node's outgoing edge, leaves the former destination orphaned, validates with mermaid.parse before committing, and records exactly one history/save entry. New Decision creation sequences focus: Enter commits NewDecision's Text as its own history entry, then moves the inspector to NewChoice with Destination focused.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "skip",
+    "difficulty": 7,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25",
+      "leaseRunId": "3e46c7af-9fc8-479c-bca9-4c66292fde35",
+      "history": [
+        {
+          "runId": "3e46c7af-9fc8-479c-bca9-4c66292fde35",
+          "startedAt": "2026-09-13T22:14:00-07:00",
+          "endedAt": "2026-09-13T22:34:16-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "index.html",
+            "plans/implementation-notes-25.md",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "c1971eaa237f19bb11d0dd78782a1e4820239144",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "68a5d1d54d3176300984781ba2b611e8da3f0a27",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 672ms\n\n  viewer.js  44.15 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [667.00ms]\n(node:68941) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 1514ms\n\n  viewer.js  44.15 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (3783.150292ms)\n✔ test_phone_view_shows_the_start_slice (12.169916ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (171.575833ms)\n✔ test_reset_returns_to_the_start_slice (52.616084ms)\n✔ test_back_button_undoes_one_choice_at_a_time (242.327667ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (105.430375ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (828.389208ms)\n✔ test_decision_log_reflects_choices_and_undo (3284.955042ms)\n✔ test_font_size_is_the_same_in_every_view (1083.760042ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (740.780042ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1532.67375ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (1091.590042ms)\n✔ test_add_question_in_middle_splices_each_former_successor (760.387792ms)\n✔ test_add_block_after_terminal_block (769.665958ms)\n✔ test_add_block_in_middle_splices_the_edge (774.058209ms)\n✔ test_remove_choice_orphans_its_downstream_path (1146.825833ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (775.299083ms)\n✔ test_inline_question_text_edit_persists (775.936583ms)\n✔ test_inline_static_block_text_edit_persists (721.028334ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (550.129ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (346.819917ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (354.235917ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (418.896042ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (403.619584ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (376.232875ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (365.907208ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (364.61525ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (357.742166ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (886.172167ms)\n✔ test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order (955.328541ms)\n✔ test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice (408.09775ms)\n✔ test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan (1064.6475ms)\n✔ test_destination_terminal_removes_only_the_selected_outgoing_edge (996.735291ms)\n✔ test_destination_accepts_descendants_and_current_value_is_a_no_op (1045.154667ms)\n✔ test_dirty_text_then_destination_creates_two_ordered_undo_entries (1074.649334ms)\n✔ test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks (389.562375ms)\n✔ test_new_static_button_and_destination_option_have_identical_terminal_orphan_results (2065.857ms)\n✔ test_new_static_text_enter_keeps_selection_and_focuses_destination (854.783875ms)\n✔ test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus (2107.196834ms)\n✔ test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_destination (815.325083ms)\n(node:68942) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (1503.179208ms)\n(node:68943) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-25/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (1533.421875ms)\nℹ tests 42\nℹ suites 0\nℹ pass 42\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 36657.963459",
+            "checkedAt": "2026-09-13T22:34:11-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "c1971eaa237f19bb11d0dd78782a1e4820239144"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  25
+                ],
+                "skipped": [],
+                "unblocked": [
+                  28
+                ],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "3f612ffe6f96b3129d539a4a28998b927e7b070d"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "c1971eaa237f19bb11d0dd78782a1e4820239144"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "3f612ffe6f96b3129d539a4a28998b927e7b070d"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-13",
+    "commitHashes": [
+      "c1971eaa237f19bb11d0dd78782a1e4820239144",
+      "68a5d1d54d3176300984781ba2b611e8da3f0a27"
+    ],
+    "closureNote": "Task 25 completed.\n\nCommits:\n  c1971eaa237f19bb11d0dd78782a1e4820239144  (root)   work\n  68a5d1d54d3176300984781ba2b611e8da3f0a27  (root)   merge\nModified files: index.html, plans/implementation-notes-25.md, tests/index.html.test.ts, viewer.js, viewer.ts\nTask tests: (not recorded)\nFull suite: green"
+  },
+  {
+    "taskNumber": 26,
+    "version": "bf4a75ee50087e9a163a09c5924e63951906ae5e",
+    "title": "Remove and Remove-choices actions on the inspector",
+    "userDescription": "Step 4 of the task-22 node-inspector split: remove an existing node. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-3 of this split.\n\nScope: wire the inspector's Remove button per node kind, preserving task 21's existing removal semantics: Decision Remove uses the replacement-path preview/cycle/confirm flow (the temporary preview may replace the normal controls and retains its own confirm/cycle/cancel controls); static Remove reconnects every predecessor to every successor; choice Remove removes the choice and its incident edges while leaving its downstream path orphaned. Also wire Decision's Remove choices button: it removes every outgoing Decision branch representation-independently -- delete labelled outgoing branch edges, and delete immediate explicit choice nodes plus their incident edges -- while retaining downstream nodes and paths as orphans. Removing the selected node closes its inspector. Each removal is one immediate undoable save, validated with Mermaid.\n\nOut of scope: add-choice, add-after/New-block creation, insert-before, Destination select behavior (already covered in steps 2-3).\n\nTests: tests/index.html.test.ts coverage for Decision Remove's preview/cycle/confirm flow, static Remove's predecessor/successor reconnection, choice Remove's orphaning, Remove choices' branch/choice-node deletion with orphan retention, and the inspector closing after removing the selected node.",
+    "goal": [
+      "- The inspector's Remove button is wired per node kind, preserving existing removal semantics: Decision Remove uses a replacement-path preview/cycle/confirm flow; static Remove reconnects every predecessor to every successor; choice Remove removes the choice and its incident edges while leaving its downstream path orphaned.",
+      "- The Decision inspector's Remove choices button removes every outgoing branch representation-independently: it deletes labelled outgoing branch edges, and deletes immediate explicit choice nodes plus their incident edges, while retaining downstream nodes and paths as orphans.",
+      "- The temporary Decision-removal preview may replace the inspector's normal controls and keeps its own confirm/cycle/cancel controls.",
+      "- Removing the selected node closes its inspector.",
+      "- Each removal is one immediate Mermaid-validated undoable save."
+    ],
+    "notInScope": [
+      "- add-choice, add-after/New-block creation, and insert-before — steps 3, 5, and 6 of this split own them.",
+      "- Destination select behavior — step 2 of this split owns it."
+    ],
+    "problemSolvedByTask": "Node removal today has no consistent per-node-kind entry point in the new inspector surface; this step wires the inspector's Remove/Remove-choices controls to the existing removal behaviors so deleting or pruning a path stays a one-click, undoable action.",
+    "description": "Implements from the task-22 baseline on staging (merge commit ab41fb0); develop's viewer.ts/index.html have none of this editor code yet. Task 21's baseline viewer.ts defines the semantics to preserve: removeQuestion/advanceRemovalPreview/confirmQuestionRemoval/cancelQuestionRemoval implement the Decision preview/cycle/confirm flow via pendingRemoval; removeBlock reconnects every predecessor to every successor; removeChoice deletes a choice node plus its incident edges and orphans its downstream. There is no existing Remove-choices (remove-all-branches) implementation in task 21 -- it must be built new, deleting labelled outgoing edges directly and deleting immediate explicit choice nodes plus incident edges. This step reuses step 1's floating #nodeInspector to host per-kind Remove/Remove-choices controls in place of the old shared #nodeActions toolbar, routes all four removals through commitEditorSource, and closes the inspector on removing the selected node.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "skip",
+    "difficulty": 6,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26",
+      "leaseRunId": "9d3f0738-0f18-4e94-8bbf-d3e9c27ca8e6",
+      "history": [
+        {
+          "runId": "9d3f0738-0f18-4e94-8bbf-d3e9c27ca8e6",
+          "startedAt": "2026-09-13T23:16:27-07:00",
+          "endedAt": "2026-09-13T23:43:33-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "index.html",
+            "plans/implementation-notes-26.md",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "fddf8fe33a7a473b132d909695ab8c57652c4331",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "33eeda285c07dbc81275e23504ea0e76be7fdeba",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 705ms\n\n  viewer.js  46.29 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [657.00ms]\n(node:8304) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 1512ms\n\n  viewer.js  46.29 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (4678.838583ms)\n✔ test_phone_view_shows_the_start_slice (9.319333ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (175.767ms)\n✔ test_reset_returns_to_the_start_slice (51.438583ms)\n✔ test_back_button_undoes_one_choice_at_a_time (226.324667ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (101.6885ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (823.04075ms)\n✔ test_decision_log_reflects_choices_and_undo (3315.504292ms)\n✔ test_font_size_is_the_same_in_every_view (1115.3495ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (317.092666ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1486.736292ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (1069.621417ms)\n✔ test_add_question_in_middle_splices_each_former_successor (782.576042ms)\n✔ test_add_block_after_terminal_block (780.8325ms)\n✔ test_add_block_in_middle_splices_the_edge (742.893333ms)\n✔ test_remove_choice_orphans_its_downstream_path (1205.858416ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (741.677708ms)\n✔ test_inline_question_text_edit_persists (770.821959ms)\n✔ test_inline_static_block_text_edit_persists (793.320292ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (520.235792ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (353.412208ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (355.2865ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (410.758666ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (357.856167ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (358.526916ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (360.554959ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (355.060542ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (358.520417ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (890.772375ms)\n✔ test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order (958.15125ms)\n✔ test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice (453.919375ms)\n✔ test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan (1029.817ms)\n✔ test_destination_terminal_removes_only_the_selected_outgoing_edge (1039.587417ms)\n✔ test_destination_accepts_descendants_and_current_value_is_a_no_op (1038.192833ms)\n✔ test_dirty_text_then_destination_creates_two_ordered_undo_entries (1091.751917ms)\n✔ test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks (395.868709ms)\n✔ test_inspector_remove_button_dispatches_removal_by_node_kind (1926.146708ms)\n✔ test_inspector_remove_choices_button_orphans_every_outgoing_branch (1831.270084ms)\n✔ test_new_static_button_and_destination_option_have_identical_terminal_orphan_results (2042.969708ms)\n✔ test_new_static_text_enter_keeps_selection_and_focuses_destination (772.20125ms)\n✔ test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus (2079.426583ms)\n✔ test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_destination (788.528167ms)\n(node:8305) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (1488.808167ms)\n(node:8306) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-26/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (1520.700666ms)\nℹ tests 44\nℹ suites 0\nℹ pass 44\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 40772.841208",
+            "checkedAt": "2026-09-13T23:43:27-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "fddf8fe33a7a473b132d909695ab8c57652c4331"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  26
+                ],
+                "skipped": [],
+                "unblocked": [],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "68a5d1d54d3176300984781ba2b611e8da3f0a27"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "fddf8fe33a7a473b132d909695ab8c57652c4331"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "68a5d1d54d3176300984781ba2b611e8da3f0a27"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-13",
+    "commitHashes": [
+      "fddf8fe33a7a473b132d909695ab8c57652c4331",
+      "33eeda285c07dbc81275e23504ea0e76be7fdeba"
+    ],
+    "closureNote": "Task 26 completed.\n\nCommits:\n  fddf8fe33a7a473b132d909695ab8c57652c4331  (root)   work\n  33eeda285c07dbc81275e23504ea0e76be7fdeba  (root)   merge\nModified files: index.html, plans/implementation-notes-26.md, tests/index.html.test.ts, viewer.js, viewer.ts\nTask tests: (not recorded)\nFull suite: green"
+  },
+  {
+    "taskNumber": 28,
+    "version": "8eedf3d9665da0c5e8a230228f9c206eed0c1313",
+    "title": "Add-choice action on the Decision inspector",
+    "userDescription": "Step 6 of the task-22 node-inspector split: add a choice to a decision block. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-5 of this split and is the final step, completing task 22's full inspector behavior.\n\nScope: wire the Decision inspector's 'add choice' button, which adds one additional branch to an existing Decision. It creates one explicit terminal choice, moves the inspector to the new choice with Destination focused (using the Destination/creation implementation from steps 2-3). This is distinct from 'insert Decision & leading choice before' (step 5, which creates a new Decision) and from add-after (step 3, which extends a single outgoing edge on static/choice blocks) -- add choice specifically appends a new branch to a Decision that already exists. Each addition is one immediate undoable save, validated with Mermaid. This step also closes out the full task 22 spec: confirm the complete inspector (all six steps) validates every committed source with Mermaid, passes the full existing suite, and that a rebuilt viewer.js matches viewer.ts.\n\nOut of scope: nothing further in this split -- this is the last step.\n\nTests: tests/index.html.test.ts coverage for add-choice creating a new terminal choice, moving focus to its Destination, coexisting correctly with a Decision's other choices, and a final full-suite/build-parity check across all six steps' combined behavior.",
+    "goal": [
+      "- The Decision inspector's `add choice` button adds one new branch to an existing Decision by creating one explicit terminal choice.",
+      "- After creation, the inspector moves to the new choice with Destination focused, reusing the Destination/creation implementation from step 3 of this split.",
+      "- `add choice` is distinct from `insert Decision & leading choice before` (creates a new Decision) and from add-after (extends a single outgoing edge on static/choice blocks): it always grows an existing Decision's branch count by one, even when the Decision currently has only labelled edges rather than explicit choice nodes.",
+      "- Each addition is one immediate Mermaid-validated undoable save.",
+      "- With all six steps of this split complete: every committed source validates with Mermaid, the full existing suite passes, and a freshly rebuilt viewer.js matches viewer.ts."
+    ],
+    "notInScope": [
+      "- Nothing further in this split; this is the last step. Any future task-22 follow-on work is out of scope here."
+    ],
+    "problemSolvedByTask": "Decisions can currently only gain new branches through ad hoc source edits or a normalization path that doesn't guarantee a net-new branch; this step gives Decisions a direct, reliable 'add one more branch' action in the inspector.",
+    "description": "Task 22's inspector work lives only on the staging branch; develop has no editorGraph, commitEditorSource, or inspector scaffolding yet. Staging's viewer.ts already defines addChoice(), which either normalizes a Decision's sole labelled outgoing edge into an explicit choice or appends a New-choice node/edge when no labelled edge exists -- per the plan this normalization path does not satisfy 'add choice', which must always append one net-new branch even when the Decision currently has only labelled edges. This step wires the Decision inspector's add-choice control to a corrected add-choice commit that always grows branch count by one, then moves selection/focus to the new choice's Destination select, reusing the same commit/history/save path and step 3's destination-creation code. Final acceptance also requires re-running mermaid.parse validation across all committed diagram fixtures, the full existing suite, and confirming a fresh viewer.js build matches the committed bundle.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "skip",
+    "difficulty": 6,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28",
+      "leaseRunId": "64f964ad-f0ed-422f-add1-1eef8cf14043",
+      "history": [
+        {
+          "runId": "64f964ad-f0ed-422f-add1-1eef8cf14043",
+          "startedAt": "2026-09-13T23:45:44-07:00",
+          "endedAt": "2026-09-14T00:10:21-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "plans/implementation-notes-28.md",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "bc98b981015cc0a282b612ee20bdb6fb3a2f0728",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "594501772204ecc30a4b7b97ce05746c405ac2fc",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 741ms\n\n  viewer.js  47.11 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [699.00ms]\n(node:87362) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 1794ms\n\n  viewer.js  47.11 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (2624.759958ms)\n✔ test_phone_view_shows_the_start_slice (5.83525ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (184.059459ms)\n✔ test_reset_returns_to_the_start_slice (52.782417ms)\n✔ test_back_button_undoes_one_choice_at_a_time (238.344417ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (105.226917ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (824.868125ms)\n✔ test_decision_log_reflects_choices_and_undo (3291.105834ms)\n✔ test_font_size_is_the_same_in_every_view (1062.746375ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (315.891333ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1474.500542ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (1058.681459ms)\n✔ test_add_question_in_middle_splices_each_former_successor (800.435458ms)\n✔ test_add_block_after_terminal_block (787.706ms)\n✔ test_add_block_in_middle_splices_the_edge (747.193167ms)\n✔ test_remove_choice_orphans_its_downstream_path (1120.575833ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (732.490833ms)\n✔ test_inline_question_text_edit_persists (771.378833ms)\n✔ test_inline_static_block_text_edit_persists (728.06775ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (512.575375ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (360.729208ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (357.5045ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (409.50525ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (368.432458ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (360.764084ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (356.946083ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (361.06975ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (378.830084ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (888.476ms)\n✔ test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order (950.492375ms)\n✔ test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice (404.632958ms)\n✔ test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan (1075.558209ms)\n✔ test_destination_terminal_removes_only_the_selected_outgoing_edge (1009.642834ms)\n✔ test_destination_accepts_descendants_and_current_value_is_a_no_op (1042.495375ms)\n✔ test_dirty_text_then_destination_creates_two_ordered_undo_entries (1109.796958ms)\n✔ test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks (385.969375ms)\n✔ test_inspector_remove_button_dispatches_removal_by_node_kind (1844.16525ms)\n✔ test_inspector_remove_choices_button_orphans_every_outgoing_branch (1820.725917ms)\n✔ test_new_static_button_and_destination_option_have_identical_terminal_orphan_results (2082.898833ms)\n✔ test_new_static_text_enter_keeps_selection_and_focuses_destination (769.878917ms)\n✔ test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus (2073.058125ms)\n✔ test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_destination (822.101167ms)\n✔ test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges (1041.17625ms)\n✔ test_add_choice_on_inspector_moves_focus_to_the_new_choices_destination (1010.757708ms)\nBundled 1 module in 680ms\n\n  viewer.js  47.11 KB  (entry point)\n\n✔ test_all_committed_diagrams_validate_with_mermaid (50.800417ms)\n✔ test_viewer_js_build_matches_committed_bundle (693.622875ms)\n(node:87363) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (1779.569041ms)\n(node:87364) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-28/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (1792.143292ms)\nℹ tests 48\nℹ suites 0\nℹ pass 48\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 41524.865958",
+            "checkedAt": "2026-09-14T00:10:17-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "bc98b981015cc0a282b612ee20bdb6fb3a2f0728"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  28
+                ],
+                "skipped": [],
+                "unblocked": [],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "33eeda285c07dbc81275e23504ea0e76be7fdeba"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "bc98b981015cc0a282b612ee20bdb6fb3a2f0728"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "33eeda285c07dbc81275e23504ea0e76be7fdeba"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-14",
+    "commitHashes": [
+      "bc98b981015cc0a282b612ee20bdb6fb3a2f0728",
+      "594501772204ecc30a4b7b97ce05746c405ac2fc"
+    ],
+    "closureNote": "Task 28 completed.\n\nCommits:\n  bc98b981015cc0a282b612ee20bdb6fb3a2f0728  (root)   work\n  594501772204ecc30a4b7b97ce05746c405ac2fc  (root)   merge\nModified files: plans/implementation-notes-28.md, tests/index.html.test.ts, viewer.js, viewer.ts\nTask tests: (not recorded)\nFull suite: green"
+  },
+  {
+    "taskNumber": 27,
+    "version": "d3dba5189dc62975ef10ad5771485945b21675ce",
+    "title": "Insert-before actions on Decision and static inspectors",
+    "userDescription": "Step 5 of the task-22 node-inspector split: insert a node before a selected node. Follow plans/task-22-node-inspector-and-destinations.md and plans/task-22-mockup.png. Builds on Steps 1-4 of this split.\n\nScope: wire 'insert static block before' (available on Decision and static inspectors) and 'insert Decision & leading choice before' (available on Decision and static inspectors). 'insert static block before' redirects every incoming edge through one new static block and then to the selected node; with no predecessor the new block becomes a root leading to the selected node. 'insert Decision & leading choice before' creates one new Decision and one explicit leading choice between that Decision and the selected node, preserving the rule that a Decision points directly only to choices. Both automatically splice incoming edges and do not open Destination. Each insertion is one immediate undoable save, validated with Mermaid.\n\nOut of scope: Remove/Remove-choices, add-after/New-block creation, add-choice-to-Decision, Destination select behavior.\n\nTests: tests/index.html.test.ts coverage for insert-before on nodes with and without predecessors (root case), fan-in incoming-edge splicing, the Decision-points-only-to-choices invariant after inserting Decision & leading choice, and that Destination is not opened by these actions.",
+    "goal": [
+      "- `insert static block before` (available on Decision and static inspectors) redirects every incoming edge through one new static block and then to the selected node; with no predecessor the new block becomes a root leading to the selected node.",
+      "- `insert Decision & leading choice before` (available on Decision and static inspectors) creates one new Decision and one explicit leading choice between that Decision and the selected node, preserving the rule that a Decision points directly only to choices.",
+      "- Both actions automatically splice incoming edges and do not open Destination.",
+      "- Each insertion is one immediate Mermaid-validated undoable save."
+    ],
+    "notInScope": [
+      "- Remove/Remove-choices, add-after/New-block creation, and add-choice-to-an-existing-Decision — steps 4 and 6 of this split own them (add-after lands in step 3).",
+      "- Destination select behavior — step 2 of this split owns it."
+    ],
+    "problemSolvedByTask": "There is currently no GUI way to splice a new static block or a new Decision-and-choice pair immediately ahead of an existing node without hand-editing the incoming edges in the Mermaid source.",
+    "description": "Confirmed on develop that none of the task-22 inspector work exists yet. Per plans/task-22-node-inspector-and-destinations.md's 'Insert-before and removal workflows' section, this step implements two automatic, non-Destination actions on the Decision/static inspectors that splice every incoming P-->Target edge through the new node(s) (or become a new root when Target has no predecessor), preserving the Decision-points-only-to-choices invariant, each as one mermaid.parse-validated undoable save. This depends only on the floating #nodeInspector shell from step 1 (DOM/render-per-kind and the commit/history/save pipeline), not on the Destination select (steps 2-3) or Remove wiring (step 4).",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "skip",
+    "difficulty": 6,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27",
+      "leaseRunId": "4e2b4c76-60ec-44ea-b7ad-15402a06763a",
+      "history": [
+        {
+          "runId": "4e2b4c76-60ec-44ea-b7ad-15402a06763a",
+          "startedAt": "2026-09-13T23:45:42-07:00",
+          "endedAt": "2026-09-14T00:27:45-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "plans/implementation-notes-27.md",
+            "tests/index.html.test.ts",
+            "viewer.js",
+            "viewer.ts"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "",
+              "hash": "9bb363c2c54270a32f705205f65c6aa26cd271c9",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "b97488c16c6c5c0287f141229ee5f4523dce6972",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "layers": [
+              {
+                "occurrenceId": "",
+                "passed": true
+              }
+            ],
+            "output": "> test\n> bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 1 module in 754ms\n\n  viewer.js  49.90 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [657.00ms]\n(node:36934) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27/tests/index.html.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\nBundled 1 module in 1453ms\n\n  viewer.js  49.90 KB  (entry point)\n\n✔ test_phone_view_shows_a_fixed_phone_shaped_frame (3731.545333ms)\n✔ test_phone_view_shows_the_start_slice (7.332834ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (165.506125ms)\n✔ test_reset_returns_to_the_start_slice (49.042459ms)\n✔ test_back_button_undoes_one_choice_at_a_time (227.166958ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (96.155917ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (824.103208ms)\n✔ test_decision_log_reflects_choices_and_undo (3318.54375ms)\n✔ test_font_size_is_the_same_in_every_view (1032.5055ms)\n✔ test_clicking_a_decision_node_scrolls_the_new_choices_into_view (307.905625ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1475.830417ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (990.81825ms)\n✔ test_add_question_in_middle_splices_each_former_successor (737.690917ms)\n✔ test_add_block_after_terminal_block (724.103334ms)\n✔ test_add_block_in_middle_splices_the_edge (766.283708ms)\n✔ test_remove_choice_orphans_its_downstream_path (1090.022333ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (722.543833ms)\n✔ test_inline_question_text_edit_persists (764.370709ms)\n✔ test_inline_static_block_text_edit_persists (774.72725ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (495.522417ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (348.716875ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (360.471917ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (413.994542ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (369.732083ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (367.155209ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (361.954125ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (363.921625ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (358.565166ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (891.609291ms)\n✔ test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order (940.159667ms)\n✔ test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice (400.4505ms)\n✔ test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan (1067.76825ms)\n✔ test_destination_terminal_removes_only_the_selected_outgoing_edge (1005.109916ms)\n✔ test_destination_accepts_descendants_and_current_value_is_a_no_op (1025.201583ms)\n✔ test_dirty_text_then_destination_creates_two_ordered_undo_entries (1122.577625ms)\n✔ test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks (400.848125ms)\n✔ test_inspector_remove_button_dispatches_removal_by_node_kind (1912.73ms)\n✔ test_inspector_remove_choices_button_orphans_every_outgoing_branch (1753.714209ms)\n✔ test_new_static_button_and_destination_option_have_identical_terminal_orphan_results (2014.84125ms)\n✔ test_new_static_text_enter_keeps_selection_and_focuses_destination (800.109084ms)\n✔ test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus (2071.412875ms)\n✔ test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_destination (820.556417ms)\n✔ test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges (1085.5995ms)\n✔ test_add_choice_on_inspector_moves_focus_to_the_new_choices_destination (1046.327ms)\n✔ test_insert_static_block_before_splices_incoming_edges_with_their_labels (761.642542ms)\n✔ test_insert_static_block_before_a_root_node_becomes_the_new_root (772.587875ms)\n✔ test_insert_decision_before_adds_one_leading_choice_and_splices_incoming_edges (818.692ms)\n✔ test_insert_decision_before_a_root_node_becomes_the_new_root (777.773917ms)\nBundled 1 module in 814ms\n\n  viewer.js  49.90 KB  (entry point)\n\n✔ test_all_committed_diagrams_validate_with_mermaid (49.682417ms)\n✔ test_viewer_js_build_matches_committed_bundle (827.5785ms)\n(node:36935) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27/tests/viewer.js.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (1472.858959ms)\n(node:36936) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27/tests/viewer.test.ts is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (1428.865875ms)\nℹ tests 52\nℹ suites 0\nℹ pass 52\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 45325.437541",
+            "checkedAt": "2026-09-14T00:27:40-07:00"
+          },
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": true,
+                "stoppedAt": {
+                  "occurrenceId": "",
+                  "checkoutPath": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-27"
+                },
+                "conflictedFilePaths": [
+                  "tests/index.html.test.ts",
+                  "viewer.js",
+                  "viewer.ts"
+                ],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "594501772204ecc30a4b7b97ce05746c405ac2fc"
+                }
+              ]
+            },
+            {
+              "stepId": "continue-rebase",
+              "script": "advanceTaskRebase",
+              "result": {
+                "finished": true,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                ""
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "9bb363c2c54270a32f705205f65c6aa26cd271c9"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  27
+                ],
+                "skipped": [],
+                "unblocked": [],
+                "ambiguous": []
+              }
+            }
+          ],
+          "attempts": {
+            "planReview": 1,
+            "pipeline-rebase-conflict-fix": 1
+          },
+          "countedPasses": {
+            "planReview": [
+              "1a99bf35-d665-4f95-b99a-8d1cfbf88b33"
+            ],
+            "pipeline-rebase-conflict-fix": [
+              "7ba5735f-d45b-4afc-8c51-a1337e4eca41"
+            ]
+          },
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "594501772204ecc30a4b7b97ce05746c405ac2fc"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "continue-rebase",
+            "occurrenceIds": [
+              ""
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "9bb363c2c54270a32f705205f65c6aa26cd271c9"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "594501772204ecc30a4b7b97ce05746c405ac2fc"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "codexReviewNotes": "[add-insert-before-functions] Change both functions to retain the matching EditorEdge objects rather than only predecessor IDs, and emit each redirected predecessor edge with its original label: use `edge.from -- \"${edge.label}\" --> newId` when `edge.label` exists and `edge.from --> newId` otherwise. Keep the new-node-to-selected-node edges unlabelled.\n\nDurable because: Each incoming edge's semantics travel with the splice, including decision labels, while the newly created Decision still has only its explicit unlabelled edge to its choice.\n\n[verification] Replace the temporary-and-delete test instruction with permanent test blocks in `tests/index.html.test.ts`. Exercise the new inspector actions via `clickInspectorAction`, retain the planned static fan-in and root assertions, and add assertions for Decision insertion with fan-in/root as applicable, its sole Decision-to-choice outgoing edge, closed inspector/Destination, saved valid source, and one history entry with undo restoring the original source. Run `bun run test` as the final verification.\n\nDurable because: The requested workflows and their persistence/history behavior remain protected from regressions instead of being checked only during one implementation session.",
+    "completionDate": "2026-09-14",
+    "commitHashes": [
+      "9bb363c2c54270a32f705205f65c6aa26cd271c9",
+      "b97488c16c6c5c0287f141229ee5f4523dce6972"
+    ],
+    "closureNote": "Task 27 completed.\n\nCommits:\n  9bb363c2c54270a32f705205f65c6aa26cd271c9  (root)   work\n  b97488c16c6c5c0287f141229ee5f4523dce6972  (root)   merge\nModified files: plans/implementation-notes-27.md, tests/index.html.test.ts, viewer.js, viewer.ts\nTask tests: (not recorded)\nFull suite: green"
   }
 ]
