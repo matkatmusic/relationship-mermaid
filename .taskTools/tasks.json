@@ -985,5 +985,43 @@
         "reason": "editorGraph() builds its node/edge model via the same parseEditorEdgeLine/parseEditorToken functions task 32 fixes, and that parser currently drops the trailing node and corrupts the middle node's label on any chained `A --> B --> C` line. accountability.mmd has 47+ such chained lines and financial-investments.mmd has 3, both in the set of 4 files this task must rename every node id in — the shared parser must stop mangling chained-edge nodes before this task's validation and rename work can be done correctly."
       }
     ]
+  },
+  {
+    "taskNumber": 37,
+    "version": "67f60fafbbd8e8e06728a0b66e6c090d3bdbff08",
+    "title": "Strict Q_/Q_CHOICE/B_ naming + decl/edge line-separation parser, plus header Next/Previous decision-nav buttons",
+    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"viewer.ts\",\"viewer.js\",\"index.html\"]. Feature: implement a strict naming-convention parser and header Next/Previous decision-nav buttons. Parser: decision node ids must start with `Q_` and use brace shape `{}`, choice node ids must start with `Q_CHOICE` and use bracket shape `[]`, static/block node ids must start with `B_` and use bracket shape `[]`. Any id that doesn't match its shape's required prefix makes the whole diagram invalid; the editor must refuse to render/edit it and instead show which specific ids are non-compliant and what prefix they need. Nav buttons: add Next/Previous buttons to index.html's #header that cycle with wraparound through Q_* decision nodes in file order, selecting and scrolling/panning the diagram to each one. Depends on sibling rename tasks (which rename all 4 diagrams to the new convention) and on task 32 (shared chained-edge parser bug) landing first.",
+    "goal": [
+      "- The parser enforces the naming convention: decision ids start with `Q_` (brace shape), choice ids start with `Q_CHOICE` (bracket shape), static ids start with `B_` (bracket shape)",
+      "- Every node declaration must be on its own standalone line, never inline on an edge line; an inline decl also makes the diagram invalid",
+      "- A diagram violating either rule refuses to render/edit and lists exactly which ids/lines are non-compliant and what they need to become",
+      "- Header Next/Previous buttons select and scroll/pan to the next/previous Q_* decision node in file order, wrapping around at the ends",
+      "- `npm test` passes (this child cannot edit test files itself — that's a sibling task's scope)"
+    ],
+    "notInScope": [
+      "- Renaming the 4 existing diagrams is owned by sibling rename tasks; this child only builds the parser/UI, it doesn't touch diagrams/*.mmd",
+      "- Adding/editing test files — this child's files list is viewer.ts/viewer.js/index.html only, new test assertions for this behavior belong to a sibling task",
+      "- Task #32's shared single-line `A --> B --> C` chained-edge parser bug is a separate task and a hard blocker; this child assumes it's already fixed"
+    ],
+    "problemSolvedByTask": "No quick way to jump between decisions in a big diagram",
+    "description": "editorGraph() in viewer.ts currently infers node kind from parseEditorToken()'s shape field ('brace'|'rect'|'other') plus an edge heuristic (id.startsWith(from + '_')); this must become strict id-prefix + shape validation: Q_ prefix with brace shape for decisions, Q_CHOICE prefix with bracket shape for choices, B_ prefix with bracket shape for blocks, and the 'other' (stadium/rounded `([...])`) shape must be rejected outright. parseEditorToken() and parseEditorEdgeLine() already split a line into either a decl or an edge-with-two-tokens, but parseEditorToken() is also called on edge.fromToken/edge.toToken and happily parses an inline shape suffix there — that inline-decl tolerance is exactly what must now be flagged invalid, per line and per id. declarationSuffixOf() only emits two shapes today (brace for kind 'question', bracket otherwise) and needs a third branch once 'choice' gets its own Q_CHOICE convention. Validation failures must stop rendering/editing and report the offending id/line plus the required form, likely surfaced through the existing #errorLog element in index.html rather than a new one. scrollToNextQuestion(edges) in viewer.ts only replays walkTrail(edges), the phone-view answered trail, and cannot serve Next/Previous; a new function must instead collect graph.nodes filtered to ids starting with 'Q_' in file (lineIndex) order and cycle through them with wraparound, wired to two new buttons added to index.html's #header next to the existing New/Save/Open/Reset/Undo/Redo controls.",
+    "modifiableFiles": [
+      "viewer.ts",
+      "viewer.js",
+      "index.html"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Load a diagram already using the Q_/Q_CHOICE/B_ convention with 3 decisions, click Next repeatedly and assert selection cycles through all 3 then wraps; click Previous and assert it goes backward. Separately, load a diagram with a non-compliant id and assert the editor shows the invalid-diagram message listing it instead of rendering.",
+    "difficulty": 7,
+    "blockedBy": [
+      {
+        "taskNumber": 32,
+        "reason": "editorGraph() builds its node/edge model via the same parseEditorEdgeLine/parseEditorToken functions task 32 fixes, and that parser currently drops the trailing node and corrupts the middle node's label on any chained `A --> B --> C` line. This task's strict validation and decl/edge line-separation enforcement operate on that same parsed model, so turning on strict validation before the chained-edge parser bug is fixed will misparse existing diagrams and produce false invalid-diagram errors."
+      }
+    ]
   }
 ]
