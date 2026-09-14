@@ -28,6 +28,9 @@ const PHONE_INNER = { width: 327, height: 514 };
 const nodeActions = document.getElementById('nodeActions')!;
 const selectedNodeBox = document.getElementById('selectedNode')!;
 let selectedEditorNodeId: string | null = null;
+const nodeInspector = document.getElementById('nodeInspector')!;
+const nodeInspectorTitle = document.getElementById('nodeInspectorTitle')!;
+const nodeTextInput = document.getElementById('nodeTextInput') as HTMLInputElement;
 let pendingRemoval: PendingRemoval | null = null;
 let editorHistory: string[] = [codeBox.value];
 let editorHistoryIndex = 0;
@@ -458,6 +461,8 @@ function scrollToNextQuestion(edges: Edge[]) {
 
 type EditorNodeKind = 'question' | 'block' | 'choice';
 
+const INSPECTOR_TITLES: Record<EditorNodeKind, string> = { question: 'Decision block', block: 'static block', choice: 'choice block' };
+
 interface EditorNode {
   id: string;
   kind: EditorNodeKind;
@@ -613,6 +618,7 @@ function selectEditorNode(id: string | null) {
   nodeActions.classList.toggle('open', !!id);
   selectedNodeBox.textContent = id ?? '';
   renderEditorSelection();
+  renderNodeInspector();
 }
 
 function renderEditorSelection() {
@@ -879,35 +885,81 @@ function replaceDeclarationInLine(line: string, id: string, newToken: string) {
   return line.replace(re, newToken);
 }
 
-function beginInlineEdit(nodeEl: Element, id: string, kind: EditorNodeKind) {
-  const label = nodeEl.querySelector('.nodeLabel') as HTMLElement | null;
-  if (!label)
+// function beginInlineEdit(nodeEl: Element, id: string, kind: EditorNodeKind) {
+//   const label = nodeEl.querySelector('.nodeLabel') as HTMLElement | null;
+//   if (!label)
+//     return;
+//   label.contentEditable = 'true';
+//   label.focus();
+//   let committed = false;
+//   const commit = () => {
+//     if (committed)
+//       return;
+//     committed = true;
+//     label.contentEditable = 'false';
+//     const text = (label.textContent ?? '').trim();
+//     const graph = editorGraph();
+//     const node = graph.nodes.get(id);
+//     if (!node)
+//       return;
+//     const newToken = kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
+//     const lines = graph.lines.slice();
+//     lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
+//     runEditorAction(() => commitEditorSource(lines.join('\n')));
+//   };
+//   label.addEventListener('keydown', (event) => {
+//     if ((event as KeyboardEvent).key !== 'Enter')
+//       return;
+//     event.preventDefault();
+//     commit();
+//   });
+//   label.addEventListener('blur', commit, { once: true });
+// }
+
+function renderNodeInspector() {
+  const graph = editorGraph();
+  const node = graph.nodes.get(selectedEditorNodeId ?? '');
+  nodeInspector.hidden = !node;
+  if (!node)
     return;
-  label.contentEditable = 'true';
-  label.focus();
-  let committed = false;
-  const commit = () => {
-    if (committed)
-      return;
-    committed = true;
-    label.contentEditable = 'false';
-    const text = (label.textContent ?? '').trim();
-    const graph = editorGraph();
-    const node = graph.nodes.get(id);
-    if (!node)
-      return;
-    const newToken = kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
-    const lines = graph.lines.slice();
-    lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
-    runEditorAction(() => commitEditorSource(lines.join('\n')));
-  };
-  label.addEventListener('keydown', (event) => {
-    if ((event as KeyboardEvent).key !== 'Enter')
-      return;
-    event.preventDefault();
-    commit();
-  });
-  label.addEventListener('blur', commit, { once: true });
+  nodeInspectorTitle.textContent = INSPECTOR_TITLES[node.kind];
+  nodeTextInput.value = node.label;
+  positionNodeInspector();
+}
+
+function positionNodeInspector() {
+  if (nodeInspector.hidden)
+    return;
+  const nodeEl = diagramBox.querySelector('[id*="flowchart-' + selectedEditorNodeId + '-"]');
+  if (!nodeEl)
+    return;
+  const node = nodeEl.getBoundingClientRect();
+  const output = outputBox.getBoundingClientRect();
+  const gap = 12;
+  const maxWidth = 320;
+  const spaceRight = output.right - node.right - gap;
+  const spaceLeft = node.left - output.left - gap;
+  const fitsRight = spaceRight >= maxWidth;
+  nodeInspector.style.width = Math.max(0, Math.min(maxWidth, Math.max(spaceRight, spaceLeft))) + 'px';
+  const card = nodeInspector.getBoundingClientRect();
+  const preferredLeft = fitsRight || spaceRight >= spaceLeft ? node.right + gap : node.left - gap - card.width;
+  nodeInspector.style.left = Math.max(output.left, Math.min(preferredLeft, output.right - card.width)) + 'px';
+  nodeInspector.style.top = Math.max(output.top, Math.min(node.top, output.bottom - card.height)) + 'px';
+}
+
+function commitNodeText() {
+  const id = selectedEditorNodeId;
+  if (!id)
+    return;
+  const graph = editorGraph();
+  const node = graph.nodes.get(id);
+  if (!node)
+    return;
+  const text = nodeTextInput.value.trim();
+  const newToken = node.kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
+  const lines = graph.lines.slice();
+  lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
+  runEditorAction(() => commitEditorSource(lines.join('\n')));
 }
 
 outputBox.addEventListener('click', (event) => {
@@ -935,12 +987,9 @@ outputBox.addEventListener('dblclick', (event) => {
   const nodeEl = (event.target as HTMLElement).closest('g.node');
   if (!nodeEl)
     return;
-  const id = nodeIdOf(nodeEl);
-  const graph = editorGraph();
-  const kind = editorNodeKind(id, graph);
-  if (!kind || kind === 'choice')
-    return;
-  beginInlineEdit(nodeEl, id, kind);
+  selectEditorNode(nodeIdOf(nodeEl));
+  nodeTextInput.focus();
+  nodeTextInput.select();
 });
 
 document.getElementById('addQuestionAfterBtn')!.addEventListener('click', addQuestionAfter);
@@ -954,6 +1003,20 @@ document.getElementById('confirmRemoveQuestionBtn')!.addEventListener('click', c
 document.getElementById('cancelRemoveQuestionBtn')!.addEventListener('click', cancelQuestionRemoval);
 document.getElementById('editorUndoBtn')!.addEventListener('click', undoEditorAction);
 document.getElementById('editorRedoBtn')!.addEventListener('click', redoEditorAction);
+document.getElementById('nodeInspectorDismissBtn')!.addEventListener('click', () => selectEditorNode(null));
+nodeTextInput.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter')
+    return;
+  event.preventDefault();
+  commitNodeText();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape')
+    return;
+  selectEditorNode(null);
+});
+outputBox.addEventListener('scroll', positionNodeInspector);
+window.addEventListener('resize', positionNodeInspector);
 
 // function updateSvgSizingForPhoneMode() {
 //   const svg = diagramBox.querySelector('svg');
@@ -1193,6 +1256,7 @@ async function render() {
     currentBottomQ = bottomQ;
     const source = phone ? chunkSource(shown, siblings, edges) : codeBox.value;
     const { svg } = await mermaid.render(id, source);
+    const viewport = { left: outputBox.scrollLeft, top: outputBox.scrollTop };
     diagramBox.innerHTML = svg;
     renderEditorSelection();
     if (edges.length > 0) {
@@ -1205,6 +1269,8 @@ async function render() {
       svgEl.style.width = phoneWidth + 'px';
       svgEl.style.height = box.height * scale + 'px';
     }
+    outputBox.scrollLeft = viewport.left;
+    outputBox.scrollTop = viewport.top;
     if (phone)
       renderLog(edges);
       // if (phone)
@@ -1222,6 +1288,7 @@ async function render() {
     if (!phone)
       highlightPath();
       // updateSvgSizingForPhoneMode();
+    positionNodeInspector();
     errorLog.textContent = '';
     errorLog.classList.remove('open');
   }

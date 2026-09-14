@@ -657,29 +657,23 @@ test("test_add_choice_normalizes_the_first_labelled_question_branch", async () =
 
 test("test_inline_question_text_edit_persists", async () => {
   await resetEditorFixture();
-  // Step: double-click the Q1 question node and replace its label text.
-  await evaluate(`(() => {
-    document.querySelector('[id*="flowchart-Q1-"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    const label = document.querySelector('[id*="flowchart-Q1-"] .nodeLabel');
-    label.textContent = 'Can I stay calm?';
-    label.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  })()`);
+  // Step: click the Q1 question node, type a new label into the inspector's Text input, and press Enter.
+  await clickNode("Q1");
+  await evaluate("(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Can I stay calm?'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()");
   await evaluate("window.editorActionPromise");
   const source = await evaluate("codeBox.value");
   // Step: the question's declaration is rewritten with brace syntax.
   assert.ok(source.includes('Q1{"Can I stay calm?"}'));
+  // Step: the inspector closed after the commit.
+  assert.equal((await inspectorState()).hidden, true);
   await assertEditorSourceIsSavedAndValid();
 });
 
 test("test_inline_static_block_text_edit_persists", async () => {
   await resetEditorFixture();
-  // Step: double-click the LetGo block node and replace its label text.
-  await evaluate(`(() => {
-    document.querySelector('[id*="flowchart-LetGo-"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    const label = document.querySelector('[id*="flowchart-LetGo-"] .nodeLabel');
-    label.textContent = 'Pause the conversation';
-    label.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  })()`);
+  // Step: click the LetGo block node, type a new label into the inspector's Text input, and press Enter.
+  await clickNode("LetGo");
+  await evaluate("(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Pause the conversation'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()");
   await evaluate("window.editorActionPromise");
   const source = await evaluate("codeBox.value");
   // Step: the block's declaration is rewritten with rectangle syntax.
@@ -719,4 +713,176 @@ test("test_question_removal_preview_cancel_confirm_undo_and_redo_persist", async
   await evaluate("window.redoEditorAction(); window.editorActionPromise");
   source = await evaluate("codeBox.value");
   assert.ok(!source.includes('Q1{"Can I be calm?"}'));
+});
+
+const SCROLL_FIXTURE_NAME = "accountability.mmd";
+const scrollFixtureSource = readFileSync(join(process.cwd(), "diagrams", SCROLL_FIXTURE_NAME), "utf8");
+
+async function clickNode(id: string) {
+  await evaluate(`document.querySelector('[id*="flowchart-${id}-"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+}
+
+async function dblclickNode(id: string) {
+  await evaluate(`document.querySelector('[id*="flowchart-${id}-"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`);
+}
+
+async function inspectorState() {
+  // Scenario: read the inspector's visibility, title, and Text value in one round trip.
+  const json = await evaluate(`JSON.stringify({
+    hidden: document.getElementById('nodeInspector').hidden,
+    title: document.getElementById('nodeInspectorTitle').textContent,
+    text: document.getElementById('nodeTextInput').value,
+  })`);
+  return JSON.parse(json);
+}
+
+async function inspectorPlacement(id: string) {
+  // Scenario: where the card sits relative to the selected node and the #output box.
+  const json = await evaluate(`JSON.stringify((() => {
+    const card = document.getElementById('nodeInspector').getBoundingClientRect();
+    const output = document.getElementById('output').getBoundingClientRect();
+    const node = document.querySelector('[id*="flowchart-${id}-"]').getBoundingClientRect();
+    return {
+      insideOutput: card.left >= output.left && card.right <= output.right + 1 && card.top >= output.top && card.bottom <= output.bottom + 1,
+      besideNode: card.left >= node.right || card.right <= node.left,
+      width: card.width,
+    };
+  })())`);
+  return JSON.parse(json);
+}
+
+async function outputScrollTop() {
+  return evaluate("document.getElementById('output').scrollTop");
+}
+
+test("test_clicking_a_question_opens_a_decision_block_inspector", async () => {
+  await resetEditorFixture();
+  // Step: click the Q1 question node.
+  await clickNode("Q1");
+  // Step: the inspector is open, titled "Decision block", and holds the current label.
+  const state = await inspectorState();
+  assert.equal(state.hidden, false);
+  assert.equal(state.title, "Decision block");
+  assert.equal(state.text, "Can I be calm?");
+  // Step: the card sits beside the node and inside the visible #output box.
+  const placement = await inspectorPlacement("Q1");
+  assert.ok(placement.width > 0);
+  assert.equal(placement.insideOutput, true);
+  assert.equal(placement.besideNode, true);
+});
+
+test("test_clicking_a_block_opens_a_static_block_inspector", async () => {
+  await resetEditorFixture();
+  // Step: click the LetGo block node.
+  await clickNode("LetGo");
+  // Step: the inspector is titled "static block" and holds the current label.
+  const state = await inspectorState();
+  assert.equal(state.hidden, false);
+  assert.equal(state.title, "static block");
+  assert.equal(state.text, "Let it go");
+});
+
+test("test_clicking_a_choice_opens_a_choice_block_inspector", async () => {
+  await resetEditorFixture();
+  // Step: give Q1 an explicit choice node, then click it.
+  await selectEditorNode("Q1");
+  await runEditorAction("addChoice");
+  await clickNode("Q1_NO");
+  // Step: the inspector is titled "choice block" and holds the current label.
+  const state = await inspectorState();
+  assert.equal(state.hidden, false);
+  assert.equal(state.title, "choice block");
+  assert.equal(state.text, "No");
+});
+
+test("test_double_clicking_a_node_focuses_and_selects_the_text_input", async () => {
+  await resetEditorFixture();
+  // Step: double-click the LetGo block node.
+  await dblclickNode("LetGo");
+  // Step: the Text input is focused and its whole value is selected.
+  const focus = await evaluate(`JSON.stringify((() => {
+    const input = document.getElementById('nodeTextInput');
+    return { focused: document.activeElement === input, start: input.selectionStart, end: input.selectionEnd, length: input.value.length };
+  })())`).then(JSON.parse);
+  assert.equal(focus.focused, true);
+  assert.equal(focus.start, 0);
+  assert.equal(focus.end, focus.length);
+  assert.ok(focus.length > 0);
+});
+
+test("test_cancel_discards_uncommitted_text_and_closes_the_inspector", async () => {
+  await resetEditorFixture();
+  // Step: open Q1's inspector and type text without pressing Enter.
+  await clickNode("Q1");
+  await evaluate("document.getElementById('nodeTextInput').value = 'typed but not committed'");
+  // Step: press Cancel; the inspector closes and the source is unchanged.
+  await evaluate("document.getElementById('nodeInspectorDismissBtn').click()");
+  assert.equal((await inspectorState()).hidden, true);
+  const source = await evaluate("codeBox.value");
+  assert.ok(source.includes('Q1{"Can I be calm?"}'));
+  // Step: reopening Q1 shows the saved label, not the typed text.
+  await clickNode("Q1");
+  assert.equal((await inspectorState()).text, "Can I be calm?");
+});
+
+test("test_escape_discards_uncommitted_text_and_closes_the_inspector", async () => {
+  await resetEditorFixture();
+  // Step: open Q1's inspector and type text without pressing Enter.
+  await clickNode("Q1");
+  await evaluate("document.getElementById('nodeTextInput').value = 'typed but not committed'");
+  // Step: press Escape in the input; the inspector closes and the source is unchanged.
+  await evaluate("document.getElementById('nodeTextInput').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))");
+  assert.equal((await inspectorState()).hidden, true);
+  const source = await evaluate("codeBox.value");
+  assert.ok(source.includes('Q1{"Can I be calm?"}'));
+});
+
+test("test_clicking_empty_drawing_space_closes_the_inspector", async () => {
+  await resetEditorFixture();
+  // Step: open Q1's inspector.
+  await clickNode("Q1");
+  assert.equal((await inspectorState()).hidden, false);
+  // Step: click the #output box itself (no node under the pointer); the inspector closes.
+  await evaluate("document.getElementById('output').dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+  assert.equal((await inspectorState()).hidden, true);
+});
+
+test("test_clicking_another_node_retargets_the_inspector_and_discards_text", async () => {
+  await resetEditorFixture();
+  // Step: open Q1's inspector and type text without pressing Enter.
+  await clickNode("Q1");
+  await evaluate("document.getElementById('nodeTextInput').value = 'typed but not committed'");
+  // Step: click LetGo; the inspector now shows LetGo and the typed text is gone.
+  await clickNode("LetGo");
+  const state = await inspectorState();
+  assert.equal(state.hidden, false);
+  assert.equal(state.title, "static block");
+  assert.equal(state.text, "Let it go");
+  const source = await evaluate("codeBox.value");
+  assert.ok(source.includes('Q1{"Can I be calm?"}'));
+});
+
+test("test_inspector_keeps_the_diagram_scroll_position", async () => {
+  // Scenario: selecting, committing with Enter, and dismissing never move #output's scroll position.
+  await evaluate(`phoneToggle.checked = false; phoneToggle.dispatchEvent(new Event('change')); loadDiagram(${JSON.stringify(SCROLL_FIXTURE_NAME)})`);
+  await sleep(500);
+  // Step: the accountability diagram overflows #output, so scrolling is real.
+  const overflow = await evaluate("JSON.stringify({sh: document.getElementById('output').scrollHeight, ch: document.getElementById('output').clientHeight})").then(JSON.parse);
+  assert.ok(overflow.sh > overflow.ch);
+  await evaluate("document.getElementById('output').scrollTop = 150");
+  // Step: selecting a node keeps the scroll position, and the card stays inside #output.
+  await clickNode("RAISE_ISSUE");
+  assert.equal(await outputScrollTop(), 150);
+  assert.equal((await inspectorPlacement("RAISE_ISSUE")).insideOutput, true);
+  // Step: committing the text with Enter rerenders, saves, and keeps the scroll position.
+  await evaluate("(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Other side raises an issue'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()");
+  await evaluate("window.editorActionPromise");
+  await sleep(300);
+  assert.equal(await outputScrollTop(), 150);
+  // Step: dismissing keeps the scroll position.
+  await clickNode("RAISE_ISSUE");
+  await evaluate("document.getElementById('nodeInspectorDismissBtn').click()");
+  assert.equal(await outputScrollTop(), 150);
+  // Step: put the accountability file back to its original bytes.
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
 });
