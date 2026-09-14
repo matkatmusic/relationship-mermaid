@@ -794,5 +794,33 @@
     "hasTests": true,
     "tests": "select a choice node, assert the widget's html includes the destination label and non-empty menu. repeat the test using 'static node'.  select a question node, assert the widget's html does not have the destination label or menu component.",
     "difficulty": 2
+  },
+  {
+    "taskNumber": 31,
+    "version": "9b33b648157c12f5b6c0ab3e4f91a98d99f6c402",
+    "title": "Fix destination dropdown to select the node's real outgoing destination, even when it is kind 'choice'",
+    "userDescription": "Bug: When a static or choice node is selected, the 'destination' dropdown menu's selected indexis not the block the selected node leads to; Set the destination dropdown's index to the block that the selected node leads to.",
+    "goal": [
+      "- Selecting a static or choice node whose outgoing edge already points somewhere sets destinationSelect.value to that destination's id, not '' (Terminal)",
+      "- This works even when the real destination is currently excluded from the option list because its kind === 'choice'",
+      "- `npm test` passes"
+    ],
+    "notInScope": [
+      "- The naming-convention heuristic that decides 'choice' vs 'block' kind (viewer.ts:570-574) is not reworked here, only how the destination dropdown handles its result",
+      "- The separate bug where the destination row stays visible for decision nodes is task #30"
+    ],
+    "problemSolvedByTask": "Destination dropdown lies about the graph",
+    "description": "Confirmed root cause in viewer.ts: renderNodeInspector's destination-options loop (~line 1114-1117) skips any candidate node with kind === 'choice', so outgoingDestination(node.id, graph) can return an id that was never added as an <option>, leaving destinationSelect.value unmatched and silently defaulting to the 'Terminal' option (value ''). Node kind is assigned in the graph parser (viewer.ts ~line 570-574) by a naming-convention heuristic (id starts with fromId + '_' plus an unlabeled edge), not a reliable structural signal, so a real destination node can still be misclassified as 'choice'. Fix is to stop excluding kind === 'choice' candidates from the options loop (or otherwise guarantee the true destination always has a matching option) so destinationSelect.value correctly reflects outgoingDestination(node.id, graph).",
+    "modifiableFiles": [
+      "viewer.ts",
+      "tests/viewer.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Load a diagram with a static/choice node that already has a real outgoing edge to an existing block, select that node, and assert destinationSelect.value equals the real destination's id (not '' / Terminal).",
+    "difficulty": 3
   }
 ]
