@@ -1,8 +1,12 @@
 {
   "name": "relationship-mermaid",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "bun build viewer.ts --outfile viewer.js",
     "test": "bun run build && bun test tests/server.test.js && node --test \"tests/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1"
   }
 }
