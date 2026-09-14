@@ -1010,6 +1010,8 @@ test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks'
   assert.deepEqual(await inspectorActions(), [
     { action: 'remove', text: 'Remove', spanTwoColumns: false },
     { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: false },
+    { action: 'insert-static-before', text: 'insert static block before', spanTwoColumns: false },
+    { action: 'insert-decision-before', text: 'insert Decision & leading choice before', spanTwoColumns: false },
   ]);
   await selectEditorNode('Q1');
   await runEditorAction('addChoice');
@@ -1024,6 +1026,8 @@ test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks'
     { action: 'remove', text: 'Remove', spanTwoColumns: false },
     { action: 'add-choice', text: 'Add choice', spanTwoColumns: false },
     { action: 'remove-choices', text: 'Remove choices', spanTwoColumns: false },
+    { action: 'insert-static-before', text: 'insert static block before', spanTwoColumns: false },
+    { action: 'insert-decision-before', text: 'insert Decision & leading choice before', spanTwoColumns: false },
   ]);
 });
 
@@ -1215,6 +1219,101 @@ test('test_add_choice_on_inspector_moves_focus_to_the_new_choices_destination', 
   assert.equal((await destinationState()).value, '');
   // Step: the add-choice commit is exactly one new undo entry.
   assert.equal(await evaluate('editorHistory.length'), historyBefore + 1);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_static_block_before_splices_incoming_edges_with_their_labels', async () => {
+  await resetEditorFixture();
+  // Step: select the fan-in target "Let it go" and insert a static block before it.
+  await clickNode('LetGo');
+  const historyBefore = await evaluate('editorHistory.length');
+  await clickInspectorAction('insert-static-before');
+  const source = await evaluate('codeBox.value');
+  // Step: the new static block is declared and sits directly before "Let it go".
+  assert.ok(source.includes('B_NEW_1["New static block"]'));
+  assert.ok(source.includes('B_NEW_1 --> LetGo'));
+  assert.ok(source.includes('LetGo["Let it go"]'));
+  // Step: every former incoming edge is redirected to the new block, keeping its own label.
+  assert.ok(source.includes('Q1 -- "No" --> B_NEW_1'));
+  assert.ok(source.includes('Q2 -- "No" --> B_NEW_1'));
+  assert.ok(source.includes('Q3 -- "No" --> B_NEW_1'));
+  assert.ok(source.includes('Q4 -- "Not helpful / Move further" --> B_NEW_1'));
+  assert.ok(!source.includes('Q1 -- No --> LetGo'));
+  assert.ok(!source.includes('Q2 -- No --> LetGo'));
+  assert.ok(!source.includes('Q3 -- No --> LetGo'));
+  assert.ok(!source.includes('Q4 -- "Not helpful / Move further" --> LetGo'));
+  // Step: the insertion closed the inspector instead of opening Destination.
+  assert.equal((await inspectorState()).hidden, true);
+  // Step: it is a single history entry.
+  assert.equal(await evaluate('editorHistory.length'), historyBefore + 1);
+  // Step: undo restores the original source exactly.
+  await evaluate('window.undoEditorAction(); window.editorActionPromise');
+  assert.equal(await evaluate('codeBox.value'), editorFixtureSource);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_static_block_before_a_root_node_becomes_the_new_root', async () => {
+  await resetEditorFixture();
+  // Step: select "Start", which has no predecessor, and insert a static block before it.
+  await clickNode('Start');
+  const historyBefore = await evaluate('editorHistory.length');
+  await clickInspectorAction('insert-static-before');
+  const source = await evaluate('codeBox.value');
+  // Step: the new block leads into Start; Start keeps its own declaration untouched.
+  assert.ok(source.includes('B_NEW_1["New static block"]'));
+  assert.ok(source.includes('B_NEW_1 --> Start'));
+  assert.ok(source.includes('Start(["Something happened.<br/>Say something, or let it go?"])'));
+  assert.equal((await inspectorState()).hidden, true);
+  assert.equal(await evaluate('editorHistory.length'), historyBefore + 1);
+  await evaluate('window.undoEditorAction(); window.editorActionPromise');
+  assert.equal(await evaluate('codeBox.value'), editorFixtureSource);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_decision_before_adds_one_leading_choice_and_splices_incoming_edges', async () => {
+  await resetEditorFixture();
+  // Step: select the fan-in target "Let it go" and insert a Decision & leading choice before it.
+  await clickNode('LetGo');
+  const historyBefore = await evaluate('editorHistory.length');
+  await clickInspectorAction('insert-decision-before');
+  const source = await evaluate('codeBox.value');
+  // Step: the new Decision has exactly one outgoing edge, to its new choice.
+  assert.ok(source.includes('Q_NEW_1{"New Decision"}'));
+  assert.ok(source.includes('Q_NEW_1_NEW["New choice"]'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_NEW_1_NEW'));
+  const decisionOutgoing = source.match(/Q_NEW_1 -->/g) || [];
+  assert.equal(decisionOutgoing.length, 1);
+  // Step: the new choice leads to "Let it go", unlabelled.
+  assert.ok(source.includes('Q_NEW_1_NEW --> LetGo'));
+  assert.ok(source.includes('LetGo["Let it go"]'));
+  // Step: every former incoming edge is redirected to the new Decision, keeping its own label.
+  assert.ok(source.includes('Q1 -- "No" --> Q_NEW_1'));
+  assert.ok(source.includes('Q2 -- "No" --> Q_NEW_1'));
+  assert.ok(source.includes('Q3 -- "No" --> Q_NEW_1'));
+  assert.ok(source.includes('Q4 -- "Not helpful / Move further" --> Q_NEW_1'));
+  assert.ok(!source.includes('Q1 -- No --> LetGo'));
+  // Step: the insertion closed the inspector instead of opening Destination.
+  assert.equal((await inspectorState()).hidden, true);
+  assert.equal(await evaluate('editorHistory.length'), historyBefore + 1);
+  // Step: undo restores the original source exactly.
+  await evaluate('window.undoEditorAction(); window.editorActionPromise');
+  assert.equal(await evaluate('codeBox.value'), editorFixtureSource);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_decision_before_a_root_node_becomes_the_new_root', async () => {
+  await resetEditorFixture();
+  // Step: select "Start", which has no predecessor, and insert a Decision & leading choice before it.
+  await clickNode('Start');
+  await clickInspectorAction('insert-decision-before');
+  const source = await evaluate('codeBox.value');
+  assert.ok(source.includes('Q_NEW_1{"New Decision"}'));
+  assert.ok(source.includes('Q_NEW_1_NEW["New choice"]'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_NEW_1_NEW'));
+  const decisionOutgoing = source.match(/Q_NEW_1 -->/g) || [];
+  assert.equal(decisionOutgoing.length, 1);
+  assert.ok(source.includes('Q_NEW_1_NEW --> Start'));
+  assert.equal((await inspectorState()).hidden, true);
   await assertEditorSourceIsSavedAndValid();
 });
 

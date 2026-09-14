@@ -588,6 +588,61 @@ function addBlockAfter() {
     newLines.push(`  ${bId} --> ${successor}`);
   setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
 }
+function insertStaticBefore() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const selected = selectedEditorNodeId;
+  const selectedNode = graph.nodes.get(selected);
+  const removedLineIndexes = new Set;
+  const predecessors = [];
+  for (const edge of graph.edges) {
+    if (edge.to !== selected)
+      continue;
+    predecessors.push(edge);
+    removedLineIndexes.add(edge.lineIndex);
+  }
+  const staticId = nextEditorId("B_NEW", graph);
+  const newLines = [`  ${staticId}["New static block"]`];
+  if (removedLineIndexes.has(selectedNode.lineIndex))
+    newLines.push(`  ${selected}${declarationSuffixOf(selectedNode)}`);
+  for (const edge of predecessors)
+    preserveInlineDecl(edge, edge.from, graph, newLines);
+  for (const edge of predecessors)
+    newLines.push(edge.label ? `  ${edge.from} -- "${edge.label}" --> ${staticId}` : `  ${edge.from} --> ${staticId}`);
+  newLines.push(`  ${staticId} --> ${selected}`);
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+function insertDecisionBefore() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const selected = selectedEditorNodeId;
+  const selectedNode = graph.nodes.get(selected);
+  const removedLineIndexes = new Set;
+  const predecessors = [];
+  for (const edge of graph.edges) {
+    if (edge.to !== selected)
+      continue;
+    predecessors.push(edge);
+    removedLineIndexes.add(edge.lineIndex);
+  }
+  const decisionId = nextEditorId("Q_NEW", graph);
+  const newChoiceId = choiceId(decisionId, "NEW");
+  const newLines = [
+    `  ${decisionId}{"New Decision"}`,
+    `  ${newChoiceId}["New choice"]`,
+    `  ${decisionId} --> ${newChoiceId}`
+  ];
+  if (removedLineIndexes.has(selectedNode.lineIndex))
+    newLines.push(`  ${selected}${declarationSuffixOf(selectedNode)}`);
+  for (const edge of predecessors)
+    preserveInlineDecl(edge, edge.from, graph, newLines);
+  for (const edge of predecessors)
+    newLines.push(edge.label ? `  ${edge.from} -- "${edge.label}" --> ${decisionId}` : `  ${edge.from} --> ${decisionId}`);
+  newLines.push(`  ${newChoiceId} --> ${selected}`);
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
 function choiceSuffixFromLabel(label) {
   return label.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "CHOICE";
 }
@@ -814,9 +869,9 @@ function renderNodeInspector() {
   }
   const actions = [inspectorActionButton("remove", "Remove")];
   if (node.kind === "question")
-    actions.push(inspectorActionButton("add-choice", "Add choice"), inspectorActionButton("remove-choices", "Remove choices"));
+    actions.push(inspectorActionButton("add-choice", "Add choice"), inspectorActionButton("remove-choices", "Remove choices"), inspectorActionButton("insert-static-before", "insert static block before"), inspectorActionButton("insert-decision-before", "insert Decision & leading choice before"));
   else if (node.kind === "block")
-    actions.push(inspectorActionButton("add-decision-after", "add Decision block after"));
+    actions.push(inspectorActionButton("add-decision-after", "add Decision block after"), inspectorActionButton("insert-static-before", "insert static block before"), inspectorActionButton("insert-decision-before", "insert Decision & leading choice before"));
   else if (node.kind === "choice")
     actions.push(inspectorActionButton("add-decision-after", "add Decision block after"), inspectorActionButton("add-static-after", "add static block after"));
   nodeInspectorActions.replaceChildren(...actions);
@@ -1026,6 +1081,10 @@ nodeInspectorActions.addEventListener("click", (event) => {
       removeChoice();
   } else if (action === "remove-choices")
     removeChoices();
+  else if (action === "insert-static-before")
+    insertStaticBefore();
+  else if (action === "insert-decision-before")
+    insertDecisionBefore();
 });
 nodeTextInput.addEventListener("keydown", (event) => {
   if (event.key !== "Enter")
@@ -1347,4 +1406,4 @@ codeBox.addEventListener("input", () => {
   render();
 });
 loadDiagram("accountability.mmd");
-Object.assign(window, { loadDiagram, codeBox, nodeIdOf, selectEditorNode, addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, removeChoices, undoEditorAction, redoEditorAction });
+Object.assign(window, { loadDiagram, codeBox, nodeIdOf, selectEditorNode, addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, removeChoices, undoEditorAction, redoEditorAction, insertStaticBefore, insertDecisionBefore });
