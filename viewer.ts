@@ -35,6 +35,8 @@ const nodeInspectorDismissBtn = document.getElementById('nodeInspectorDismissBtn
 const destinationRow = document.getElementById('destinationRow')!;
 const destinationSelect = document.getElementById('destinationSelect') as HTMLSelectElement;
 const nodeInspectorActions = document.getElementById('nodeInspectorActions')!;
+const nodeInspectorControls = document.getElementById('nodeInspectorControls')!;
+const nodeInspectorRemovalPreview = document.getElementById('nodeInspectorRemovalPreview')!;
 const NEW_STATIC_DESTINATION = 'new-static';
 const NEW_DECISION_DESTINATION = 'new-decision';
 let advanceAfterDecisionText: { decisionId: string; choiceId: string } | null = null;
@@ -690,6 +692,7 @@ function renderEditorSelection() {
 
 function showRemovalPreview() {
   renderEditorSelection();
+  renderNodeInspector();
 }
 
 function addQuestionAfter() {
@@ -858,6 +861,40 @@ function removeQuestion() {
   showRemovalPreview();
 }
 
+function removeChoices() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const questionId = selectedEditorNodeId;
+  const removedLineIndexes = new Set<number>();
+  const newLines: string[] = [];
+  for (const edge of graph.edges) {
+    if (edge.from !== questionId)
+      continue;
+    removedLineIndexes.add(edge.lineIndex);
+    const targetNode = graph.nodes.get(edge.to);
+    const isImmediateChoice = targetNode?.kind === 'choice';
+    if (!isImmediateChoice) {
+      preserveInlineDecl(edge, edge.to, graph, newLines);
+      continue;
+    }
+    const choiceNodeId = edge.to;
+    removedLineIndexes.add(targetNode!.lineIndex);
+    for (const inner of graph.edges) {
+      if (inner === edge)
+        continue;
+      const touchesChoice = inner.from === choiceNodeId || inner.to === choiceNodeId;
+      if (!touchesChoice)
+        continue;
+      removedLineIndexes.add(inner.lineIndex);
+      const otherEndpoint = inner.from === choiceNodeId ? inner.to : inner.from;
+      if (otherEndpoint !== choiceNodeId)
+        preserveInlineDecl(inner, otherEndpoint, graph, newLines);
+    }
+  }
+  setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
+}
+
 function advanceRemovalPreview() {
   if (!pendingRemoval)
     return;
@@ -982,9 +1019,19 @@ function renderNodeInspector() {
     return;
   nodeInspectorTitle.textContent = INSPECTOR_TITLES[node.kind];
   nodeTextInput.value = node.label;
-  const actions: HTMLButtonElement[] = [];
-  if (node.kind === 'block')
-    actions.push(inspectorActionButton('add-decision-after', 'add Decision block after', true));
+  const previewing = !!pendingRemoval;
+  nodeInspectorRemovalPreview.hidden = !previewing;
+  nodeInspectorActions.hidden = previewing;
+  nodeInspectorControls.hidden = previewing;
+  if (previewing) {
+    positionNodeInspector();
+    return;
+  }
+  const actions: HTMLButtonElement[] = [inspectorActionButton('remove', 'Remove')];
+  if (node.kind === 'question')
+    actions.push(inspectorActionButton('remove-choices', 'Remove choices'));
+  else if (node.kind === 'block')
+    actions.push(inspectorActionButton('add-decision-after', 'add Decision block after'));
   else if (node.kind === 'choice')
     actions.push(
       inspectorActionButton('add-decision-after', 'add Decision block after'),
@@ -1176,6 +1223,17 @@ nodeInspectorActions.addEventListener('click', (event) => {
     applyDestination(NEW_STATIC_DESTINATION);
   else if (action === 'add-decision-after')
     applyDestination(NEW_DECISION_DESTINATION);
+  else if (action === 'remove') {
+    const kind = editorGraph().nodes.get(selectedEditorNodeId ?? '')?.kind;
+    if (kind === 'question')
+      removeQuestion();
+    else if (kind === 'block')
+      removeBlock();
+    else if (kind === 'choice')
+      removeChoice();
+  }
+  else if (action === 'remove-choices')
+    removeChoices();
 });
 nodeTextInput.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter')
@@ -1613,4 +1671,4 @@ codeBox.addEventListener('input', () => {
 // loadList();
 loadDiagram('accountability.mmd');
 
-Object.assign(window, { loadDiagram, codeBox, nodeIdOf, selectEditorNode, addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, undoEditorAction, redoEditorAction });
+Object.assign(window, { loadDiagram, codeBox, nodeIdOf, selectEditorNode, addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, removeChoices, undoEditorAction, redoEditorAction });
