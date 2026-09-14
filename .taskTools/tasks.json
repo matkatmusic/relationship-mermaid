@@ -1060,5 +1060,48 @@
         "reason": "This task must rename node ids in accountability.mmd, which has 47+ chained single-line `A --> B --> C` edges, and split them into standalone declaration lines. The shared parseEditorEdgeLine/parseEditorToken functions that task 32 fixes currently drop the trailing node and corrupt the middle node's label on any chained edge line, so those chained lines cannot be correctly read or rewritten by the tool until task 32 lands."
       }
     ]
+  },
+  {
+    "taskNumber": 39,
+    "version": "3b2d3b7e390abf5e632d3385c17a110713a06718",
+    "title": "Rename stop-causing-harms.mmd to the Q_/Q_CHOICE/B_ convention and update test assertions for all renamed ids",
+    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"diagrams/stop-causing-harms.mmd\",\"tests/viewer.test.ts\",\"tests/index.html.test.ts\"]. Feature/migration: rename every node id in diagrams/stop-causing-harms.mmd to comply with the new strict naming convention being built in sibling task 37, and update tests/viewer.test.ts and tests/index.html.test.ts to match the new ids introduced by both this rename and sibling task 38's renames. Depends on task 32 (shared chained-edge parser bug), and on sibling tasks 37 (parser) and 38 (3 of the 4 diagram renames) landing first.",
+    "goal": [
+      "- Every node id in stop-causing-harms.mmd starts with the correct Q_/Q_CHOICE/B_ prefix for its kind, with no inline declarations, and graph structure/labels/connectivity are unchanged",
+      "- tests/index.html.test.ts and tests/viewer.test.ts no longer reference any old node id from any of the 4 diagrams (this file's rename plus sibling task 38's 3 renames)",
+      "- `npm test` passes end to end against the fully-renamed set of 4 diagrams"
+    ],
+    "notInScope": [
+      "- Renaming the other 3 diagrams is owned by sibling task 38 — this task only renames stop-causing-harms.mmd itself",
+      "- The parser/nav-button implementation is owned by sibling task 37 — this task only renames a diagram and updates test assertions"
+    ],
+    "problemSolvedByTask": "Last diagram + test suite don't match the new convention",
+    "description": "diagrams/stop-causing-harms.mmd currently declares Root as a stadium node (Root([\"...\"])) followed by Q1 through Q7, each node declared inline inside its chained edge line (e.g. Q1 --> Q2[\"...\"]) rather than on a standalone line. All edges in this file are single-successor and unconditional except one labeled back-edge (Q5 -. needs an example, circle back .-> Q1); unlike say-something-or-let-it-go.mmd's Q1-Q4, none of Root/Q1-Q7 actually branch into multiple named choices, so under the new convention (Q_ brace nodes for real decisions, Q_CHOICE bracket nodes for their choice targets, B_ bracket nodes for static/block content) the absence of any branching here means Root and Q1-Q7 read as B_-prefixed bracket nodes rather than Q_ decision nodes — a naming call the implementer must confirm against task 37's finalized parser rules. tests/index.html.test.ts hardcodes EDITOR_FIXTURE_NAME = \"say-something-or-let-it-go.mmd\" and asserts only against that fixture's ids (Start, Q1, Q1_NO, LetGo, HaveConvo, Q_NEW_1, B_NEW_1, etc.); it contains no stop-causing-harms.mmd ids today, so it needs re-verification once tasks 37 and 38 land rather than a stop-causing-harms-specific edit. tests/viewer.test.ts asserts only generic build-output strings (nodeActions, editorUndoBtn) via a bun build of viewer.ts, with no diagram-specific node ids currently, so it likely needs no changes but should be re-checked after tasks 37/38 land.",
+    "modifiableFiles": [
+      "diagrams/stop-causing-harms.mmd",
+      "tests/viewer.test.ts",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Update tests/index.html.test.ts's EDITOR_FIXTURE_NAME and all its hardcoded id literals (Start→new B_ id, Q1→new Q_ id, etc.) to match the renamed say-something-or-let-it-go.mmd; update tests/viewer.test.ts similarly if it references any renamed ids; assert `npm test` passes end to end.",
+    "difficulty": 5,
+    "blockedBy": [
+      {
+        "taskNumber": 32,
+        "reason": "This task's stop-causing-harms.mmd rename involves rewriting node declaration and edge lines with the shared parseEditorEdgeLine/parseEditorToken functions, which task 32 fixes; until that chained-edge parser bug is fixed, any chained A --> B --> C lines in this diagram cannot be correctly read or rewritten."
+      },
+      {
+        "taskNumber": 37,
+        "reason": "This task must rename ids to the strict Q_/Q_CHOICE/B_ naming convention and enforce standalone declaration lines, but task 37 is what defines and implements that convention and the decl/edge line-separation parser; this task needs that convention finalized before it can apply it to stop-causing-harms.mmd."
+      },
+      {
+        "taskNumber": 38,
+        "reason": "This task's test updates to tests/viewer.test.ts and tests/index.html.test.ts must match the final renamed ids chosen for say-something-or-let-it-go.mmd (and the other diagrams) in task 38, so the test assertions cannot be finalized until task 38's rename lands."
+      }
+    ]
   }
 ]
