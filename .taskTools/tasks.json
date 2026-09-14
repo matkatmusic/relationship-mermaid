@@ -822,5 +822,35 @@
     "hasTests": true,
     "tests": "Load a diagram with a static/choice node that already has a real outgoing edge to an existing block, select that node, and assert destinationSelect.value equals the real destination's id (not '' / Terminal).",
     "difficulty": 3
+  },
+  {
+    "taskNumber": 32,
+    "version": "1850b592fabfc5d2c4c97a1a7398bc0dce6e1af7",
+    "title": "Fix shared edge-line parser to correctly handle a chained A --> B --> C on one line",
+    "userDescription": "Bug: 'Insert static block before' doesn't splice into the graph.  Repro: Graph is `A --> B --> C`. I select `B`.  I choose `Insert static block before`. I expect: `A --> NEW --> B --> C`.  I see: `A --> B --> C` and `New --> B`, instead.",
+    "goal": [
+      "- parseEditorEdgeLine/parseEditorToken correctly parse a single-line chained edge like `A --> B --> C` into all three nodes and both edges, instead of only capturing the first arrow",
+      "- Selecting B and choosing 'insert static block before' on that shape produces `A --> NEW --> B --> C`, with the old A-->B edge gone and B-->C untouched",
+      "- The rendered diagram shows only the correct, updated graph — not a leftover disconnected node alongside the old edges",
+      "- `npm test` passes"
+    ],
+    "notInScope": [
+      "- Fan-in / root-node insert-static-before cases are already covered by existing passing tests and are not touched",
+      "- The second, independent renderer parser path (render()'s parseEdges plus phone-mode chunking) is not fixed here unless it turns out to share this exact one-arrow-per-line bug"
+    ],
+    "problemSolvedByTask": "Insert-before silently corrupts the graph",
+    "description": "Root cause confirmed: parseEditorEdgeLine/parseEditorToken in viewer.ts only capture one arrow per physical line, so a single-line chained edge like `A --> B --> C` mis-parses — it corrupts the middle node's label and silently drops the trailing node/edge from editorGraph()'s model entirely. This affects every editor action built on editorGraph(), not just insertStaticBefore, so fixing the shared parser is the root-cause fix rather than patching insertStaticBefore alone. Separately, render() in viewer.ts uses a second, independent parser (parseEdges) plus phone-mode chunking (sliceIds/siblingIds/leadInIds/chunkSource) to build the on-screen SVG; this path is decoupled from editorGraph()/codeBox.value and is a candidate for the rendered diagram visually lagging the true source even when the underlying mermaid text is correct — worth checking but not assumed to share the bug. Reproduce in the browser test harness (resetEditorFixture/clickNode/clickInspectorAction in tests/index.html.test.ts) with a plain single-predecessor/single-successor middle node under both edge-declaration styles (own-line declarations, and nodes declared inline on their first edge, as in diagrams/say-something-or-let-it-go.mmd), checking both codeBox.value and the rendered SVG DOM.",
+    "modifiableFiles": [
+      "viewer.ts",
+      "tests/index.html.test.ts",
+      "diagrams/say-something-or-let-it-go.mmd"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Build a minimal diagram A --> B --> C, select B, click 'insert static block before', assert the resulting source is A --> NEW --> B --> C (old A-->B edge gone, B-->C untouched).",
+    "difficulty": 7
   }
 ]
