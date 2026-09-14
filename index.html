@@ -37,6 +37,22 @@
   #status { font-size: 12px; color: #666; padding: 0 12px; }
   #diagram .node[id*="_Y-"], #diagram .node[id*="_N-"], #diagram .node[id*="_ONCE-"], #diagram .node[id*="_NONE-"], #diagram .node[id*="_MULTIPLE-"] { cursor: pointer; }
   #diagram .dim { opacity: 0.15; }
+  #nodeActions { display: none; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid #ccc; }
+  /* #nodeActions.open { display: flex; } */
+  #nodeActions .removal-only { display: none; }
+  #nodeActions.removing .removal-only { display: inline-block; }
+  #diagram g.node.editor-selected rect, #diagram g.node.editor-selected path, #diagram g.node.editor-selected polygon { stroke: #1565c0 !important; stroke-width: 4px !important; }
+  #diagram g.node.editor-preview rect, #diagram g.node.editor-preview path, #diagram g.node.editor-preview polygon { stroke: #ef6c00 !important; stroke-width: 4px !important; stroke-dasharray: 6 4; }
+  /* #diagram .nodeLabel[contenteditable="true"] { outline: 2px solid #1565c0; background: #fff; } */
+  #nodeInspector { position: fixed; z-index: 20; box-sizing: border-box; width: 320px; padding: 12px 16px 16px; background: #fff; border: 1px solid #ddd; border-radius: 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); font-family: monospace; }
+  #nodeInspector h2 { margin: 0 0 12px; font-size: 16px; font-weight: normal; text-align: center; }
+  .inspector-text-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .inspector-text-row input { flex: 1; min-width: 0; padding: 6px 8px; border: 2px solid #555; border-radius: 4px; font: inherit; }
+  .inspector-grid:not([hidden]) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .inspector-grid button { padding: 6px 10px; }
+  .inspector-destination-row { display: flex; align-items: center; gap: 6px; }
+  .inspector-destination-row select { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; }
+  .span-2 { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -46,6 +62,8 @@
   <button id="openFileBtn">Open file...</button>
   <input type="file" id="openFileInput" accept=".mmd,text/plain" style="display:none">
   <button id="resetBtn">Reset</button>
+  <button id="editorUndoBtn">Undo edit</button>
+  <button id="editorRedoBtn">Redo edit</button>
   <label><input type="checkbox" id="phoneToggle"> Phone view</label>
   <select id="diagramSelect">
     <option value="" disabled selected>Diagrams</option>
@@ -61,6 +79,20 @@
     </div>
     <button id="drawerToggle" title="Show/hide editor">&#9776;</button>
   </div>
+  <div id="nodeActions" aria-live="polite">
+    <span id="selectedNode"></span>
+    <button id="addQuestionAfterBtn">Add question after</button>
+    <button id="addBlockAfterBtn">Add block after</button>
+    <button id="removeQuestionBtn">Remove question</button>
+    <button id="removeBlockBtn">Remove block</button>
+    <button id="addChoiceBtn">Add choice</button>
+    <button id="removeChoiceBtn">Remove choice</button>
+    <!-- <button id="nextRemovalPathBtn" class="removal-only">Next replacement path</button> -->
+    <!-- <button id="confirmRemoveQuestionBtn" class="removal-only">Confirm removal</button> -->
+    <!-- <button id="cancelRemoveQuestionBtn" class="removal-only">Cancel removal</button> -->
+    <!-- <button id="editorUndoBtn">Undo edit</button> -->
+    <!-- <button id="editorRedoBtn">Redo edit</button> -->
+  </div>
   <div id="output">
     <div id="phoneBar">
       <button id="undoBtn">Undo decision</button>
@@ -71,6 +103,20 @@
     <pre id="logBox"></pre>
   </div>
 </div>
+<aside id="nodeInspector" role="dialog" aria-labelledby="nodeInspectorTitle" hidden>
+  <h2 id="nodeInspectorTitle"></h2>
+  <label class="inspector-text-row"><span>Text:</span><input id="nodeTextInput" type="text"></label>
+  <div id="nodeInspectorActions" class="inspector-grid"></div>
+  <div id="nodeInspectorControls" class="inspector-grid">
+    <button id="nodeInspectorDismissBtn" class="span-2">Cancel</button>
+    <label id="destinationRow" class="inspector-destination-row span-2"><span>Destination:</span><select id="destinationSelect"></select></label>
+  </div>
+  <div id="nodeInspectorRemovalPreview" class="inspector-grid" hidden>
+    <button id="nextRemovalPathBtn">Next replacement path</button>
+    <button id="confirmRemoveQuestionBtn">Confirm removal</button>
+    <button id="cancelRemoveQuestionBtn" class="span-2">Cancel removal</button>
+  </div>
+</aside>
 
 <script src="viewer.js"></script>
 </body>
