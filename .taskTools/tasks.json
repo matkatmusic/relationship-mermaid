@@ -767,5 +767,32 @@
     "hasTests": true,
     "tests": "For each editor button handler, add a node:test case in tests/index.html.test.ts (or a new tests/*.test.ts file following its load-fixture-then-evaluate-in-page pattern) shaped as: 1) Arrange: load diagrams/say-something-or-let-it-go.mmd as the starting diagram state via the existing resetEditorFixture/selectEditorNode helpers. 2) Act: call the handler function directly in-page (e.g. window.addChoice(), window.removeBlock()) — not a simulated button click. 3) Assert: the resulting diagram state (node list / mermaid source, via assertEditorSourceIsSavedAndValid or equivalent) matches what that action should produce. Example: test('removeBlock deletes the selected block and reconnects its neighbors', () => { resetEditorFixture(); selectEditorNode('someBlockId'); window.removeBlock(); assert the block is gone and upstream/downstream nodes are reconnected; }); removeBlock() currently has no coverage at all and should be included.",
     "difficulty": 4
+  },
+  {
+    "taskNumber": 30,
+    "version": "d2fd89861c96c4d7c9c342d70a8324330d5c7224",
+    "title": "Fix .inspector-destination-row CSS so decision nodes actually hide the destination dropdown",
+    "userDescription": "Visual change: If selected node's type is 'decision', do not show the 'destination' dropdown.",
+    "goal": [
+      "- Selecting a decision (question) node shows no 'Destination:' label or dropdown in the rendered widget, not just the `hidden` DOM property",
+      "- Selecting a choice or static block node still shows the destination label and a populated dropdown, same as today",
+      "- `npm test` passes"
+    ],
+    "notInScope": [
+      "- Other places where a CSS rule might override the `[hidden]` attribute are not audited or fixed here",
+      "- The destination dropdown's option list contents/ordering for non-decision nodes are unchanged"
+    ],
+    "problemSolvedByTask": "Editor UI is signaling to the user that the user can select the destination that a decision node can lead to, and the user should not be able to.",
+    "description": "Root cause confirmed: in index.html, the `.inspector-destination-row { display: flex; ... }` rule has no `:not([hidden])` guard, unlike the sibling rule `.inspector-grid:not([hidden]) { display: grid; ... }` a few lines above it, which already establishes the pattern for this exact problem. viewer.ts correctly sets `destinationRow.hidden = !hasDestination` for decision/question nodes, but the unguarded CSS `display: flex` beats the `[hidden]` attribute's UA-stylesheet `display: none`, so the row stays visible with an empty select. Fix is to add `:not([hidden])` to the `.inspector-destination-row` selector, mirroring `.inspector-grid`.",
+    "modifiableFiles": [
+      "index.html"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "select a choice node, assert the widget's html includes the destination label and non-empty menu. repeat the test using 'static node'.  select a question node, assert the widget's html does not have the destination label or menu component.",
+    "difficulty": 2
   }
 ]
