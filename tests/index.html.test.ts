@@ -1022,6 +1022,7 @@ test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks'
   await clickNode('Q1');
   assert.deepEqual(await inspectorActions(), [
     { action: 'remove', text: 'Remove', spanTwoColumns: false },
+    { action: 'add-choice', text: 'Add choice', spanTwoColumns: false },
     { action: 'remove-choices', text: 'Remove choices', spanTwoColumns: false },
   ]);
 });
@@ -1177,4 +1178,62 @@ test('test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_
   assert.deepEqual(await inspectorFocus(), { activeId: 'destinationSelect', selectedId: 'Q_NEW_1_NEW' });
   assert.equal(await evaluate('editorHistory.length'), historyBeforeText + 1);
   await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  Q{"Q"} -- Yes --> Y["Y"]\n  Q --> Q_A["A"]\n  Q_A --> End["End"]');
+  await clickNode('Q');
+  const beforeCount = await evaluate('editorGraph().edges.filter(e => e.from === "Q").length');
+  await clickInspectorAction('add-choice');
+  const source = await evaluate('codeBox.value');
+  // Step: a brand-new terminal choice is appended, growing Q's branch count by one.
+  assert.ok(source.includes('Q_NEW["New choice"]'));
+  assert.ok(source.includes('Q --> Q_NEW'));
+  assert.ok(!source.includes('Q_NEW -->'));
+  // Step: the existing labelled edge and the existing explicit choice are both untouched.
+  assert.ok(source.includes('Q{"Q"} -- Yes --> Y["Y"]'));
+  assert.ok(source.includes('Q_A["A"]'));
+  assert.ok(source.includes('Q_A --> End'));
+  const afterCount = await evaluate('editorGraph().edges.filter(e => e.from === "Q").length');
+  assert.equal(afterCount, beforeCount + 1);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_add_choice_on_inspector_moves_focus_to_the_new_choices_destination', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  Q{"Q"} -- Yes --> Y["Y"]');
+  await clickNode('Q');
+  const historyBefore = await evaluate('editorHistory.length');
+  await clickInspectorAction('add-choice');
+  // Step: the inspector now shows the new choice block, with its Destination select focused.
+  const state = await inspectorState();
+  assert.equal(state.hidden, false);
+  assert.equal(state.title, 'choice block');
+  assert.equal(state.text, 'New choice');
+  assert.deepEqual(await inspectorFocus(), { activeId: 'destinationSelect', selectedId: 'Q_NEW' });
+  assert.equal((await destinationState()).value, '');
+  // Step: the add-choice commit is exactly one new undo entry.
+  assert.equal(await evaluate('editorHistory.length'), historyBefore + 1);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_all_committed_diagrams_validate_with_mermaid', async () => {
+  // Step: every diagram known to the server parses cleanly with Mermaid.
+  const names: string[] = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams`).then((r) => r.json());
+  for (const name of names) {
+    const source = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${encodeURIComponent(name)}`).then((r) => r.text());
+    await evaluate(`mermaid.parse(${JSON.stringify(source)})`);
+  }
+});
+
+test('test_viewer_js_build_matches_committed_bundle', async () => {
+  // Step: rebuild viewer.js from viewer.ts into a fresh temp file.
+  const outDir = mkdtempSync(join(tmpdir(), 'viewer-build-'));
+  const outFile = join(outDir, 'viewer.js');
+  spawnSync('bun', ['build', 'viewer.ts', '--outfile', outFile], { stdio: 'inherit' });
+  const fresh = readFileSync(outFile, 'utf8');
+  const committed = readFileSync(join(process.cwd(), 'viewer.js'), 'utf8');
+  // Step: the freshly rebuilt bundle is byte-identical to the committed viewer.js.
+  assert.equal(fresh, committed);
 });
