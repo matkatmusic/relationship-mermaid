@@ -1008,17 +1008,91 @@ test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks'
   await resetEditorFixture();
   await clickNode('LetGo');
   assert.deepEqual(await inspectorActions(), [
-    { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: true },
+    { action: 'remove', text: 'Remove', spanTwoColumns: false },
+    { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: false },
   ]);
   await selectEditorNode('Q1');
   await runEditorAction('addChoice');
   await clickNode('Q1_NO');
   assert.deepEqual(await inspectorActions(), [
+    { action: 'remove', text: 'Remove', spanTwoColumns: false },
     { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: false },
     { action: 'add-static-after', text: 'add static block after', spanTwoColumns: false },
   ]);
   await clickNode('Q1');
-  assert.deepEqual(await inspectorActions(), []);
+  assert.deepEqual(await inspectorActions(), [
+    { action: 'remove', text: 'Remove', spanTwoColumns: false },
+    { action: 'remove-choices', text: 'Remove choices', spanTwoColumns: false },
+  ]);
+});
+
+test('test_inspector_remove_button_dispatches_removal_by_node_kind', async () => {
+  await resetEditorFixture();
+  // Step: Remove on a static block reconnects every predecessor to every successor.
+  await clickNode('LetGo');
+  await clickInspectorAction('remove');
+  let source = await evaluate('codeBox.value');
+  assert.ok(!source.includes('LetGo'));
+  assert.equal((await inspectorState()).hidden, true);
+  await assertEditorSourceIsSavedAndValid();
+
+  // Step: Remove on an explicit choice node orphans its downstream path.
+  await resetEditorFixture();
+  await selectEditorNode('Q1');
+  await runEditorAction('addChoice');
+  await clickNode('Q1_NO');
+  await clickInspectorAction('remove');
+  source = await evaluate('codeBox.value');
+  assert.ok(!source.includes('Q1_NO'));
+  assert.ok(source.includes('LetGo["Let it go"]'));
+  assert.equal((await inspectorState()).hidden, true);
+  await assertEditorSourceIsSavedAndValid();
+
+  // Step: Remove on a Decision enters the replacement-path preview instead of committing immediately.
+  await resetEditorFixture();
+  await clickNode('Q1');
+  await clickInspectorAction('remove');
+  const preview = await evaluate(`JSON.stringify({
+    previewHidden: document.getElementById('nodeInspectorRemovalPreview').hidden,
+    actionsHidden: document.getElementById('nodeInspectorActions').hidden,
+  })`).then(JSON.parse);
+  assert.equal(preview.previewHidden, false);
+  assert.equal(preview.actionsHidden, true);
+  await evaluate("document.getElementById('cancelRemoveQuestionBtn').click()");
+  assert.equal((await inspectorState()).hidden, true);
+});
+
+test('test_inspector_remove_choices_button_orphans_every_outgoing_branch', async () => {
+  await resetEditorFixture();
+  // Step: normalize Q1's "No" branch into an explicit choice node, leaving "Yes" as a labelled edge.
+  await selectEditorNode('Q1');
+  await runEditorAction('addChoice');
+  await assertEditorSourceIsSavedAndValid();
+  // Step: select Q1 and use the inspector's Remove choices action.
+  await clickNode('Q1');
+  await clickInspectorAction('remove-choices');
+  const source = await evaluate('codeBox.value');
+  // Step: both branches are gone from Q1, including the explicit choice node.
+  assert.ok(!source.includes('Q1 --> Q1_NO'));
+  assert.ok(!source.includes('Q1_NO["No"]'));
+  assert.ok(!source.includes('Q1 -- Yes --> Q2'));
+  // Step: the orphaned downstream nodes remain in the source.
+  assert.ok(source.includes('LetGo["Let it go"]'));
+  assert.ok(source.includes('Q2{"Can they be calm?"}'));
+  // Step: removing all choices closed the inspector.
+  assert.equal((await inspectorState()).hidden, true);
+  await assertEditorSourceIsSavedAndValid();
+
+  // Step: an immediate choice node shared by another node's incoming edge loses that edge too, while the other node remains.
+  await setEditorSource('flowchart TD\n  Q{"Q"}\n  Q --> Q_X\n  Q_X["X"]\n  Q_X --> Down["Down"]\n  Other["Other"] --> Q_X');
+  await clickNode('Q');
+  await clickInspectorAction('remove-choices');
+  const sharedSource = await evaluate('codeBox.value');
+  assert.ok(!sharedSource.includes('Q_X'));
+  assert.ok(sharedSource.includes('Q{"Q"}'));
+  assert.ok(sharedSource.includes('Down["Down"]'));
+  assert.ok(sharedSource.includes('Other["Other"]'));
+  await assertEditorSourceIsSavedAndValid();
 });
 
 test('test_new_static_button_and_destination_option_have_identical_terminal_orphan_results', async () => {
