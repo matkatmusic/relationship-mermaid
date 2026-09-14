@@ -905,12 +905,27 @@ async function chooseDestination(value: string) {
   await evaluate('window.editorActionPromise');
 }
 
+async function clickInspectorAction(action: string) {
+  await evaluate(`document.querySelector('[data-action="${action}"]').click()`);
+  await evaluate('window.editorActionPromise');
+}
+
+async function inspectorActions() {
+  return evaluate(`JSON.stringify(Array.from(document.querySelectorAll('#nodeInspectorActions button')).map(button => ({ action: button.dataset.action, text: button.textContent, spanTwoColumns: button.classList.contains('span-2') })))`).then(JSON.parse);
+}
+
+async function inspectorFocus() {
+  return evaluate(`JSON.stringify({ activeId: document.activeElement?.id, selectedId: document.getElementById('selectedNode').textContent })`).then(JSON.parse);
+}
+
 test("test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order", async () => {
   await resetEditorFixture();
   await setEditorSource('flowchart TD\n  Start["Start"] --> Decision{"Decide"}\n  Decision --> Decision_Y["Yes"]\n  Decision_Y --> Later["Later"]\n  Later --> Decision');
   await clickNode('Decision_Y');
   assert.deepEqual((await destinationState()).options, [
     { value: '', text: 'Terminal' },
+    { value: 'new-static', text: 'New static block' },
+    { value: 'new-decision', text: 'New Decision block' },
     { value: 'Start', text: 'Start (Start)' },
     { value: 'Decision', text: 'Decide (Decision)' },
     { value: 'Later', text: 'Later (Later)' },
@@ -986,5 +1001,106 @@ test("test_dirty_text_then_destination_creates_two_ordered_undo_entries", async 
   await evaluate('window.undoEditorAction(); window.editorActionPromise');
   source = await evaluate('codeBox.value');
   assert.ok(source.includes('A["A"] --> B["B"]'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks', async () => {
+  await resetEditorFixture();
+  await clickNode('LetGo');
+  assert.deepEqual(await inspectorActions(), [
+    { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: true },
+  ]);
+  await selectEditorNode('Q1');
+  await runEditorAction('addChoice');
+  await clickNode('Q1_NO');
+  assert.deepEqual(await inspectorActions(), [
+    { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: false },
+    { action: 'add-static-after', text: 'add static block after', spanTwoColumns: false },
+  ]);
+  await clickNode('Q1');
+  assert.deepEqual(await inspectorActions(), []);
+});
+
+test('test_new_static_button_and_destination_option_have_identical_terminal_orphan_results', async () => {
+  const fixture = 'flowchart TD\n  Q{"Q"} --> Q_A["A"]\n  Q_A --> B["B"]\n  B --> C["C"]';
+  await resetEditorFixture();
+  await setEditorSource(fixture);
+  await clickNode('Q_A');
+  const buttonHistoryLength = await evaluate('editorHistory.length');
+  await clickInspectorAction('add-static-after');
+  const buttonSource = await evaluate('codeBox.value');
+  assert.ok(buttonSource.includes('Q_A --> B_NEW_1'));
+  assert.ok(buttonSource.includes('B_NEW_1["New static block"]'));
+  assert.ok(!buttonSource.includes('Q_A["A"] --> B["B"]'));
+  assert.ok(buttonSource.includes('B --> C["C"]'));
+  assert.equal((await inspectorState()).text, 'New static block');
+  assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'B_NEW_1' });
+  assert.equal(await evaluate('editorHistory.length'), buttonHistoryLength + 1);
+  await assertEditorSourceIsSavedAndValid();
+
+  await resetEditorFixture();
+  await setEditorSource(fixture);
+  await clickNode('Q_A');
+  const menuHistoryLength = await evaluate('editorHistory.length');
+  await chooseDestination('new-static');
+  assert.equal(await evaluate('codeBox.value'), buttonSource);
+  assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'B_NEW_1' });
+  assert.equal(await evaluate('editorHistory.length'), menuHistoryLength + 1);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_new_static_text_enter_keeps_selection_and_focuses_destination', async () => {
+  await resetEditorFixture();
+  await clickNode('LetGo');
+  await chooseDestination('new-static');
+  await evaluate(`(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Follow up'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
+  await evaluate('window.editorActionPromise');
+  assert.ok((await evaluate('codeBox.value')).includes('B_NEW_1["Follow up"]'));
+  assert.deepEqual(await inspectorFocus(), { activeId: 'destinationSelect', selectedId: 'B_NEW_1' });
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus', async () => {
+  const fixture = 'flowchart TD\n  A["A"] --> B["B"]\n  B --> C["C"]';
+  await resetEditorFixture();
+  await setEditorSource(fixture);
+  await clickNode('A');
+  const buttonHistoryLength = await evaluate('editorHistory.length');
+  await clickInspectorAction('add-decision-after');
+  const buttonSource = await evaluate('codeBox.value');
+  assert.ok(buttonSource.includes('A --> Q_NEW_1'));
+  assert.ok(buttonSource.includes('Q_NEW_1{"New Decision"}'));
+  assert.ok(buttonSource.includes('Q_NEW_1_NEW["New choice"]'));
+  assert.ok(buttonSource.includes('Q_NEW_1 --> Q_NEW_1_NEW'));
+  assert.ok(!buttonSource.includes('Q_NEW_1_NEW -->'));
+  assert.ok(buttonSource.includes('B --> C["C"]'));
+  assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'Q_NEW_1' });
+  assert.equal(await evaluate('editorHistory.length'), buttonHistoryLength + 1);
+  await assertEditorSourceIsSavedAndValid();
+
+  await resetEditorFixture();
+  await setEditorSource(fixture);
+  await clickNode('A');
+  await chooseDestination('new-decision');
+  assert.equal(await evaluate('codeBox.value'), buttonSource);
+  assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'Q_NEW_1' });
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_destination', async () => {
+  await resetEditorFixture();
+  await clickNode('LetGo');
+  await chooseDestination('new-decision');
+  const historyBeforeText = await evaluate('editorHistory.length');
+  await evaluate(`(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Decide next'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
+  await evaluate('window.editorActionPromise');
+  const source = await evaluate('codeBox.value');
+  assert.ok(source.includes('Q_NEW_1{"Decide next"}'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_NEW_1_NEW'));
+  assert.ok(!source.includes('Q_NEW_1_NEW -->'));
+  assert.equal((await inspectorState()).title, 'choice block');
+  assert.equal((await destinationState()).value, '');
+  assert.deepEqual(await inspectorFocus(), { activeId: 'destinationSelect', selectedId: 'Q_NEW_1_NEW' });
+  assert.equal(await evaluate('editorHistory.length'), historyBeforeText + 1);
   await assertEditorSourceIsSavedAndValid();
 });
