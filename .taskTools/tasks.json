@@ -738,5 +738,34 @@
         "reason": "Pages has no server, so the viewer fallback must be in place before the page can work there"
       }
     ]
+  },
+  {
+    "taskNumber": 29,
+    "version": "7bbbf2d2cfdc84ff14a3954c21e68eb8e20f5ab6",
+    "title": "Unit tests for each editor button's handler: starting diagram state, call handler, assert resulting state",
+    "userDescription": "write tests to cover the expected behavior of each button click in the editor widget, expressed as: `starting diagram state, button click event occurs, asserting expected diagram state.",
+    "goal": [
+      "- Each editor button handler (addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, advanceRemovalPreview, confirmQuestionRemoval, cancelQuestionRemoval, undoEditorAction, redoEditorAction) has a passing test",
+      "- `npm test` passes with no regressions in the existing suite",
+      "- New tests live under tests/, following the existing file conventions",
+      "- Tests use diagrams/say-something-or-let-it-go.mmd as the starting diagram state"
+    ],
+    "notInScope": [
+      "- DOM/e2e click simulation (document.getElementById(id).click()) is out of scope; tests call the handler function directly",
+      "- Non-button triggers (keyboard shortcuts, drag-and-drop) are out of scope",
+      "- Fixing any bug a test uncovers is a separate task, not bundled into this one"
+    ],
+    "problemSolvedByTask": "No regression safety net",
+    "description": "The editor widget is the node-editing button set wired in viewer.ts (lines ~1293-1303): addQuestionAfterBtn, addBlockAfterBtn, removeQuestionBtn, removeBlockBtn, addChoiceBtn, removeChoiceBtn (in index.html's #nodeActions panel), nextRemovalPathBtn, confirmRemoveQuestionBtn, cancelRemoveQuestionBtn (in #nodeInspectorRemovalPreview), and editorUndoBtn/editorRedoBtn (header). Each is bound via addEventListener('click', ...) to addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, advanceRemovalPreview, confirmQuestionRemoval, cancelQuestionRemoval, undoEditorAction, and redoEditorAction respectively. tests/index.html.test.ts already exercises most of these via its runEditorAction() helper (which calls window.<fn>() directly), but removeBlock() has no test coverage at all.",
+    "modifiableFiles": [
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "For each editor button handler, add a node:test case in tests/index.html.test.ts (or a new tests/*.test.ts file following its load-fixture-then-evaluate-in-page pattern) shaped as: 1) Arrange: load diagrams/say-something-or-let-it-go.mmd as the starting diagram state via the existing resetEditorFixture/selectEditorNode helpers. 2) Act: call the handler function directly in-page (e.g. window.addChoice(), window.removeBlock()) — not a simulated button click. 3) Assert: the resulting diagram state (node list / mermaid source, via assertEditorSourceIsSavedAndValid or equivalent) matches what that action should produce. Example: test('removeBlock deletes the selected block and reconnects its neighbors', () => { resetEditorFixture(); selectEditorNode('someBlockId'); window.removeBlock(); assert the block is gone and upstream/downstream nodes are reconnected; }); removeBlock() currently has no coverage at all and should be included.",
+    "difficulty": 4
   }
 ]
