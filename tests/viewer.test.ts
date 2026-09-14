@@ -16,7 +16,7 @@ test("bun build viewer.ts succeeds and includes expected DOM ids", () => {
 });
 
 test("bun build viewer.ts keeps the real destination as an option even when its kind is choice", () => {
-  // Scenario: the destination-options loop in renderNodeInspector must keep the node's real outgoing destination as an <option> even when that destination's kind === 'choice'. The fix names the skip guard isHiddenChoice (choice AND not the real destination); before the fix that identifier does not exist, so its presence in the bundle proves the skip is now conditional.
+  // Checks the bundle for isHiddenChoice, the guard that keeps a real choice destination listed.
   // ponytail: bundle-string check; the behavioral destinationSelect.value assertion belongs in the CDP harness at tests/index.html.test.ts, which this task does not own.
   const outfile = join(tmpdir(), `viewer-destination-${Date.now()}.js`);
   const result = spawnSync("bun", ["build", "viewer.ts", "--outfile", outfile]);

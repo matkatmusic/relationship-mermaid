@@ -882,12 +882,14 @@ function renderNodeInspector() {
     destinationSelect.add(new Option("Terminal", ""));
     destinationSelect.add(new Option("New static block", NEW_STATIC_DESTINATION));
     destinationSelect.add(new Option("New Decision block", NEW_DECISION_DESTINATION));
+    const destination = outgoingDestination(node.id, graph);
     for (const candidate of graph.nodes.values()) {
-      if (candidate.id === node.id || candidate.kind === "choice")
+      const isSelf = candidate.id === node.id;
+      const isHiddenChoice = candidate.kind === "choice" && candidate.id !== destination;
+      if (isSelf || isHiddenChoice)
         continue;
       destinationSelect.add(new Option(`${candidate.label} (${candidate.id})`, candidate.id));
     }
-    const destination = outgoingDestination(node.id, graph);
     destinationSelect.value = destination ?? "";
     nodeInspectorDismissBtn.textContent = destination ? "Cancel" : "Close";
   } else {
