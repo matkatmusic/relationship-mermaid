@@ -814,7 +814,7 @@ function renderNodeInspector() {
   }
   const actions = [inspectorActionButton("remove", "Remove")];
   if (node.kind === "question")
-    actions.push(inspectorActionButton("remove-choices", "Remove choices"));
+    actions.push(inspectorActionButton("add-choice", "Add choice"), inspectorActionButton("remove-choices", "Remove choices"));
   else if (node.kind === "block")
     actions.push(inspectorActionButton("add-decision-after", "add Decision block after"));
   else if (node.kind === "choice")
@@ -886,6 +886,25 @@ async function commitNewDecisionAfter(sourceId, graph) {
   advanceAfterDecisionText = { decisionId, choiceId: newChoiceId };
   selectEditorNode(decisionId);
   focusInspectorText();
+}
+async function commitAddChoiceOnDecision(questionId, graph) {
+  const removedLineIndexes = new Set;
+  let suffix = "NEW";
+  let n = 1;
+  while (graph.nodes.has(choiceId(questionId, suffix)))
+    suffix = "NEW" + ++n;
+  const cid = choiceId(questionId, suffix);
+  const newLines = [`  ${cid}["New choice"]`, `  ${questionId} --> ${cid}`];
+  await commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines));
+  selectEditorNode(cid);
+  focusInspectorDestination();
+}
+function addChoiceOnDecision() {
+  if (!selectedEditorNodeId)
+    return;
+  const graph = editorGraph();
+  const questionId = selectedEditorNodeId;
+  setEditorActionPromise(commitAddChoiceOnDecision(questionId, graph));
 }
 function commitNodeText(id = selectedEditorNodeId, text = nodeTextInput.value.trim()) {
   if (!id)
@@ -995,6 +1014,8 @@ nodeInspectorActions.addEventListener("click", (event) => {
     applyDestination(NEW_STATIC_DESTINATION);
   else if (action === "add-decision-after")
     applyDestination(NEW_DECISION_DESTINATION);
+  else if (action === "add-choice")
+    addChoiceOnDecision();
   else if (action === "remove") {
     const kind = editorGraph().nodes.get(selectedEditorNodeId ?? "")?.kind;
     if (kind === "question")
