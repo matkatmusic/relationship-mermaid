@@ -882,5 +882,35 @@
     "hasTests": true,
     "tests": "Select a node and scroll the output panel, trigger a save, assert the saved .mmd ends with a %%%%==== block containing correct JSON; reload the file and assert the same node gets re-selected and the panel scrolls back to the same position.",
     "difficulty": 5
+  },
+  {
+    "taskNumber": 34,
+    "version": "fa4a91a1c78be9bbb5f9cb1dcf47252c8470c608",
+    "title": "Add 'Insert static block after' inspector action that correctly splices for choice and block nodes",
+    "userDescription": "Feature: new button 'Insert static block after' for choice blocks and static blocks.  It should splice into the graph. Example: Graph is `A --> B --> C`. I select `B`. I choose `Insert static block after`. I expect: `A --> B --> NEW --> C`.",
+    "goal": [
+      "- Selecting a static or choice node and choosing 'insert static block after' produces source --> NEW --> old-destination, with the old outgoing edge redirected to NEW rather than dropped",
+      "- The action is available in the inspector for both node.kind === 'choice' and node.kind === 'block'",
+      "- Inserting after a terminal node (no existing destination) just adds NEW as the new destination, same as today's 'add static block after' behavior for that case",
+      "- `npm test` passes"
+    ],
+    "notInScope": [
+      "- The existing legacy 'add-static-after' button, applyDestination(NEW_STATIC_DESTINATION), and commitNewStaticAfter are left untouched — this is a new, separate action, not a fix to the old one",
+      "- A parallel 'insert decision after' action is a separate task",
+      "- Task #32's shared single-line `A --> B --> C` chained-edge parser bug — this task's tests should not rely on that being fixed"
+    ],
+    "problemSolvedByTask": "No way to insert a block after mid-chain without losing the tail",
+    "description": "commitNewStaticAfter (viewer.ts ~line 1158) creates a new static block and calls replaceOutgoing(sourceId, staticId, graph), which only repoints source's outgoing edge to the new block and drops the old destination — root cause of why the existing 'add-static-after' silently orphans the old successor. insertStaticBefore (viewer.ts ~line 756) is the mirror-direction reference: it captures predecessor edges, rewrites them to point at the new node, then adds one edge from the new node to the originally selected node. A new commit function (e.g. commitInsertStaticAfter) should follow that same shape in reverse: capture source's current outgoing destination via outgoingDestination(sourceId, graph) before rewriting, call replaceOutgoing(sourceId, staticId, graph) to point source at the new block, then append an edge from staticId to the captured old destination only if one existed. Wire a new 'insert-static-after' action into nodeInspectorActions for both node.kind === 'choice' (~line 1101-1105) and node.kind === 'block' (~line 1095-1100), and add its handler in the nodeInspectorActions click listener (~line 1306-1330) alongside the existing insert-static-before/insert-decision-before handlers.",
+    "modifiableFiles": [
+      "viewer.ts",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Build A --> B --> C, select B, click 'insert static block after', assert the result is A --> B --> NEW --> C (old B-->C edge gone, A-->B untouched). Repeat selecting a choice node.",
+    "difficulty": 5
   }
 ]
