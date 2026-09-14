@@ -34,6 +34,11 @@ const nodeTextInput = document.getElementById('nodeTextInput') as HTMLInputEleme
 const nodeInspectorDismissBtn = document.getElementById('nodeInspectorDismissBtn')!;
 const destinationRow = document.getElementById('destinationRow')!;
 const destinationSelect = document.getElementById('destinationSelect') as HTMLSelectElement;
+const nodeInspectorActions = document.getElementById('nodeInspectorActions')!;
+const NEW_STATIC_DESTINATION = 'new-static';
+const NEW_DECISION_DESTINATION = 'new-decision';
+let advanceAfterDecisionText: { decisionId: string; choiceId: string } | null = null;
+let focusDestinationAfterTextId: string | null = null;
 let pendingRemoval: PendingRemoval | null = null;
 let editorHistory: string[] = [codeBox.value];
 let editorHistoryIndex = 0;
@@ -653,6 +658,10 @@ function runEditorAction(action: () => Promise<void>) {
 
 function selectEditorNode(id: string | null) {
   selectedEditorNodeId = id;
+  if (advanceAfterDecisionText?.decisionId !== id)
+    advanceAfterDecisionText = null;
+  if (focusDestinationAfterTextId !== id)
+    focusDestinationAfterTextId = null;
   pendingRemoval = null;
   nodeActions.classList.remove('removing');
   nodeActions.classList.toggle('open', !!id);
@@ -956,6 +965,15 @@ function replaceDeclarationInLine(line: string, id: string, newToken: string) {
 //   label.addEventListener('blur', commit, { once: true });
 // }
 
+function inspectorActionButton(action: string, label: string, spanTwoColumns = false) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.action = action;
+  button.textContent = label;
+  button.classList.toggle('span-2', spanTwoColumns);
+  return button;
+}
+
 function renderNodeInspector() {
   const graph = editorGraph();
   const node = graph.nodes.get(selectedEditorNodeId ?? '');
@@ -964,11 +982,22 @@ function renderNodeInspector() {
     return;
   nodeInspectorTitle.textContent = INSPECTOR_TITLES[node.kind];
   nodeTextInput.value = node.label;
+  const actions: HTMLButtonElement[] = [];
+  if (node.kind === 'block')
+    actions.push(inspectorActionButton('add-decision-after', 'add Decision block after', true));
+  else if (node.kind === 'choice')
+    actions.push(
+      inspectorActionButton('add-decision-after', 'add Decision block after'),
+      inspectorActionButton('add-static-after', 'add static block after'),
+    );
+  nodeInspectorActions.replaceChildren(...actions);
   const hasDestination = node.kind !== 'question';
   destinationRow.hidden = !hasDestination;
   destinationSelect.replaceChildren();
   if (hasDestination) {
     destinationSelect.add(new Option('Terminal', ''));
+    destinationSelect.add(new Option('New static block', NEW_STATIC_DESTINATION));
+    destinationSelect.add(new Option('New Decision block', NEW_DECISION_DESTINATION));
     for (const candidate of graph.nodes.values()) {
       if (candidate.id === node.id || candidate.kind === 'choice')
         continue;
@@ -1004,22 +1033,66 @@ function positionNodeInspector() {
   nodeInspector.style.top = Math.max(output.top, Math.min(node.top, output.bottom - card.height)) + 'px';
 }
 
+function focusInspectorText() {
+  nodeTextInput.focus();
+  nodeTextInput.select();
+}
+
+function focusInspectorDestination() {
+  destinationSelect.focus();
+}
+
+async function commitNewStaticAfter(sourceId: string, graph: EditorGraph) {
+  const staticId = nextEditorId('B_NEW', graph);
+  const source = `${replaceOutgoing(sourceId, staticId, graph)}\n  ${staticId}["New static block"]`;
+  await commitEditorSource(source);
+  focusDestinationAfterTextId = staticId;
+  selectEditorNode(staticId);
+  focusInspectorText();
+}
+
+async function commitNewDecisionAfter(sourceId: string, graph: EditorGraph) {
+  const decisionId = nextEditorId('Q_NEW', graph);
+  const newChoiceId = choiceId(decisionId, 'NEW');
+  const source = `${replaceOutgoing(sourceId, decisionId, graph)}\n  ${decisionId}{"New Decision"}\n  ${newChoiceId}["New choice"]\n  ${decisionId} --> ${newChoiceId}`;
+  await commitEditorSource(source);
+  advanceAfterDecisionText = { decisionId, choiceId: newChoiceId };
+  selectEditorNode(decisionId);
+  focusInspectorText();
+}
+
 function commitNodeText(id = selectedEditorNodeId, text = nodeTextInput.value.trim()) {
   if (!id)
     return;
+  const advance = advanceAfterDecisionText?.decisionId === id ? advanceAfterDecisionText : null;
+  const focusDestination = focusDestinationAfterTextId === id;
+  if (advance)
+    advanceAfterDecisionText = null;
+  if (focusDestination)
+    focusDestinationAfterTextId = null;
   enqueueEditorAction(async () => {
     const graph = editorGraph();
     const node = graph.nodes.get(id);
-    if (!node || node.label === text)
+    if (!node)
       return;
-    const newToken = node.kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
-    const lines = graph.lines.slice();
-    lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
-    await commitEditorSource(lines.join('\n'));
+    if (node.label !== text) {
+      const newToken = node.kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
+      const lines = graph.lines.slice();
+      lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
+      await commitEditorSource(lines.join('\n'));
+    }
+    if (advance) {
+      selectEditorNode(advance.choiceId);
+      focusInspectorDestination();
+    }
+    else if (focusDestination) {
+      selectEditorNode(id);
+      focusInspectorDestination();
+    }
   });
 }
 
-function commitDestination() {
+function applyDestination(destination: string) {
   const id = selectedEditorNodeId;
   if (!id)
     return;
@@ -1027,19 +1100,30 @@ function commitDestination() {
   const node = graph.nodes.get(id);
   if (!node || node.kind === 'question')
     return;
-  const destination = destinationSelect.value;
-  if (outgoingDestination(id, graph) === (destination || undefined))
+  const createsStatic = destination === NEW_STATIC_DESTINATION;
+  const createsDecision = destination === NEW_DECISION_DESTINATION;
+  if (!createsStatic && !createsDecision && outgoingDestination(id, graph) === (destination || undefined))
     return;
   const text = nodeTextInput.value.trim();
   if (text !== node.label)
     commitNodeText(id, text);
   enqueueEditorAction(async () => {
     const currentGraph = editorGraph();
-    const source = destination
-      ? replaceOutgoing(id, destination, currentGraph)
-      : removeOutgoing(id, currentGraph);
-    await commitEditorSource(source);
+    if (createsStatic)
+      await commitNewStaticAfter(id, currentGraph);
+    else if (createsDecision)
+      await commitNewDecisionAfter(id, currentGraph);
+    else {
+      const source = destination
+        ? replaceOutgoing(id, destination, currentGraph)
+        : removeOutgoing(id, currentGraph);
+      await commitEditorSource(source);
+    }
   });
+}
+
+function commitDestination() {
+  applyDestination(destinationSelect.value);
 }
 
 outputBox.addEventListener('click', (event) => {
@@ -1085,6 +1169,14 @@ document.getElementById('editorUndoBtn')!.addEventListener('click', undoEditorAc
 document.getElementById('editorRedoBtn')!.addEventListener('click', redoEditorAction);
 document.getElementById('nodeInspectorDismissBtn')!.addEventListener('click', () => selectEditorNode(null));
 destinationSelect.addEventListener('change', commitDestination);
+nodeInspectorActions.addEventListener('click', (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
+  const action = button?.dataset.action;
+  if (action === 'add-static-after')
+    applyDestination(NEW_STATIC_DESTINATION);
+  else if (action === 'add-decision-after')
+    applyDestination(NEW_DECISION_DESTINATION);
+});
 nodeTextInput.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter')
     return;
