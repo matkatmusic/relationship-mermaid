@@ -31,6 +31,9 @@ let selectedEditorNodeId: string | null = null;
 const nodeInspector = document.getElementById('nodeInspector')!;
 const nodeInspectorTitle = document.getElementById('nodeInspectorTitle')!;
 const nodeTextInput = document.getElementById('nodeTextInput') as HTMLInputElement;
+const nodeInspectorDismissBtn = document.getElementById('nodeInspectorDismissBtn')!;
+const destinationRow = document.getElementById('destinationRow')!;
+const destinationSelect = document.getElementById('destinationSelect') as HTMLSelectElement;
 let pendingRemoval: PendingRemoval | null = null;
 let editorHistory: string[] = [codeBox.value];
 let editorHistoryIndex = 0;
@@ -587,6 +590,39 @@ function choiceId(questionId: string, suffix: string) {
   return `${questionId}_${suffix}`;
 }
 
+function outgoingDestination(id: string, graph: EditorGraph) {
+  return graph.edges.find(edge => edge.from === id)?.to;
+}
+
+function sourceWithOutgoingChanged(id: string, destination: string | undefined, graph: EditorGraph) {
+  const removedLineIndexes = new Set<number>();
+  const restoredIds = new Set<string>();
+  const newLines: string[] = [];
+  for (const edge of graph.edges) {
+    if (edge.from !== id)
+      continue;
+    removedLineIndexes.add(edge.lineIndex);
+    for (const endpointId of [edge.from, edge.to]) {
+      const endpoint = graph.nodes.get(endpointId);
+      if (endpoint && endpoint.lineIndex === edge.lineIndex && !restoredIds.has(endpointId)) {
+        restoredIds.add(endpointId);
+        newLines.push(`  ${endpointId}${declarationSuffixOf(endpoint)}`);
+      }
+    }
+  }
+  if (destination)
+    newLines.push(`  ${id} --> ${destination}`);
+  return sourceWithLinesReplaced(graph, removedLineIndexes, newLines);
+}
+
+function replaceOutgoing(id: string, destination: string, graph: EditorGraph) {
+  return sourceWithOutgoingChanged(id, destination, graph);
+}
+
+function removeOutgoing(id: string, graph: EditorGraph) {
+  return sourceWithOutgoingChanged(id, undefined, graph);
+}
+
 function preserveInlineDecl(edge: EditorEdge, keepEndpointId: string, graph: EditorGraph, newLines: string[]) {
   const node = graph.nodes.get(keepEndpointId);
   if (node && node.lineIndex === edge.lineIndex)
@@ -607,8 +643,12 @@ async function commitEditorSource(source: string, options?: { recordHistory?: bo
   selectEditorNode(null);
 }
 
+function enqueueEditorAction(action: () => Promise<void>) {
+  setEditorActionPromise(editorActionPromise.then(action));
+}
+
 function runEditorAction(action: () => Promise<void>) {
-  setEditorActionPromise(action());
+  enqueueEditorAction(action);
 }
 
 function selectEditorNode(id: string | null) {
@@ -924,6 +964,23 @@ function renderNodeInspector() {
     return;
   nodeInspectorTitle.textContent = INSPECTOR_TITLES[node.kind];
   nodeTextInput.value = node.label;
+  const hasDestination = node.kind !== 'question';
+  destinationRow.hidden = !hasDestination;
+  destinationSelect.replaceChildren();
+  if (hasDestination) {
+    destinationSelect.add(new Option('Terminal', ''));
+    for (const candidate of graph.nodes.values()) {
+      if (candidate.id === node.id || candidate.kind === 'choice')
+        continue;
+      destinationSelect.add(new Option(`${candidate.label} (${candidate.id})`, candidate.id));
+    }
+    const destination = outgoingDestination(node.id, graph);
+    destinationSelect.value = destination ?? '';
+    nodeInspectorDismissBtn.textContent = destination ? 'Cancel' : 'Close';
+  }
+  else {
+    nodeInspectorDismissBtn.textContent = 'Cancel';
+  }
   positionNodeInspector();
 }
 
@@ -947,19 +1004,42 @@ function positionNodeInspector() {
   nodeInspector.style.top = Math.max(output.top, Math.min(node.top, output.bottom - card.height)) + 'px';
 }
 
-function commitNodeText() {
+function commitNodeText(id = selectedEditorNodeId, text = nodeTextInput.value.trim()) {
+  if (!id)
+    return;
+  enqueueEditorAction(async () => {
+    const graph = editorGraph();
+    const node = graph.nodes.get(id);
+    if (!node || node.label === text)
+      return;
+    const newToken = node.kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
+    const lines = graph.lines.slice();
+    lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
+    await commitEditorSource(lines.join('\n'));
+  });
+}
+
+function commitDestination() {
   const id = selectedEditorNodeId;
   if (!id)
     return;
   const graph = editorGraph();
   const node = graph.nodes.get(id);
-  if (!node)
+  if (!node || node.kind === 'question')
+    return;
+  const destination = destinationSelect.value;
+  if (outgoingDestination(id, graph) === (destination || undefined))
     return;
   const text = nodeTextInput.value.trim();
-  const newToken = node.kind === 'question' ? `${id}{"${text}"}` : `${id}["${text}"]`;
-  const lines = graph.lines.slice();
-  lines[node.lineIndex] = replaceDeclarationInLine(lines[node.lineIndex], id, newToken);
-  runEditorAction(() => commitEditorSource(lines.join('\n')));
+  if (text !== node.label)
+    commitNodeText(id, text);
+  enqueueEditorAction(async () => {
+    const currentGraph = editorGraph();
+    const source = destination
+      ? replaceOutgoing(id, destination, currentGraph)
+      : removeOutgoing(id, currentGraph);
+    await commitEditorSource(source);
+  });
 }
 
 outputBox.addEventListener('click', (event) => {
@@ -1004,6 +1084,7 @@ document.getElementById('cancelRemoveQuestionBtn')!.addEventListener('click', ca
 document.getElementById('editorUndoBtn')!.addEventListener('click', undoEditorAction);
 document.getElementById('editorRedoBtn')!.addEventListener('click', redoEditorAction);
 document.getElementById('nodeInspectorDismissBtn')!.addEventListener('click', () => selectEditorNode(null));
+destinationSelect.addEventListener('change', commitDestination);
 nodeTextInput.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter')
     return;
