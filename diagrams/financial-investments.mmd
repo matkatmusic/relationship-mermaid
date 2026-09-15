@@ -1,28 +1,28 @@
 flowchart TD
-  A[financial investment]
-  B[what's the cost?]
-  C[Do we have enough money?]
-  C_Y[Yes]
-  C_N[No]
-  NEED_MONEY_ROUTE{What is the fastest way to get the money?}
-E_BORROW[Borrow from someone]
-E_NEW_JOB["get a (better) job"]
-E_SECOND_JOB[Get a second job]
-E_JOB_PROMOTION[get a promotion]
-  ARE_TERMS_REASONABLE[are the terms of the investment reasonable?]
+  B_A[financial investment]
+  B_B[what's the cost?]
+  B_C[Do we have enough money?]
+  Q_CHOICE_C_Y[Yes]
+  Q_CHOICE_C_N[No]
+  Q_NEED_MONEY_ROUTE{What is the fastest way to get the money?}
+B_E_BORROW[Borrow from someone]
+B_E_NEW_JOB["get a (better) job"]
+B_E_SECOND_JOB[Get a second job]
+B_E_JOB_PROMOTION[get a promotion]
+  Q_ARE_TERMS_REASONABLE{are the terms of the investment reasonable?}
 
-ARE_TERMS_REASONABLE_Y[Yes]
-ARE_TERMS_REASONABLE_N[No]
+Q_CHOICE_ARE_TERMS_REASONABLE_Y[Yes]
+Q_CHOICE_ARE_TERMS_REASONABLE_N[No]
 
-A --> B --> C 
-C --> C_Y --> ARE_TERMS_REASONABLE
-C --> C_N --> NEED_MONEY_ROUTE
+B_A --> B_B --> B_C
+B_C --> Q_CHOICE_C_Y --> Q_ARE_TERMS_REASONABLE
+B_C --> Q_CHOICE_C_N --> Q_NEED_MONEY_ROUTE
 
-NEED_MONEY_ROUTE --> E_BORROW
-NEED_MONEY_ROUTE --> E_NEW_JOB
-NEED_MONEY_ROUTE --> E_JOB_PROMOTION
-NEED_MONEY_ROUTE --> E_SECOND_JOB
+Q_NEED_MONEY_ROUTE --> B_E_BORROW
+Q_NEED_MONEY_ROUTE --> B_E_NEW_JOB
+Q_NEED_MONEY_ROUTE --> B_E_JOB_PROMOTION
+Q_NEED_MONEY_ROUTE --> B_E_SECOND_JOB
 
-ARE_TERMS_REASONABLE --> ARE_TERMS_REASONABLE_Y
+Q_ARE_TERMS_REASONABLE --> Q_CHOICE_ARE_TERMS_REASONABLE_Y
 
-ARE_TERMS_REASONABLE --> ARE_TERMS_REASONABLE_N
+Q_ARE_TERMS_REASONABLE --> Q_CHOICE_ARE_TERMS_REASONABLE_N
