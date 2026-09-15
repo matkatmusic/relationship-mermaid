@@ -24,6 +24,8 @@ var watcher = null;
 var currentBottomQ;
 var phoneFocusNodeId = null;
 var phoneFocusUsesDecisionContext = false;
+var phonePreviewChoiceId = null;
+var diagramScale = null;
 var chosenAnswers = new Set;
 var phonePath = [];
 var MAX_PHONE_NODES = 8;
@@ -146,7 +148,7 @@ function contextualDecisionSliceIds(decisionId, edges) {
 function sliceIds(edges) {
   if (phoneFocusNodeId && phoneFocusUsesDecisionContext)
     return contextualDecisionSliceIds(phoneFocusNodeId, edges);
-  const last = phonePath[phonePath.length - 1];
+  const last = phonePreviewChoiceId ?? phonePath[phonePath.length - 1];
   const ids = phoneFocusNodeId ? [phoneFocusNodeId] : last ? [parentOf(last, edges), last] : [edges[0][0]];
   let node = ids[ids.length - 1];
   for (;; ) {
@@ -164,7 +166,8 @@ function sliceIds(edges) {
   }
 }
 function leadInIds(ids, siblings, edges) {
-  if (phoneFocusNodeId && !phoneFocusUsesDecisionContext || !phonePath.length && !phoneFocusUsesDecisionContext)
+  const hasDecisionContext = phoneFocusUsesDecisionContext || phonePreviewChoiceId || phonePath.length;
+  if (!hasDecisionContext)
     return [];
   const budget = MAX_PHONE_NODES - new Set([...ids, ...siblings]).size;
   const found = [];
@@ -203,7 +206,8 @@ function leadInIds(ids, siblings, edges) {
   return found;
 }
 function siblingIds(ids, edges) {
-  if (phoneFocusNodeId && !phoneFocusUsesDecisionContext || !phonePath.length && !phoneFocusUsesDecisionContext)
+  const hasDecisionContext = phoneFocusUsesDecisionContext || phonePreviewChoiceId || phonePath.length;
+  if (!hasDecisionContext)
     return [];
   const found = [];
   for (const [from, to] of edges) {
@@ -417,6 +421,54 @@ function showEditorValidationError(error) {
 function decisionNodes(graph) {
   return [...graph.nodes.values()].filter((node) => node.kind === "question").sort((a, b) => a.lineIndex - b.lineIndex);
 }
+function nearestDecisionFrom(id, step, graph) {
+  const visited = new Set([id]);
+  let frontier = [id];
+  while (frontier.length) {
+    const nextFrontier = [];
+    for (const nodeId of frontier) {
+      for (const edge of graph.edges) {
+        const neighbor = step === 1 ? edge.from === nodeId ? edge.to : null : edge.to === nodeId ? edge.from : null;
+        if (!neighbor || visited.has(neighbor))
+          continue;
+        visited.add(neighbor);
+        if (graph.nodes.get(neighbor)?.kind === "question")
+          return graph.nodes.get(neighbor);
+        nextFrontier.push(neighbor);
+      }
+    }
+    frontier = nextFrontier;
+  }
+}
+function nearestFeedingChoice(id, graph) {
+  const visited = new Set([id]);
+  let frontier = [id];
+  while (frontier.length) {
+    const nextFrontier = [];
+    for (const nodeId of frontier) {
+      const node = graph.nodes.get(nodeId);
+      const isChoiceFedByDecision = node?.kind === "choice" && graph.edges.some((edge) => edge.to === nodeId && graph.nodes.get(edge.from)?.kind === "question");
+      if (isChoiceFedByDecision)
+        return nodeId;
+      for (const edge of graph.edges) {
+        if (edge.to !== nodeId || visited.has(edge.from))
+          continue;
+        visited.add(edge.from);
+        nextFrontier.push(edge.from);
+      }
+    }
+    frontier = nextFrontier;
+  }
+  return null;
+}
+function discardInvalidPhonePreview(graph) {
+  if (phoneFocusNodeId && graph.nodes.get(phoneFocusNodeId)?.kind !== "question") {
+    phoneFocusNodeId = null;
+    phoneFocusUsesDecisionContext = false;
+  }
+  if (phonePreviewChoiceId && nearestFeedingChoice(phonePreviewChoiceId, graph) !== phonePreviewChoiceId)
+    phonePreviewChoiceId = null;
+}
 function updateDecisionCounter(graph) {
   const decisions = decisionNodes(graph);
   if (decisions.length === 0) {
@@ -454,12 +506,16 @@ async function navigateDecision(step) {
     setStatus("No decisions in this diagram");
     return;
   }
-  const currentIndex = decisions.findIndex((node) => node.id === currentDecisionId);
+  const selected = graph.nodes.get(selectedEditorNodeId ?? "");
+  const nearest = selected ? nearestDecisionFrom(selected.id, step, graph) : undefined;
+  const anchorId = selected?.kind === "question" ? selected.id : currentDecisionId;
+  const currentIndex = decisions.findIndex((node) => node.id === anchorId);
   const nextIndex = (currentIndex + step + decisions.length) % decisions.length;
-  const decision = decisions[nextIndex];
+  const decision = nearest ?? decisions[nextIndex];
   currentDecisionId = decision.id;
   phoneFocusNodeId = decision.id;
   phoneFocusUsesDecisionContext = true;
+  phonePreviewChoiceId = null;
   selectEditorNode(decision.id);
   updateDecisionCounter(graph);
   await render();
@@ -1390,9 +1446,22 @@ outputBox.addEventListener("click", (event) => {
   const id = nodeEl ? nodeIdOf(nodeEl) : null;
   selectEditorNode(id);
   if (id) {
-    phoneFocusNodeId = id;
-    phoneFocusUsesDecisionContext = false;
-    render();
+    const graph = editorGraph();
+    const node = graph.nodes.get(id);
+    if (node?.kind === "question") {
+      phoneFocusNodeId = id;
+      phoneFocusUsesDecisionContext = true;
+      phonePreviewChoiceId = null;
+      render();
+    } else {
+      const feedingChoice = nearestFeedingChoice(id, graph);
+      if (feedingChoice) {
+        phoneFocusNodeId = null;
+        phoneFocusUsesDecisionContext = false;
+        phonePreviewChoiceId = feedingChoice;
+        render();
+      }
+    }
   }
 });
 phoneDiagramBox.addEventListener("click", (event) => {
@@ -1409,6 +1478,7 @@ phoneDiagramBox.addEventListener("click", (event) => {
   phonePath.push(clicked);
   phoneFocusNodeId = null;
   phoneFocusUsesDecisionContext = false;
+  phonePreviewChoiceId = null;
   render();
 });
 outputBox.addEventListener("dblclick", (event) => {
@@ -1600,6 +1670,7 @@ async function render() {
   errorBox.textContent = "";
   try {
     const graph = editorGraph();
+    discardInvalidPhonePreview(graph);
     updateDecisionCounter(graph);
     const edges = parseEdges(codeBox.value);
     const ids = edges.length > 0 ? sliceIds(edges) : [];
@@ -1636,7 +1707,9 @@ async function render() {
     renderEditorSelection();
     highlightPath();
     if (edges.length > 0) {
-      const scale = await baseScale(edges);
+      if (diagramScale === null)
+        diagramScale = await baseScale(edges);
+      const scale = diagramScale;
       const regularSvgEl = diagramBox.querySelector("svg");
       const regularBox = viewBoxOf(regularSvg);
       regularSvgEl.style.width = regularBox.width * scale + "px";
@@ -1653,7 +1726,7 @@ async function render() {
     phoneDiagramBox.scrollTop = phoneViewport.top;
     renderLog(edges);
     const hasContextualPreviousDecision = phoneFocusUsesDecisionContext && ids[0] !== phoneFocusNodeId && graph.nodes.get(ids[0])?.kind === "question";
-    const shouldDrawLastDecision = edges.length > 0 && (phonePath.length > 0 || hasContextualPreviousDecision);
+    const shouldDrawLastDecision = edges.length > 0 && (phonePath.length > 0 || phonePreviewChoiceId || hasContextualPreviousDecision);
     if (shouldDrawLastDecision)
       drawLastDecisionMask(ids, edges);
     if (shouldDrawLastDecision)
@@ -1707,6 +1780,8 @@ async function loadDiagram(name) {
   currentName = name;
   phoneFocusNodeId = null;
   phoneFocusUsesDecisionContext = false;
+  phonePreviewChoiceId = null;
+  diagramScale = null;
   currentDecisionId = metadata?.lastSelectedNodeId ?? null;
   codeBox.value = text;
   resetEditorHistory(text);
@@ -1766,6 +1841,8 @@ document.getElementById("newBtn").addEventListener("click", () => {
   currentName = null;
   phoneFocusNodeId = null;
   phoneFocusUsesDecisionContext = false;
+  phonePreviewChoiceId = null;
+  diagramScale = null;
   currentDecisionId = null;
   restoreTypeMetadata(null);
   codeBox.value = `flowchart TD
@@ -1783,6 +1860,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   phonePath.length = 0;
   phoneFocusNodeId = null;
   phoneFocusUsesDecisionContext = false;
+  phonePreviewChoiceId = null;
   highlightPath();
   render();
   outputBox.scrollTo({ top: 0, behavior: "smooth" });
@@ -1792,6 +1870,7 @@ document.getElementById("undoBtn").addEventListener("click", (event) => {
   event.stopPropagation();
   phoneFocusNodeId = null;
   phoneFocusUsesDecisionContext = false;
+  phonePreviewChoiceId = null;
   phonePath.pop();
   render();
 });
@@ -1812,6 +1891,8 @@ openFileInput.addEventListener("change", async () => {
   currentName = null;
   phoneFocusNodeId = null;
   phoneFocusUsesDecisionContext = false;
+  phonePreviewChoiceId = null;
+  diagramScale = null;
   currentDecisionId = null;
   codeBox.value = await file.text();
   restoreTypeMetadata(splitEditorMetadata(codeBox.value).metadata);

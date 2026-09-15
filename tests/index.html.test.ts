@@ -1024,7 +1024,7 @@ async function inspectorFocus() {
   return evaluate(`JSON.stringify({ activeId: document.activeElement?.id, selectedId: document.getElementById('selectedNode').textContent })`).then(JSON.parse);
 }
 
-test('test_decision_navigation_counter_tracks_navigation_not_later_selection', async () => {
+test('test_decision_navigation_uses_the_nearest_graph_neighbor_and_focuses_both_views', async () => {
   await resetEditorFixture();
   await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_FIRST{"First decision"}\n  Q_CHOICE_FIRST_YES["Yes"]\n  Q_CHOICE_FIRST_NO["No"]\n  B_MIDDLE["Middle"]\n  Q_SECOND{"Second decision"}\n  Q_CHOICE_SECOND_YES["Yes"]\n  Q_CHOICE_SECOND_NO["No"]\n  B_START --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_YES --> B_MIDDLE --> Q_SECOND\n  Q_FIRST --> Q_CHOICE_FIRST_NO\n  Q_SECOND --> Q_CHOICE_SECOND_YES\n  Q_SECOND --> Q_CHOICE_SECOND_NO');
   // Step: the counter follows standalone brace-shaped decisions in source order.
@@ -1055,21 +1055,81 @@ test('test_decision_navigation_counter_tracks_navigation_not_later_selection', a
     return x >= pane.left && x <= pane.right && y >= pane.top && y <= pane.bottom;
   })()`);
   assert.equal(mainFocusVisible, true);
-  // Step: choosing another node does not change the most recently navigated decision.
-  await selectEditorNode('B_END');
+  // Step: Next also starts at the selected regular block's closest downstream
+  // decision, even though the navigation counter is already on that decision.
+  await clickNode('B_MIDDLE');
+  await evaluate("document.getElementById('nextDecisionBtn').click()");
+  await sleep(300);
+  assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_SECOND');
+  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
+  // Step: Previous starts at the selected choice's closest upstream decision,
+  // rather than skipping it because of the older navigation position.
+  await clickNode('Q_CHOICE_SECOND_YES');
   assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
   await evaluate("document.getElementById('previousDecisionBtn').click()");
+  await sleep(300);
+  assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_SECOND');
+  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
+  await evaluate("document.getElementById('previousDecisionBtn').click()");
+  await sleep(300);
   assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_FIRST');
   assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '1 / 2');
 });
 
-test('test_selecting_a_main_view_block_retargets_the_phone_subset', async () => {
+test('test_main_view_choice_and_regular_nodes_preview_their_feeding_decision_as_chosen', async () => {
   await resetEditorFixture();
-  await setEditorSource('flowchart TD\n  B_A["A"]\n  B_B["B"]\n  B_C["C"]\n  Q_NEXT{"Next?"}\n  Q_CHOICE_NEXT_Y["Yes"]\n  Q_CHOICE_NEXT_N["No"]\n  B_A --> B_B --> B_C --> Q_NEXT\n  Q_NEXT --> Q_CHOICE_NEXT_Y\n  Q_NEXT --> Q_CHOICE_NEXT_N');
-  await clickNode('B_B');
+  await setEditorSource('flowchart TD\n  B_ROOT["Root"]\n  Q_FIRST{"First?"}\n  Q_CHOICE_FIRST_Y["Yes"]\n  Q_CHOICE_FIRST_N["No"]\n  B_ONE["One"]\n  B_TWO["Two"]\n  Q_NEXT{"Next?"}\n  Q_CHOICE_NEXT_Y["Yes"]\n  Q_CHOICE_NEXT_N["No"]\n  B_ROOT --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_Y --> B_ONE --> B_TWO --> Q_NEXT\n  Q_FIRST --> Q_CHOICE_FIRST_N\n  Q_NEXT --> Q_CHOICE_NEXT_Y\n  Q_NEXT --> Q_CHOICE_NEXT_N');
+  await clickNode('B_TWO');
   await sleep(300);
-  assert.equal(await evaluate("!!document.querySelector('#phoneDiagram [id*=\"flowchart-B_B-\"]')"), true);
+  assert.equal(await evaluate('phonePreviewChoiceId'), 'Q_CHOICE_FIRST_Y');
+  assert.equal(await evaluate('phoneFocusNodeId'), null);
+  assert.equal(await evaluate('phonePath.length'), 0);
+  for (const id of ['Q_FIRST', 'Q_CHOICE_FIRST_Y', 'B_ONE', 'B_TWO', 'Q_NEXT', 'Q_CHOICE_NEXT_Y', 'Q_CHOICE_NEXT_N'])
+    assert.equal(await evaluate(`!!document.querySelector('#phoneDiagram [id*="flowchart-${id}-"]')`), true, id);
   assert.equal(await evaluate("currentBottomQ"), 'Q_NEXT');
+
+  // A choice previews the same non-logged decision outcome.
+  await clickNode('Q_CHOICE_FIRST_Y');
+  await sleep(300);
+  assert.equal(await evaluate('phonePreviewChoiceId'), 'Q_CHOICE_FIRST_Y');
+  assert.equal(await evaluate('phonePath.length'), 0);
+
+  // A regular node with no feeding decision leaves that preview untouched.
+  await clickNode('B_ROOT');
+  await sleep(100);
+  assert.equal(await evaluate('phonePreviewChoiceId'), 'Q_CHOICE_FIRST_Y');
+
+  // Decisions themselves remain the only nodes focused directly by the phone.
+  await clickNode('Q_NEXT');
+  await sleep(300);
+  assert.equal(await evaluate('phoneFocusNodeId'), 'Q_NEXT');
+  assert.equal(await evaluate('phonePreviewChoiceId'), null);
+  assert.equal(await evaluate('currentBottomQ'), 'Q_NEXT');
+});
+
+test('test_add_and_insert_actions_preserve_the_zoom_scale_in_both_views', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_FIRST{"First?"}\n  Q_CHOICE_FIRST_Y["Yes"]\n  Q_CHOICE_FIRST_N["No"]\n  B_END["End"]\n  B_START --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_Y --> B_END\n  Q_FIRST --> Q_CHOICE_FIRST_N');
+  const scales = () => evaluate(`JSON.stringify((() => {
+    const scale = (selector) => {
+      const svg = document.querySelector(selector);
+      return Number.parseFloat(svg.style.height) / svg.viewBox.baseVal.height;
+    };
+    return { regular: scale('#diagram svg'), phone: scale('#phoneDiagram svg') };
+  })())`).then(JSON.parse);
+  const initial = await scales();
+
+  await clickNode('Q_FIRST');
+  await clickInspectorAction('add-choice');
+  const afterAdd = await scales();
+  assert.ok(Math.abs(afterAdd.regular - initial.regular) < 0.000001);
+  assert.ok(Math.abs(afterAdd.phone - initial.phone) < 0.000001);
+
+  await clickNode('B_START');
+  await clickInspectorAction('insert-decision-after');
+  const afterInsert = await scales();
+  assert.ok(Math.abs(afterInsert.regular - initial.regular) < 0.000001);
+  assert.ok(Math.abs(afterInsert.phone - initial.phone) < 0.000001);
 });
 
 test("test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order", async () => {
