@@ -887,6 +887,29 @@ test("test_inspector_keeps_the_diagram_scroll_position", async () => {
   await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
 });
 
+test("test_save_persists_and_load_restores_editor_metadata_trailer", async () => {
+  // Scenario: saving an editor change records the current selection and output viewport in a Mermaid comment trailer.
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
+  await evaluate(`phoneToggle.checked = false; phoneToggle.dispatchEvent(new Event('change')); loadDiagram(${JSON.stringify(SCROLL_FIXTURE_NAME)})`);
+  await sleep(500);
+  await evaluate("document.getElementById('output').scrollLeft = 0; document.getElementById('output').scrollTop = 150; window.selectEditorNode('B_RAISE_ISSUE'); window.addBlockAfter(); window.editorActionPromise");
+
+  const saved = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`).then((r) => r.text());
+  const trailer = saved.match(/%%%%====\n%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE\n%% (\{[^\n]+\})\n%%%%====$/);
+  assert.ok(trailer);
+  assert.deepEqual(JSON.parse(trailer[1]), {
+    lastSelectedNodeId: 'B_RAISE_ISSUE', outputScrollLeft: 0, outputScrollTop: 150,
+  });
+  assert.equal((saved.match(/%%%%====/g) ?? []).length, 2);
+
+  // Step: a load restores the selected node and saved viewport, while Mermaid still renders the comment trailer.
+  await evaluate(`document.getElementById('output').scrollTop = 0; loadDiagram(${JSON.stringify(SCROLL_FIXTURE_NAME)})`);
+  await sleep(500);
+  assert.deepEqual(await inspectorFocus(), { activeId: '', selectedId: 'B_RAISE_ISSUE' });
+  assert.equal(await outputScrollTop(), 150);
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
+});
+
 async function destinationState() {
   return evaluate(`JSON.stringify((() => {
     const row = document.getElementById('destinationRow');
@@ -1018,6 +1041,24 @@ test("test_destination_accepts_descendants_and_current_value_is_a_no_op", async 
   await assertEditorSourceIsSavedAndValid();
 });
 
+test("test_insert_static_before_splices_a_chained_edge_line", async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_A["A"]\n  B_B["B"]\n  B_C["C"]\n  B_A --> B_B --> B_C');
+  // Step: select the middle node of a one-line A --> B --> C chain.
+  await selectEditorNode('B_B');
+  await runEditorAction('insertStaticBefore');
+  const updated = await evaluate('codeBox.value');
+  // Step: only A --> B is replaced; B --> C is retained and the new node is connected.
+  assert.ok(updated.includes('B_A --> B_NEW_1'));
+  assert.ok(updated.includes('B_NEW_1 --> B_B'));
+  assert.ok(updated.includes('B_B --> B_C'));
+  assert.ok(!updated.includes('B_A --> B_B --> B_C'));
+  // Step: the rendered graph contains the complete connected path, not an orphaned new node.
+  for (const id of ['B_A', 'B_NEW_1', 'B_B', 'B_C'])
+    assert.equal(await evaluate(`!!document.querySelector('[id*="flowchart-${id}-"]')`), true);
+  await assertEditorSourceIsSavedAndValid();
+});
+
 test("test_dirty_text_then_destination_creates_two_ordered_undo_entries", async () => {
   await resetEditorFixture();
   await setEditorSource('flowchart TD\n  A["A"] --> B["B"]\n  B --> C{"C"}');
@@ -1042,6 +1083,8 @@ test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks'
   assert.deepEqual(await inspectorActions(), [
     { action: 'remove', text: 'Remove', spanTwoColumns: false },
     { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: false },
+    { action: 'insert-decision-after', text: 'Insert decision block after', spanTwoColumns: false },
+    { action: 'insert-static-after', text: 'Insert static block after', spanTwoColumns: false },
     { action: 'insert-static-before', text: 'insert static block before', spanTwoColumns: false },
     { action: 'insert-decision-before', text: 'insert Decision & leading choice before', spanTwoColumns: false },
   ]);
@@ -1052,6 +1095,8 @@ test('test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks'
     { action: 'remove', text: 'Remove', spanTwoColumns: false },
     { action: 'add-decision-after', text: 'add Decision block after', spanTwoColumns: false },
     { action: 'add-static-after', text: 'add static block after', spanTwoColumns: false },
+    { action: 'insert-decision-after', text: 'Insert decision block after', spanTwoColumns: false },
+    { action: 'insert-static-after', text: 'Insert static block after', spanTwoColumns: false },
   ]);
   await clickNode('Q1');
   assert.deepEqual(await inspectorActions(), [
@@ -1157,6 +1202,89 @@ test('test_new_static_button_and_destination_option_have_identical_terminal_orph
   assert.equal(await evaluate('codeBox.value'), buttonSource);
   assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'B_NEW_1' });
   assert.equal(await evaluate('editorHistory.length'), menuHistoryLength + 1);
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_static_after_splices_a_static_or_choice_node_without_dropping_its_destination', async () => {
+  const fixture = 'flowchart TD\n  B_A["A"]\n  B_B["B"]\n  B_C["C"]\n  B_A --> B_B\n  B_B --> B_C';
+  await resetEditorFixture();
+  await setEditorSource(fixture);
+  await clickNode('B_B');
+  await clickInspectorAction('insert-static-after');
+  let source = await evaluate('codeBox.value');
+  assert.ok(source.includes('B_A --> B_B'));
+  assert.ok(source.includes('B_B --> B_NEW_1'));
+  assert.ok(source.includes('B_NEW_1["New static block"]'));
+  assert.ok(source.includes('B_NEW_1 --> B_C'));
+  assert.ok(!source.includes('B_B --> B_C'));
+  await assertEditorSourceIsSavedAndValid();
+
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  Q_PICK{"Q"}\n  Q_CHOICE_PICK_A["A"]\n  B_C["C"]\n  Q_PICK --> Q_CHOICE_PICK_A\n  Q_CHOICE_PICK_A --> B_C');
+  await clickNode('Q_CHOICE_PICK_A');
+  await clickInspectorAction('insert-static-after');
+  source = await evaluate('codeBox.value');
+  assert.ok(source.includes('Q_PICK --> Q_CHOICE_PICK_A'));
+  assert.ok(source.includes('Q_CHOICE_PICK_A --> B_NEW_1'));
+  assert.ok(source.includes('B_NEW_1 --> B_C'));
+  assert.ok(!source.includes('Q_CHOICE_PICK_A --> B_C'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_static_after_a_terminal_node_matches_terminal_add_static_behavior', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_A["A"]');
+  await clickNode('B_A');
+  await clickInspectorAction('insert-static-after');
+  const source = await evaluate('codeBox.value');
+  assert.ok(source.includes('B_A --> B_NEW_1'));
+  assert.ok(source.includes('B_NEW_1["New static block"]'));
+  assert.ok(!source.includes('B_NEW_1 -->'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_decision_after_splices_blocks_and_choices_with_one_terminal_branch', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_A["A"]\n  B_B["B"]\n  B_C["C"]\n  B_A --> B_B\n  B_B --> B_C');
+  await clickNode('B_B');
+  await clickInspectorAction('insert-decision-after');
+  let source = await evaluate('codeBox.value');
+  assert.ok(source.includes('B_A --> B_B'));
+  assert.ok(source.includes('B_B --> Q_NEW_1'));
+  assert.ok(source.includes('Q_NEW_1{"New Decision"}'));
+  assert.ok(source.includes('Q_CHOICE_NEW_1_Y["Yes"]'));
+  assert.ok(source.includes('Q_CHOICE_NEW_1_N["No"]'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_Y'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_N'));
+  assert.ok(source.includes('Q_CHOICE_NEW_1_Y --> B_C'));
+  assert.ok(!source.includes('Q_CHOICE_NEW_1_N -->'));
+  assert.ok(!source.includes('B_B --> B_C'));
+  await assertEditorSourceIsSavedAndValid();
+
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  Q_PICK{"Q"}\n  Q_CHOICE_PICK_A["A"]\n  B_C["C"]\n  Q_PICK --> Q_CHOICE_PICK_A\n  Q_CHOICE_PICK_A --> B_C');
+  await clickNode('Q_CHOICE_PICK_A');
+  await clickInspectorAction('insert-decision-after');
+  source = await evaluate('codeBox.value');
+  assert.ok(source.includes('Q_PICK --> Q_CHOICE_PICK_A'));
+  assert.ok(source.includes('Q_CHOICE_PICK_A --> Q_NEW_1'));
+  assert.ok(source.includes('Q_CHOICE_NEW_1_Y --> B_C'));
+  assert.ok(!source.includes('Q_CHOICE_NEW_1_N -->'));
+  assert.ok(!source.includes('Q_CHOICE_PICK_A --> B_C'));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test('test_insert_decision_after_a_terminal_node_creates_two_terminal_choices', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_A["A"]');
+  await clickNode('B_A');
+  await clickInspectorAction('insert-decision-after');
+  const source = await evaluate('codeBox.value');
+  assert.ok(source.includes('B_A --> Q_NEW_1'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_Y'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_N'));
+  assert.ok(!source.includes('Q_CHOICE_NEW_1_Y -->'));
+  assert.ok(!source.includes('Q_CHOICE_NEW_1_N -->'));
   await assertEditorSourceIsSavedAndValid();
 });
 

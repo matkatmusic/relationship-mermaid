@@ -14,6 +14,8 @@ var outputBox = document.getElementById("output");
 var phoneToggle = document.getElementById("phoneToggle");
 var logBtn = document.getElementById("logBtn");
 var logBox = document.getElementById("logBox");
+var previousDecisionBtn = document.getElementById("previousDecisionBtn");
+var nextDecisionBtn = document.getElementById("nextDecisionBtn");
 var renderId = 0;
 var currentName = null;
 var watcher = null;
@@ -354,7 +356,7 @@ function isAnswerId(id, edges) {
   for (const [from, to] of edges) {
     const targetsId = to === id;
     const fromIsQuestion = from.startsWith("Q_");
-    const idIsAnswerOfFrom = id.startsWith(from + "_");
+    const idIsAnswerOfFrom = id.startsWith("Q_CHOICE_" + from.replace(/^Q_/, "") + "_");
     const isMatch = targetsId && fromIsQuestion && idIsAnswerOfFrom;
     if (isMatch) {
       matched = true;
@@ -363,7 +365,77 @@ function isAnswerId(id, edges) {
   }
   return matched;
 }
+function showEditorValidationError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  errorBox.textContent = message;
+  errorLog.textContent = message + `
+`;
+  errorLog.classList.add("open");
+  errorLog.scrollTop = errorLog.scrollHeight;
+}
+function navigateDecision(step) {
+  let graph;
+  try {
+    graph = editorGraph();
+  } catch (error) {
+    showEditorValidationError(error);
+    return;
+  }
+  const decisions = [...graph.nodes.values()].filter((node) => node.kind === "question").sort((a, b) => a.lineIndex - b.lineIndex);
+  if (decisions.length === 0) {
+    setStatus("No decisions in this diagram");
+    return;
+  }
+  const currentIndex = decisions.findIndex((node) => node.id === selectedEditorNodeId);
+  const nextIndex = currentIndex < 0 ? step > 0 ? 0 : decisions.length - 1 : (currentIndex + step + decisions.length) % decisions.length;
+  const decision = decisions[nextIndex];
+  selectEditorNode(decision.id);
+  const el = diagramBox.querySelector('[id*="flowchart-' + decision.id + '-"]');
+  if (el)
+    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+}
 var INSPECTOR_TITLES = { question: "Decision block", block: "static block", choice: "choice block" };
+
+class EditorValidationError extends Error {
+  problems;
+  constructor(problems) {
+    super(`Invalid diagram:
+${problems.join(`
+`)}`);
+    this.problems = problems;
+    this.name = "EditorValidationError";
+  }
+}
+var EDITOR_METADATA_FENCE = "%%%%====";
+var EDITOR_METADATA_WARNING = "DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE";
+function splitEditorMetadata(source) {
+  const headerPattern = /(?:^|\r?\n)%%%%====\r?\n%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE\r?\n%% (\{[^\r\n]*\})\r?\n%%%%====/g;
+  const matches = [...source.matchAll(headerPattern)];
+  if (matches.length === 0)
+    return { source, metadata: null };
+  let metadata = null;
+  try {
+    const parsed = JSON.parse(matches[matches.length - 1][1]);
+    if (typeof parsed.lastSelectedNodeId === "string" || parsed.lastSelectedNodeId === null) {
+      if (typeof parsed.outputScrollLeft === "number" && typeof parsed.outputScrollTop === "number")
+        metadata = parsed;
+    }
+  } catch {}
+  return { source: source.replace(headerPattern, "").replace(/\s+$/, ""), metadata };
+}
+function sourceWithEditorMetadata(source) {
+  const body = splitEditorMetadata(source).source;
+  const metadata = {
+    lastSelectedNodeId: selectedEditorNodeId,
+    outputScrollLeft: outputBox.scrollLeft,
+    outputScrollTop: outputBox.scrollTop
+  };
+  return `${body}
+${EDITOR_METADATA_FENCE}
+%% ${EDITOR_METADATA_WARNING}
+%% ${JSON.stringify(metadata)}
+${EDITOR_METADATA_FENCE}`;
+}
 function setEditorActionPromise(promise) {
   editorActionPromise = promise;
   window.editorActionPromise = promise;
@@ -386,23 +458,69 @@ function parseEditorToken(token) {
     return { id, shape: "rect", label: stripEditorQuotes(rest.slice(1, -1)) };
   return { id, shape: null, label: "" };
 }
+function declarationRequirement(id) {
+  if (id.startsWith("Q_CHOICE"))
+    return 'start with "Q_CHOICE" and use bracket shape []';
+  if (id.startsWith("Q_"))
+    return 'start with "Q_" and use brace shape {}';
+  if (id.startsWith("B_"))
+    return 'start with "B_" and use bracket shape []';
+  return 'use "Q_" with brace shape {} for a decision, "Q_CHOICE" with bracket shape [] for a choice, or "B_" with bracket shape [] for a static block';
+}
+function validateDeclaration(id, shape, lineNumber, problems) {
+  const subject = `Line ${lineNumber}: id "${id}"`;
+  if (shape === "other") {
+    problems.push(`${subject} uses unsupported rounded/stadium shape; it must ${declarationRequirement(id)}.`);
+    return;
+  }
+  if (id.startsWith("Q_CHOICE")) {
+    if (shape !== "rect")
+      problems.push(`${subject} is a choice and must use bracket shape [] (for example, ${id}["Choice"]).`);
+    return;
+  }
+  if (id.startsWith("Q_")) {
+    if (shape !== "brace")
+      problems.push(`${subject} is a decision and must use brace shape {} (for example, ${id}{"Decision"}).`);
+    return;
+  }
+  if (id.startsWith("B_")) {
+    if (shape !== "rect")
+      problems.push(`${subject} is a static block and must use bracket shape [] (for example, ${id}["Block"]).`);
+    return;
+  }
+  problems.push(`${subject} has a non-compliant prefix; it must ${declarationRequirement(id)}.`);
+}
 function parseEditorEdgeLine(line) {
-  const labelled = line.match(/^(.+?)\s--\s(?:"([^"]*)"|(\S.*?))\s-->\s(.+)$/);
-  if (labelled)
-    return { fromToken: labelled[1], label: labelled[2] ?? labelled[3], toToken: labelled[4] };
-  const plain = line.match(/^(.+?)\s-->\s(.+)$/);
-  if (plain)
-    return { fromToken: plain[1], label: undefined, toToken: plain[2] };
-  return null;
+  const separator = /\s--\s(?:"([^"]*)"|(.+?))\s-->\s|\s-->/g;
+  const tokens = [];
+  const labels = [];
+  let tokenStart = 0;
+  for (let match;match = separator.exec(line); ) {
+    tokens.push(line.slice(tokenStart, match.index).trim());
+    labels.push(match[1] ?? match[2]?.trim());
+    tokenStart = match.index + match[0].length;
+  }
+  if (tokens.length === 0)
+    return null;
+  tokens.push(line.slice(tokenStart).trim());
+  if (tokens.some((token) => !token))
+    return null;
+  return tokens.slice(0, -1).map((fromToken, index) => ({ fromToken, label: labels[index], toToken: tokens[index + 1] }));
 }
 function declarationSuffixOf(node) {
-  return node.kind === "question" ? `{"${node.label}"}` : `["${node.label}"]`;
+  if (node.kind === "question")
+    return `{"${node.label}"}`;
+  if (node.kind === "choice")
+    return `["${node.label}"]`;
+  return `["${node.label}"]`;
 }
 function editorGraph() {
   const lines = codeBox.value.split(`
 `);
   const declLines = new Map;
   const edges = [];
+  const references = new Map;
+  const problems = [];
   const recordDecl = (token, lineIndex) => {
     if (token.shape && !declLines.has(token.id))
       declLines.set(token.id, { shape: token.shape, label: token.label, lineIndex });
@@ -412,21 +530,41 @@ function editorGraph() {
     const isSkippable = !line || line.startsWith("flowchart") || line.startsWith("classDef") || line.startsWith("class ") || line.startsWith("%%");
     if (isSkippable)
       continue;
-    const edge = parseEditorEdgeLine(line);
-    if (edge) {
-      const from = parseEditorToken(edge.fromToken);
-      const to = parseEditorToken(edge.toToken);
-      recordDecl(from, lineIndex);
-      recordDecl(to, lineIndex);
-      edges.push({ from: from.id, to: to.id, label: edge.label, lineIndex });
+    const parsedEdges = parseEditorEdgeLine(line);
+    if (parsedEdges) {
+      for (const edge of parsedEdges) {
+        const from = parseEditorToken(edge.fromToken);
+        const to = parseEditorToken(edge.toToken);
+        for (const token of [from, to]) {
+          references.set(token.id, lineIndex);
+          if (token.shape) {
+            problems.push(`Line ${lineIndex + 1}: id "${token.id}" is declared inline on an edge; node declarations must be on their own standalone lines.`);
+            validateDeclaration(token.id, token.shape, lineIndex + 1, problems);
+          }
+        }
+        edges.push({ from: from.id, to: to.id, label: edge.label, lineIndex });
+      }
     } else {
       const decl = parseEditorToken(line);
-      recordDecl(decl, lineIndex);
+      if (decl.shape) {
+        recordDecl(decl, lineIndex);
+        validateDeclaration(decl.id, decl.shape, lineIndex + 1, problems);
+      }
     }
+  }
+  for (const [id, lineIndex] of references) {
+    if (!declLines.has(id))
+      problems.push(`Line ${lineIndex + 1}: id "${id}" must be declared on its own standalone line and ${declarationRequirement(id)}.`);
+  }
+  const uniqueProblems = [...new Set(problems)];
+  if (uniqueProblems.length) {
+    const error = new EditorValidationError(uniqueProblems);
+    showEditorValidationError(error);
+    throw error;
   }
   const nodes = new Map;
   for (const [id, decl] of declLines) {
-    const kind = decl.shape === "brace" ? "question" : edges.some((e) => e.to === id && !e.label && id.startsWith(e.from + "_")) ? "choice" : "block";
+    const kind = id.startsWith("Q_CHOICE") ? "choice" : id.startsWith("Q_") ? "question" : "block";
     nodes.set(id, { id, kind, label: decl.label, lineIndex: decl.lineIndex });
   }
   return { lines, nodes, edges };
@@ -443,7 +581,7 @@ function nextEditorId(prefix, graph) {
   return `${prefix}_${n}`;
 }
 function choiceId(questionId, suffix) {
-  return `${questionId}_${suffix}`;
+  return `Q_CHOICE_${questionId.replace(/^Q_/, "")}_${suffix}`;
 }
 function outgoingDestination(id, graph) {
   return graph.edges.find((edge) => edge.from === id)?.to;
@@ -480,6 +618,7 @@ function preserveInlineDecl(edge, keepEndpointId, graph, newLines) {
     newLines.push(`  ${keepEndpointId}${declarationSuffixOf(node)}`);
 }
 async function commitEditorSource(source, options) {
+  source = sourceWithEditorMetadata(source);
   await mermaid.parse(source);
   codeBox.value = source;
   const recordHistory = options?.recordHistory !== false;
@@ -604,13 +743,29 @@ function insertStaticBefore() {
   }
   const staticId = nextEditorId("B_NEW", graph);
   const newLines = [`  ${staticId}["New static block"]`];
+  const restoredInlineDecls = new Set;
+  const restoreInlineDecl = (edge, endpointId) => {
+    const node = graph.nodes.get(endpointId);
+    if (node && node.lineIndex === edge.lineIndex && !restoredInlineDecls.has(endpointId)) {
+      restoredInlineDecls.add(endpointId);
+      newLines.push(`  ${endpointId}${declarationSuffixOf(node)}`);
+    }
+  };
   if (removedLineIndexes.has(selectedNode.lineIndex))
     newLines.push(`  ${selected}${declarationSuffixOf(selectedNode)}`);
+  restoredInlineDecls.add(selected);
   for (const edge of predecessors)
-    preserveInlineDecl(edge, edge.from, graph, newLines);
+    restoreInlineDecl(edge, edge.from);
   for (const edge of predecessors)
     newLines.push(edge.label ? `  ${edge.from} -- "${edge.label}" --> ${staticId}` : `  ${edge.from} --> ${staticId}`);
   newLines.push(`  ${staticId} --> ${selected}`);
+  for (const edge of graph.edges) {
+    if (!removedLineIndexes.has(edge.lineIndex) || edge.to === selected)
+      continue;
+    restoreInlineDecl(edge, edge.from);
+    restoreInlineDecl(edge, edge.to);
+    newLines.push(edge.label ? `  ${edge.from} -- "${edge.label}" --> ${edge.to}` : `  ${edge.from} --> ${edge.to}`);
+  }
   setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
 }
 function insertDecisionBefore() {
@@ -852,7 +1007,13 @@ function inspectorActionButton(action, label, spanTwoColumns = false) {
   return button;
 }
 function renderNodeInspector() {
-  const graph = editorGraph();
+  let graph;
+  try {
+    graph = editorGraph();
+  } catch {
+    nodeInspector.hidden = true;
+    return;
+  }
   const node = graph.nodes.get(selectedEditorNodeId ?? "");
   nodeInspector.hidden = !node;
   if (!node)
@@ -871,9 +1032,9 @@ function renderNodeInspector() {
   if (node.kind === "question")
     actions.push(inspectorActionButton("add-choice", "Add choice"), inspectorActionButton("remove-choices", "Remove choices"), inspectorActionButton("insert-static-before", "insert static block before"), inspectorActionButton("insert-decision-before", "insert Decision & leading choice before"));
   else if (node.kind === "block")
-    actions.push(inspectorActionButton("add-decision-after", "add Decision block after"), inspectorActionButton("insert-static-before", "insert static block before"), inspectorActionButton("insert-decision-before", "insert Decision & leading choice before"));
+    actions.push(inspectorActionButton("add-decision-after", "add Decision block after"), inspectorActionButton("insert-decision-after", "Insert decision block after"), inspectorActionButton("insert-static-after", "Insert static block after"), inspectorActionButton("insert-static-before", "insert static block before"), inspectorActionButton("insert-decision-before", "insert Decision & leading choice before"));
   else if (node.kind === "choice")
-    actions.push(inspectorActionButton("add-decision-after", "add Decision block after"), inspectorActionButton("add-static-after", "add static block after"));
+    actions.push(inspectorActionButton("add-decision-after", "add Decision block after"), inspectorActionButton("add-static-after", "add static block after"), inspectorActionButton("insert-decision-after", "Insert decision block after"), inspectorActionButton("insert-static-after", "Insert static block after"));
   nodeInspectorActions.replaceChildren(...actions);
   const hasDestination = node.kind !== "question";
   destinationRow.hidden = !hasDestination;
@@ -930,6 +1091,63 @@ async function commitNewStaticAfter(sourceId, graph) {
   await commitEditorSource(source);
   focusDestinationAfterTextId = staticId;
   selectEditorNode(staticId);
+  focusInspectorText();
+}
+async function commitInsertStaticAfter(sourceId, graph) {
+  const staticId = nextEditorId("B_NEW", graph);
+  const oldDestination = outgoingDestination(sourceId, graph);
+  const newLines = [`  ${staticId}["New static block"]`];
+  if (oldDestination)
+    newLines.push(`  ${staticId} --> ${oldDestination}`);
+  const source = `${replaceOutgoing(sourceId, staticId, graph)}
+${newLines.join(`
+`)}`;
+  await commitEditorSource(source);
+  focusDestinationAfterTextId = staticId;
+  selectEditorNode(staticId);
+  focusInspectorText();
+}
+async function commitInsertDecisionAfter(sourceId, graph) {
+  const removedLineIndexes = new Set;
+  const successors = [];
+  for (const edge of graph.edges) {
+    if (edge.from !== sourceId)
+      continue;
+    successors.push(edge);
+    removedLineIndexes.add(edge.lineIndex);
+  }
+  const decisionId = nextEditorId("Q_NEW", graph);
+  const yesId = choiceId(decisionId, "Y");
+  const noId = choiceId(decisionId, "N");
+  const newLines = [
+    `  ${decisionId}{"New Decision"}`,
+    `  ${yesId}["Yes"]`,
+    `  ${noId}["No"]`,
+    `  ${sourceId} --> ${decisionId}`,
+    `  ${decisionId} --> ${yesId}`,
+    `  ${decisionId} --> ${noId}`
+  ];
+  const restoredInlineDecls = new Set;
+  const restoreInlineDecl = (edge, endpointId) => {
+    const node = graph.nodes.get(endpointId);
+    if (node && node.lineIndex === edge.lineIndex && !restoredInlineDecls.has(endpointId)) {
+      restoredInlineDecls.add(endpointId);
+      newLines.push(`  ${endpointId}${declarationSuffixOf(node)}`);
+    }
+  };
+  for (const edge of successors) {
+    restoreInlineDecl(edge, edge.to);
+    newLines.push(`  ${yesId} --> ${edge.to}`);
+  }
+  for (const edge of graph.edges) {
+    if (!removedLineIndexes.has(edge.lineIndex) || edge.from === sourceId)
+      continue;
+    restoreInlineDecl(edge, edge.from);
+    restoreInlineDecl(edge, edge.to);
+    newLines.push(edge.label ? `  ${edge.from} -- "${edge.label}" --> ${edge.to}` : `  ${edge.from} --> ${edge.to}`);
+  }
+  await commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines));
+  selectEditorNode(decisionId);
   focusInspectorText();
 }
 async function commitNewDecisionAfter(sourceId, graph) {
@@ -1069,7 +1287,15 @@ nodeInspectorActions.addEventListener("click", (event) => {
   const action = button?.dataset.action;
   if (action === "add-static-after")
     applyDestination(NEW_STATIC_DESTINATION);
-  else if (action === "add-decision-after")
+  else if (action === "insert-static-after") {
+    if (!selectedEditorNodeId)
+      return;
+    setEditorActionPromise(commitInsertStaticAfter(selectedEditorNodeId, editorGraph()));
+  } else if (action === "insert-decision-after") {
+    if (!selectedEditorNodeId)
+      return;
+    setEditorActionPromise(commitInsertDecisionAfter(selectedEditorNodeId, editorGraph()));
+  } else if (action === "add-decision-after")
     applyDestination(NEW_DECISION_DESTINATION);
   else if (action === "add-choice")
     addChoiceOnDecision();
@@ -1218,6 +1444,7 @@ async function render() {
   const id = "diagram-" + renderId++;
   errorBox.textContent = "";
   try {
+    editorGraph();
     const edges = parseEdges(codeBox.value);
     const phone = phoneToggle.checked && edges.length > 0;
     const ids = phone ? sliceIds(edges) : [];
@@ -1272,11 +1499,7 @@ async function render() {
     errorLog.textContent = "";
     errorLog.classList.remove("open");
   } catch (err) {
-    errorBox.textContent = err.message;
-    errorLog.textContent += err.message + `
-`;
-    errorLog.classList.add("open");
-    errorLog.scrollTop = errorLog.scrollHeight;
+    showEditorValidationError(err);
   }
 }
 function setStatus(text) {
@@ -1308,10 +1531,21 @@ function resetEditorHistory(text) {
 }
 async function loadDiagram(name) {
   const text = await fetch("/api/diagrams/" + encodeURIComponent(name)).then((r) => r.text());
+  const { metadata } = splitEditorMetadata(text);
   currentName = name;
   codeBox.value = text;
   resetEditorHistory(text);
-  render();
+  await render();
+  if (metadata) {
+    try {
+      if (editorGraph().nodes.has(metadata.lastSelectedNodeId ?? ""))
+        selectEditorNode(metadata.lastSelectedNodeId);
+    } catch {}
+  }
+  if (metadata) {
+    outputBox.scrollLeft = metadata.outputScrollLeft;
+    outputBox.scrollTop = metadata.outputScrollTop;
+  }
   loadList();
   watchDiagram(name);
 }
@@ -1355,13 +1589,15 @@ document.getElementById("newBtn").addEventListener("click", () => {
     watcher.close();
   currentName = null;
   codeBox.value = `flowchart TD
-  A[New idea]`;
+  B_NEW[New idea]`;
   resetEditorHistory(codeBox.value);
   render();
   loadList();
   setDrawerOpen(true);
 });
 document.getElementById("saveBtn").addEventListener("click", saveDiagram);
+previousDecisionBtn.addEventListener("click", () => navigateDecision(-1));
+nextDecisionBtn.addEventListener("click", () => navigateDecision(1));
 document.getElementById("resetBtn").addEventListener("click", () => {
   chosenAnswers.clear();
   phonePath.length = 0;

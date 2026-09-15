@@ -64,6 +64,8 @@
   <button id="resetBtn">Reset</button>
   <button id="editorUndoBtn">Undo edit</button>
   <button id="editorRedoBtn">Redo edit</button>
+  <button id="previousDecisionBtn">Previous</button>
+  <button id="nextDecisionBtn">Next</button>
   <label><input type="checkbox" id="phoneToggle"> Phone view</label>
   <select id="diagramSelect">
     <option value="" disabled selected>Diagrams</option>
@@ -74,7 +76,7 @@
   <div id="drawer" class="closed">
     <div id="editor">
       <textarea id="code">flowchart TD
-  A[New idea]</textarea>
+  B_NEW[New idea]</textarea>
       <pre id="errorLog"></pre>
     </div>
     <button id="drawerToggle" title="Show/hide editor">&#9776;</button>
