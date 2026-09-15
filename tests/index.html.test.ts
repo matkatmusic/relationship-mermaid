@@ -147,6 +147,7 @@ test("test_split_workspace_always_renders_regular_and_phone_views_with_distinct_
       phoneShare: phone.width / main.width,
       regularSvg: !!document.querySelector('#diagram svg'),
       phoneSvg: !!document.querySelector('#phoneDiagram svg'),
+      regularWidthStyle: document.querySelector('#diagram svg')?.style.width,
     };
   })())`).then(JSON.parse);
   assert.equal(layout.hasToggle, false);
@@ -154,6 +155,7 @@ test("test_split_workspace_always_renders_regular_and_phone_views_with_distinct_
   assert.ok(Math.abs(layout.phoneShare - 0.35) < 0.02);
   assert.equal(layout.regularSvg, true);
   assert.equal(layout.phoneSvg, true);
+  assert.match(layout.regularWidthStyle, /^\d+(?:\.\d+)?px$/);
 
   // Step: phone controls sit above only the right-hand phone diagram.
   const bar = await evaluate(`JSON.stringify((() => {
@@ -1024,20 +1026,50 @@ async function inspectorFocus() {
 
 test('test_decision_navigation_counter_tracks_navigation_not_later_selection', async () => {
   await resetEditorFixture();
-  await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_FIRST{"First decision"}\n  Q_SECOND{"Second decision"}\n  Q_CHOICE_FIRST_YES["Yes"]\n  B_END["End"]\n  B_START --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_YES\n  Q_CHOICE_FIRST_YES --> Q_SECOND\n  Q_SECOND --> B_END');
+  await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_FIRST{"First decision"}\n  Q_CHOICE_FIRST_YES["Yes"]\n  Q_CHOICE_FIRST_NO["No"]\n  B_MIDDLE["Middle"]\n  Q_SECOND{"Second decision"}\n  Q_CHOICE_SECOND_YES["Yes"]\n  Q_CHOICE_SECOND_NO["No"]\n  B_START --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_YES --> B_MIDDLE --> Q_SECOND\n  Q_FIRST --> Q_CHOICE_FIRST_NO\n  Q_SECOND --> Q_CHOICE_SECOND_YES\n  Q_SECOND --> Q_CHOICE_SECOND_NO');
   // Step: the counter follows standalone brace-shaped decisions in source order.
-  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '1 / 2');
+  const initialCounter = await evaluate("document.getElementById('decisionCounter').textContent");
+  const initialError = await evaluate("document.getElementById('error').textContent");
+  assert.equal(initialCounter, '1 / 2', initialError);
   assert.equal(await evaluate("document.getElementById('nextDecisionBtn').nextElementSibling?.id"), 'decisionCounter');
   // Step: navigating sets the current decision and advances the counter.
   await evaluate("document.getElementById('nextDecisionBtn').click()");
+  await sleep(300);
   assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_SECOND');
   assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
+  assert.equal(await evaluate("currentBottomQ"), 'Q_SECOND');
+  assert.equal(await evaluate("!!document.querySelector('#phoneDiagram [id*=\"flowchart-Q_SECOND-\"]')"), true);
+  for (const id of ['Q_FIRST', 'Q_CHOICE_FIRST_YES', 'Q_CHOICE_FIRST_NO', 'B_MIDDLE', 'Q_CHOICE_SECOND_YES', 'Q_CHOICE_SECOND_NO'])
+    assert.equal(await evaluate(`!!document.querySelector('#phoneDiagram [id*="flowchart-${id}-"]')`), true, id);
+  const phoneCenterDelta = await evaluate(`(() => {
+    const pane = document.getElementById('phoneDiagram').getBoundingClientRect();
+    const node = document.querySelector('#phoneDiagram [id*="flowchart-Q_SECOND-"]').getBoundingClientRect();
+    return Math.abs((node.left + node.width / 2) - (pane.left + pane.width / 2));
+  })()`);
+  assert.ok(phoneCenterDelta < 32, `phone decision center delta was ${phoneCenterDelta}`);
+  const mainFocusVisible = await evaluate(`(() => {
+    const pane = document.getElementById('output').getBoundingClientRect();
+    const node = document.querySelector('#diagram [id*="flowchart-Q_SECOND-"]').getBoundingClientRect();
+    const x = node.left + node.width / 2;
+    const y = node.top + node.height / 2;
+    return x >= pane.left && x <= pane.right && y >= pane.top && y <= pane.bottom;
+  })()`);
+  assert.equal(mainFocusVisible, true);
   // Step: choosing another node does not change the most recently navigated decision.
   await selectEditorNode('B_END');
   assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
   await evaluate("document.getElementById('previousDecisionBtn').click()");
   assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_FIRST');
   assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '1 / 2');
+});
+
+test('test_selecting_a_main_view_block_retargets_the_phone_subset', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_A["A"]\n  B_B["B"]\n  B_C["C"]\n  Q_NEXT{"Next?"}\n  Q_CHOICE_NEXT_Y["Yes"]\n  Q_CHOICE_NEXT_N["No"]\n  B_A --> B_B --> B_C --> Q_NEXT\n  Q_NEXT --> Q_CHOICE_NEXT_Y\n  Q_NEXT --> Q_CHOICE_NEXT_N');
+  await clickNode('B_B');
+  await sleep(300);
+  assert.equal(await evaluate("!!document.querySelector('#phoneDiagram [id*=\"flowchart-B_B-\"]')"), true);
+  assert.equal(await evaluate("currentBottomQ"), 'Q_NEXT');
 });
 
 test("test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order", async () => {
@@ -1399,46 +1431,49 @@ test('test_new_static_text_enter_keeps_selection_and_focuses_destination', async
 });
 
 test('test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus', async () => {
-  const fixture = 'flowchart TD\n  A["A"] --> B["B"]\n  B --> C["C"]';
+  const fixture = 'flowchart TD\n  B_A["A"]\n  B_B["B"]\n  B_C["C"]\n  B_D["D"]\n  B_A --> B_B --> B_C --> B_D';
   await resetEditorFixture();
   await setEditorSource(fixture);
-  await clickNode('A');
+  await clickNode('B_B');
   const buttonHistoryLength = await evaluate('editorHistory.length');
   await clickInspectorAction('add-decision-after');
   const buttonSource = await evaluate('codeBox.value');
-  assert.ok(buttonSource.includes('A --> Q_NEW_1'));
+  assert.ok(buttonSource.includes('B_A --> B_B'));
+  assert.ok(buttonSource.includes('B_B --> Q_NEW_1'));
   assert.ok(buttonSource.includes('Q_NEW_1{"New Decision"}'));
-  assert.ok(buttonSource.includes('Q_NEW_1_NEW["New choice"]'));
-  assert.ok(buttonSource.includes('Q_NEW_1 --> Q_NEW_1_NEW'));
-  assert.ok(!buttonSource.includes('Q_NEW_1_NEW -->'));
-  assert.ok(buttonSource.includes('B --> C["C"]'));
+  assert.ok(buttonSource.includes('Q_CHOICE_NEW_1_Y["Yes"]'));
+  assert.ok(buttonSource.includes('Q_CHOICE_NEW_1_N["No"]'));
+  assert.ok(buttonSource.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_Y'));
+  assert.ok(buttonSource.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_N'));
+  assert.ok(buttonSource.includes('Q_CHOICE_NEW_1_Y --> B_C'));
+  assert.ok(!buttonSource.includes('Q_CHOICE_NEW_1_N -->'));
+  assert.ok(buttonSource.includes('B_C --> B_D'));
+  assert.ok(!buttonSource.includes('B_B --> B_C'));
   assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'Q_NEW_1' });
   assert.equal(await evaluate('editorHistory.length'), buttonHistoryLength + 1);
   await assertEditorSourceIsSavedAndValid();
 
   await resetEditorFixture();
   await setEditorSource(fixture);
-  await clickNode('A');
+  await clickNode('B_B');
   await chooseDestination('new-decision');
   assert.equal(await evaluate('codeBox.value'), buttonSource);
   assert.deepEqual(await inspectorFocus(), { activeId: 'nodeTextInput', selectedId: 'Q_NEW_1' });
   await assertEditorSourceIsSavedAndValid();
 });
 
-test('test_new_decision_text_enter_commits_then_advances_to_its_terminal_choice_destination', async () => {
+test('test_new_decision_text_enter_commits_the_new_decision', async () => {
   await resetEditorFixture();
-  await clickNode('LetGo');
+  await setEditorSource('flowchart TD\n  B_START["Start"]');
+  await clickNode('B_START');
   await chooseDestination('new-decision');
   const historyBeforeText = await evaluate('editorHistory.length');
   await evaluate(`(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Decide next'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
   await evaluate('window.editorActionPromise');
   const source = await evaluate('codeBox.value');
   assert.ok(source.includes('Q_NEW_1{"Decide next"}'));
-  assert.ok(source.includes('Q_NEW_1 --> Q_NEW_1_NEW'));
-  assert.ok(!source.includes('Q_NEW_1_NEW -->'));
-  assert.equal((await inspectorState()).title, 'choice block');
-  assert.equal((await destinationState()).value, '');
-  assert.deepEqual(await inspectorFocus(), { activeId: 'destinationSelect', selectedId: 'Q_NEW_1_NEW' });
+  assert.ok(source.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_Y'));
+  assert.ok(source.includes('Q_NEW_1 --> Q_CHOICE_NEW_1_N'));
   assert.equal(await evaluate('editorHistory.length'), historyBeforeText + 1);
   await assertEditorSourceIsSavedAndValid();
 });

@@ -25,6 +25,8 @@ let renderId = 0;
 let currentName: string | null = null;
 let watcher: EventSource | null = null;
 let currentBottomQ: string | undefined;
+let phoneFocusNodeId: string | null = null;
+let phoneFocusUsesDecisionContext = false;
 const chosenAnswers = new Set();
 const phonePath: string[] = []; // decision node ids clicked in phone view, in order
 const MAX_PHONE_NODES = 8;
@@ -126,9 +128,41 @@ function renderLog(edges: Edge[]) {
   logBox.textContent = ['-- Decision Log for <issue> (<timestamp>) --', ...rows].join('\n');
 }
 
+function contextualDecisionSliceIds(decisionId: string, edges: Edge[]) {
+  const reversed = [decisionId];
+  const visited = new Set(reversed);
+  let node = decisionId;
+  for (;;) {
+    const incoming = edges.find(([, to]) => to === node);
+    if (!incoming)
+      break;
+    const predecessor = incoming[0];
+    if (visited.has(predecessor))
+      break;
+    reversed.push(predecessor);
+    visited.add(predecessor);
+    const isPreviousDecision = predecessor.startsWith('Q_') && !predecessor.startsWith('Q_CHOICE');
+    if (isPreviousDecision)
+      break;
+    node = predecessor;
+  }
+  const ids = reversed.reverse();
+  for (const choice of choicesOf(decisionId, edges)) {
+    if (!visited.has(choice))
+      ids.push(choice);
+  }
+  return ids;
+}
+
 function sliceIds(edges: Edge[]) {
+  if (phoneFocusNodeId && phoneFocusUsesDecisionContext)
+    return contextualDecisionSliceIds(phoneFocusNodeId, edges);
   const last = phonePath[phonePath.length - 1];
-  const ids = last ? [parentOf(last, edges), last] : [edges[0][0]];
+  const ids = phoneFocusNodeId
+    ? [phoneFocusNodeId]
+    : last
+      ? [parentOf(last, edges), last]
+      : [edges[0][0]];
   let node = ids[ids.length - 1];
   for (;;) {
     const next = [];
@@ -175,7 +209,7 @@ function sliceIds(edges: Edge[]) {
 // }
 
 function leadInIds(ids: string[], siblings: string[], edges: Edge[]) {
-  if (!phonePath.length)
+  if ((phoneFocusNodeId && !phoneFocusUsesDecisionContext) || (!phonePath.length && !phoneFocusUsesDecisionContext))
     return [];
   const budget = MAX_PHONE_NODES - new Set([...ids, ...siblings]).size;
   const found: string[] = [];
@@ -215,7 +249,7 @@ function leadInIds(ids: string[], siblings: string[], edges: Edge[]) {
 }
 
 function siblingIds(ids: string[], edges: Edge[]) {
-  if (!phonePath.length)
+  if ((phoneFocusNodeId && !phoneFocusUsesDecisionContext) || (!phonePath.length && !phoneFocusUsesDecisionContext))
     return [];
   const found = [];
   for (const [from, to] of edges) {
@@ -515,7 +549,17 @@ function updateDecisionCounter(graph: EditorGraph) {
   return decisions;
 }
 
-function navigateDecision(step: 1 | -1) {
+function centerNodeInViewport(container: HTMLElement, diagram: Element, id: string) {
+  const node = diagram.querySelector('[id*="flowchart-' + id + '-"]');
+  if (!node)
+    return;
+  const containerRect = container.getBoundingClientRect();
+  const nodeRect = node.getBoundingClientRect();
+  container.scrollLeft += nodeRect.left + nodeRect.width / 2 - containerRect.left - container.clientWidth / 2;
+  container.scrollTop += nodeRect.top + nodeRect.height / 2 - containerRect.top - container.clientHeight / 2;
+}
+
+async function navigateDecision(step: 1 | -1) {
   let graph: EditorGraph;
   try {
     graph = editorGraph();
@@ -533,11 +577,12 @@ function navigateDecision(step: 1 | -1) {
   const nextIndex = (currentIndex + step + decisions.length) % decisions.length;
   const decision = decisions[nextIndex];
   currentDecisionId = decision.id;
+  phoneFocusNodeId = decision.id;
+  phoneFocusUsesDecisionContext = true;
   selectEditorNode(decision.id);
   updateDecisionCounter(graph);
-  const el = diagramBox.querySelector('[id*="flowchart-' + decision.id + '-"]');
-  if (el)
-    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  await render();
+  centerNodeInViewport(outputBox, diagramBox, decision.id);
 }
 
 type EditorNodeKind = 'question' | 'block' | 'choice';
@@ -1539,13 +1584,7 @@ async function commitInsertDecisionAfter(sourceId: string, graph: EditorGraph) {
 }
 
 async function commitNewDecisionAfter(sourceId: string, graph: EditorGraph) {
-  const decisionId = nextEditorId('Q_NEW', graph);
-  const newChoiceId = choiceId(decisionId, 'NEW');
-  const source = `${replaceOutgoing(sourceId, decisionId, graph)}\n  ${decisionId}{"New Decision"}\n  ${newChoiceId}["New choice"]\n  ${decisionId} --> ${newChoiceId}`;
-  await commitEditorSource(source);
-  advanceAfterDecisionText = { decisionId, choiceId: newChoiceId };
-  selectEditorNode(decisionId);
-  focusInspectorText();
+  await commitInsertDecisionAfter(sourceId, graph);
 }
 
 async function commitAddChoiceOnDecision(questionId: string, graph: EditorGraph) {
@@ -1635,7 +1674,13 @@ function commitDestination() {
 
 outputBox.addEventListener('click', (event) => {
   const nodeEl = (event.target as HTMLElement).closest('g.node');
-  selectEditorNode(nodeEl ? nodeIdOf(nodeEl) : null);
+  const id = nodeEl ? nodeIdOf(nodeEl) : null;
+  selectEditorNode(id);
+  if (id) {
+    phoneFocusNodeId = id;
+    phoneFocusUsesDecisionContext = false;
+    render();
+  }
 });
 
 phoneDiagramBox.addEventListener('click', (event) => {
@@ -1650,6 +1695,8 @@ phoneDiagramBox.addEventListener('click', (event) => {
   if (!openChoices.includes(clicked))
     return;
   phonePath.push(clicked);
+  phoneFocusNodeId = null;
+  phoneFocusUsesDecisionContext = false;
   render();
 });
 
@@ -1919,6 +1966,10 @@ function drawSeparator(ids: string[], leadIns: string[]) {
 }
 
 function scrollChoicesIntoView(bottomQ: string | undefined, edges: Edge[]): void {
+  if (phoneFocusNodeId) {
+    centerNodeInViewport(phoneDiagramBox, phoneDiagramBox, phoneFocusNodeId);
+    return;
+  }
   const atStart = phonePath.length === 0;
   if (atStart) {
     phoneDiagramBox.scrollTop = 0;
@@ -1950,17 +2001,21 @@ async function render() {
     const leadIns = leadInIds(ids, siblings, edges);
     const shown = new Set([...ids, ...siblings, ...leadIns]);
     const reversedIds = [...ids].reverse();
-    let bottomQ;
-    for (const rid of reversedIds) {
-      let outgoingCount = 0;
-      for (const [from] of edges) {
-        if (from === rid)
-          outgoingCount++;
-      }
-      const hasBranch = outgoingCount > 1;
-      if (hasBranch) {
-        bottomQ = rid;
-        break;
+    let bottomQ = phoneFocusNodeId && graph.nodes.get(phoneFocusNodeId)?.kind === 'question'
+      ? phoneFocusNodeId
+      : undefined;
+    if (!bottomQ) {
+      for (const rid of reversedIds) {
+        let outgoingCount = 0;
+        for (const [from] of edges) {
+          if (from === rid)
+            outgoingCount++;
+        }
+        const hasBranch = outgoingCount > 1;
+        if (hasBranch) {
+          bottomQ = rid;
+          break;
+        }
       }
     }
     currentBottomQ = bottomQ;
@@ -1978,18 +2033,25 @@ async function render() {
     highlightPath();
     if (edges.length > 0) {
       const scale = await baseScale(edges);
-      const svgEl = phoneDiagramBox.querySelector('svg')!;
-      const box = viewBoxOf(phoneSvg);
-      const phoneWidth = Math.max(box.width * scale, phoneDiagramBox.clientWidth);
-      svgEl.style.width = phoneWidth + 'px';
-      svgEl.style.height = box.height * scale + 'px';
+      const regularSvgEl = diagramBox.querySelector('svg')!;
+      const regularBox = viewBoxOf(regularSvg);
+      regularSvgEl.style.width = regularBox.width * scale + 'px';
+      regularSvgEl.style.height = regularBox.height * scale + 'px';
+      const phoneSvgEl = phoneDiagramBox.querySelector('svg')!;
+      const phoneBox = viewBoxOf(phoneSvg);
+      const phoneWidth = Math.max(phoneBox.width * scale, phoneDiagramBox.clientWidth);
+      phoneSvgEl.style.width = phoneWidth + 'px';
+      phoneSvgEl.style.height = phoneBox.height * scale + 'px';
     }
     outputBox.scrollLeft = regularViewport.left;
     outputBox.scrollTop = regularViewport.top;
     phoneDiagramBox.scrollLeft = phoneViewport.left;
     phoneDiagramBox.scrollTop = phoneViewport.top;
     renderLog(edges);
-    const shouldDrawLastDecision = edges.length > 0 && phonePath.length > 0;
+    const hasContextualPreviousDecision = phoneFocusUsesDecisionContext
+      && ids[0] !== phoneFocusNodeId
+      && graph.nodes.get(ids[0])?.kind === 'question';
+    const shouldDrawLastDecision = edges.length > 0 && (phonePath.length > 0 || hasContextualPreviousDecision);
     if (shouldDrawLastDecision)
       drawLastDecisionMask(ids, edges);
     if (shouldDrawLastDecision)
@@ -2047,6 +2109,8 @@ async function loadDiagram(name: string) {
   const { metadata } = splitEditorMetadata(text);
   restoreTypeMetadata(metadata);
   currentName = name;
+  phoneFocusNodeId = null;
+  phoneFocusUsesDecisionContext = false;
   currentDecisionId = metadata?.lastSelectedNodeId ?? null;
   codeBox.value = text;
   resetEditorHistory(text);
@@ -2110,6 +2174,8 @@ document.getElementById('newBtn')!.addEventListener('click', () => {
   if (watcher)
     watcher.close();
   currentName = null;
+  phoneFocusNodeId = null;
+  phoneFocusUsesDecisionContext = false;
   currentDecisionId = null;
   restoreTypeMetadata(null);
   codeBox.value = 'flowchart TD\n  B_NEW[New idea]';
@@ -2124,6 +2190,8 @@ nextDecisionBtn.addEventListener('click', () => navigateDecision(1));
 document.getElementById('resetBtn')!.addEventListener('click', () => {
   chosenAnswers.clear();
   phonePath.length = 0;
+  phoneFocusNodeId = null;
+  phoneFocusUsesDecisionContext = false;
   highlightPath();
   render();
   outputBox.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2131,6 +2199,8 @@ document.getElementById('resetBtn')!.addEventListener('click', () => {
 });
 document.getElementById('undoBtn')!.addEventListener('click', (event) => {
   event.stopPropagation();
+  phoneFocusNodeId = null;
+  phoneFocusUsesDecisionContext = false;
   phonePath.pop();
   render();
 });
@@ -2150,6 +2220,8 @@ openFileInput.addEventListener('change', async () => {
   if (watcher)
     watcher.close();
   currentName = null;
+  phoneFocusNodeId = null;
+  phoneFocusUsesDecisionContext = false;
   currentDecisionId = null;
   codeBox.value = await file.text();
   restoreTypeMetadata(splitEditorMetadata(codeBox.value).metadata);

@@ -1,6 +1,6 @@
 flowchart TD
   B_A[financial investment]
-  B_B[what's the cost?]
+  B_B["Identify the cost"]
   B_C[Do we have enough money?]
   Q_CHOICE_C_Y[Yes]
   Q_CHOICE_C_N[No]
@@ -14,7 +14,6 @@ B_E_JOB_PROMOTION[get a promotion]
 Q_CHOICE_ARE_TERMS_REASONABLE_Y[Yes]
 Q_CHOICE_ARE_TERMS_REASONABLE_N[No]
 
-B_A --> B_B --> B_C
 B_C --> Q_CHOICE_C_Y --> Q_ARE_TERMS_REASONABLE
 B_C --> Q_CHOICE_C_N --> Q_NEED_MONEY_ROUTE
 
@@ -26,3 +25,27 @@ Q_NEED_MONEY_ROUTE --> B_E_SECOND_JOB
 Q_ARE_TERMS_REASONABLE --> Q_CHOICE_ARE_TERMS_REASONABLE_Y
 
 Q_ARE_TERMS_REASONABLE --> Q_CHOICE_ARE_TERMS_REASONABLE_N
+  B_B --> Q_NEW_1
+  Q_NEW_1{"Is the cost negotiable?"}
+  Q_CHOICE_NEW_1_NEW["Yes"]
+  Q_NEW_1 --> Q_CHOICE_NEW_1_NEW
+  Q_CHOICE_NEW_1_NEW --> B_C
+  Q_CHOICE_NEW_1_NEW2["No"]
+  Q_NEW_1 --> Q_CHOICE_NEW_1_NEW2
+  Q_CHOICE_NEW_1_NEW2 --> B_C
+  Q_CHOICE_ARE_TERMS_REASONABLE_Y --> Q_NEW_2
+  Q_NEW_2{"What is this money not being used for, by making this investment?"}
+  Q_CHOICE_NEW_2_NEW["New choice"]
+  Q_NEW_2 --> Q_CHOICE_NEW_2_NEW
+  B_A --> Q_NEW_3
+  Q_NEW_3{"Short term or long-term investment?"}
+  Q_CHOICE_NEW_3_NEW["Short term"]
+  Q_NEW_3 --> Q_CHOICE_NEW_3_NEW
+  Q_CHOICE_NEW_3_NEW --> B_B
+  Q_CHOICE_NEW_3_NEW2["Long term"]
+  Q_NEW_3 --> Q_CHOICE_NEW_3_NEW2
+  Q_CHOICE_NEW_3_NEW2 --> B_B
+%%%%====
+%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE
+%% {"lastSelectedNodeId":null,"outputScrollLeft":731,"outputScrollTop":0,"typeColors":{"decision":"#f6d365","choice":"#9ed7a4","static":"#9fc5e8","goal":"#c9b6e4"},"nodeTypes":{}}
+%%%%====
