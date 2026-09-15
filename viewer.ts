@@ -722,8 +722,8 @@ interface PendingRemoval {
 
 interface EditorMetadata {
   lastSelectedNodeId: string | null;
-  outputScrollLeft: number;
-  outputScrollTop: number;
+  outputScrollLeft?: number;
+  outputScrollTop?: number;
   typeColors?: Record<string, string>;
   nodeTypes?: Record<string, string>;
 }
@@ -739,16 +739,17 @@ function splitEditorMetadata(source: string) {
   let metadata: EditorMetadata | null = null;
   try {
     const parsed = JSON.parse(matches[matches.length - 1][1]);
-    if (typeof parsed.lastSelectedNodeId === 'string' || parsed.lastSelectedNodeId === null) {
-      if (typeof parsed.outputScrollLeft === 'number' && typeof parsed.outputScrollTop === 'number') {
-        metadata = {
-          lastSelectedNodeId: parsed.lastSelectedNodeId,
-          outputScrollLeft: parsed.outputScrollLeft,
-          outputScrollTop: parsed.outputScrollTop,
-          typeColors: stringRecord(parsed.typeColors),
-          nodeTypes: stringRecord(parsed.nodeTypes),
-        };
-      }
+    if (parsed && typeof parsed === 'object') {
+      const lastSelectedNodeId = typeof parsed.lastSelectedNodeId === 'string' || parsed.lastSelectedNodeId === null
+        ? parsed.lastSelectedNodeId
+        : null;
+      metadata = {
+        lastSelectedNodeId,
+        outputScrollLeft: typeof parsed.outputScrollLeft === 'number' ? parsed.outputScrollLeft : undefined,
+        outputScrollTop: typeof parsed.outputScrollTop === 'number' ? parsed.outputScrollTop : undefined,
+        typeColors: stringRecord(parsed.typeColors),
+        nodeTypes: stringRecord(parsed.nodeTypes),
+      };
     }
   }
   catch {
@@ -2236,6 +2237,31 @@ function resetEditorHistory(text: string) {
   selectEditorNode(null);
 }
 
+function restoreMainViewport(metadata: EditorMetadata | null, graph: EditorGraph) {
+  const hasSavedLeft = typeof metadata?.outputScrollLeft === 'number';
+  const hasSavedTop = typeof metadata?.outputScrollTop === 'number';
+  if (hasSavedLeft)
+    outputBox.scrollLeft = metadata.outputScrollLeft!;
+  if (hasSavedTop)
+    outputBox.scrollTop = metadata.outputScrollTop!;
+  if (hasSavedLeft && hasSavedTop)
+    return;
+  const firstNode = graph.nodes.values().next().value as EditorNode | undefined;
+  if (!firstNode)
+    return;
+  const node = diagramBox.querySelector('[id*="flowchart-' + firstNode.id + '-"]');
+  if (!node)
+    return;
+  const outputRect = outputBox.getBoundingClientRect();
+  const nodeRect = node.getBoundingClientRect();
+  const nodeLeft = outputBox.scrollLeft + nodeRect.left - outputRect.left;
+  const nodeTop = outputBox.scrollTop + nodeRect.top - outputRect.top;
+  if (!hasSavedLeft)
+    outputBox.scrollLeft = Math.max(0, nodeLeft - 12);
+  if (!hasSavedTop)
+    outputBox.scrollTop = Math.max(0, nodeTop - 12);
+}
+
 async function loadDiagram(name: string) {
   const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
   const { metadata } = splitEditorMetadata(text);
@@ -2249,19 +2275,19 @@ async function loadDiagram(name: string) {
   codeBox.value = text;
   resetEditorHistory(text);
   await render();
-  if (metadata) {
-    try {
-      if (editorGraph().nodes.has(metadata.lastSelectedNodeId ?? ''))
-        selectEditorNode(metadata.lastSelectedNodeId);
-    }
-    catch {
-      // render() has already surfaced the validation failure.
-    }
+  let graph: EditorGraph | null = null;
+  try {
+    graph = editorGraph();
+  }
+  catch {
+    // render() has already surfaced the validation failure.
   }
   if (metadata) {
-    outputBox.scrollLeft = metadata.outputScrollLeft;
-    outputBox.scrollTop = metadata.outputScrollTop;
+    if (graph?.nodes.has(metadata.lastSelectedNodeId ?? ''))
+      selectEditorNode(metadata.lastSelectedNodeId);
   }
+  if (graph)
+    restoreMainViewport(metadata, graph);
   loadList();
   watchDiagram(name);
 }

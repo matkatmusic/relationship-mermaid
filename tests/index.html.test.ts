@@ -964,6 +964,55 @@ test("test_save_persists_and_load_restores_editor_metadata_trailer", async () =>
   await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
 });
 
+test("test_load_uses_the_first_node_position_when_scroll_metadata_is_missing", async () => {
+  const wideNodes = Array.from({ length: 10 }, (_, index) => `  B_WIDE_${index + 1}["Wide ${index + 1}"]`);
+  const deepNodes = Array.from({ length: 12 }, (_, index) => `  B_DEEP_${index + 1}["Deep ${index + 1}"]`);
+  const wideEdges = Array.from({ length: 10 }, (_, index) => `  B_FIRST --> B_WIDE_${index + 1}`);
+  const deepEdges = Array.from({ length: 11 }, (_, index) => `  B_DEEP_${index + 1} --> B_DEEP_${index + 2}`);
+  const body = [
+    'flowchart TD',
+    '  B_FIRST["First"]',
+    ...wideNodes,
+    ...deepNodes,
+    ...wideEdges,
+    '  B_WIDE_1 --> B_DEEP_1',
+    ...deepEdges,
+  ].join('\n');
+  const sourceWithoutScroll = `${body}\n%%%%====\n%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE\n%% {"lastSelectedNodeId":null}\n%%%%====`;
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`, { method: 'PUT', body: sourceWithoutScroll });
+  await setEditorSource(body);
+  const oldViewport = await evaluate(`JSON.stringify((() => {
+    const output = document.getElementById('output');
+    output.scrollLeft = output.scrollWidth;
+    output.scrollTop = output.scrollHeight;
+    return { left: output.scrollLeft, top: output.scrollTop };
+  })())`).then(JSON.parse);
+  assert.ok(oldViewport.left > 0);
+  assert.ok(oldViewport.top > 0);
+
+  await evaluate(`loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`);
+  const restored = await evaluate(`JSON.stringify((() => {
+    const output = document.getElementById('output');
+    const pane = output.getBoundingClientRect();
+    const first = document.querySelector('#diagram [id*="flowchart-B_FIRST-"]').getBoundingClientRect();
+    return {
+      left: output.scrollLeft,
+      top: output.scrollTop,
+      firstVisible: first.left >= pane.left && first.right <= pane.right && first.top >= pane.top && first.bottom <= pane.bottom,
+    };
+  })())`).then(JSON.parse);
+  assert.equal(restored.firstVisible, true, JSON.stringify({ oldViewport, restored }));
+  assert.ok(restored.left < oldViewport.left);
+  assert.ok(restored.top < oldViewport.top);
+
+  const sourceWithZeroScroll = `${body}\n%%%%====\n%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE\n%% {"lastSelectedNodeId":null,"outputScrollLeft":0,"outputScrollTop":0}\n%%%%====`;
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`, { method: 'PUT', body: sourceWithZeroScroll });
+  await evaluate(`(() => { const output = document.getElementById('output'); output.scrollLeft = output.scrollWidth; output.scrollTop = output.scrollHeight; })()`);
+  await evaluate(`loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`);
+  assert.deepEqual(await evaluate(`JSON.stringify({ left: document.getElementById('output').scrollLeft, top: document.getElementById('output').scrollTop })`).then(JSON.parse), { left: 0, top: 0 });
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`, { method: 'PUT', body: editorFixtureSource });
+});
+
 test("test_node_categories_and_colors_persist_and_recolor_both_views", async () => {
   await resetEditorFixture();
   await clickNode("B_Start");
