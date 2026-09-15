@@ -1,0 +1,198 @@
+[
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_phone_view_shows_the_start_slice"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_a_decision_node_slices_to_the_next_decision_point"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_reset_returns_to_the_start_slice"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_back_button_undoes_one_choice_at_a_time"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_phone_view_handles_a_diagram_with_no_edges"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_decision_log_reflects_choices_and_undo"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_font_size_is_the_same_in_every_view"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_a_decision_node_scrolls_the_new_choices_into_view"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_syntax_error_keeps_last_good_diagram_and_shows_error_log"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_question_after_terminal_block_creates_two_choices"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_question_in_middle_splices_each_former_successor"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_block_in_middle_splices_the_edge"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_choice_normalizes_the_first_labelled_question_branch"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inline_question_text_edit_persists"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inline_static_block_text_edit_persists"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_question_removal_preview_cancel_confirm_undo_and_redo_persist"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_a_question_opens_a_decision_block_inspector"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_a_block_opens_a_static_block_inspector"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inspector_is_fixed_while_scrolling_and_tracks_the_editor_drawer"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_a_choice_opens_a_choice_block_inspector"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_double_clicking_a_node_focuses_and_selects_the_text_input"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_cancel_discards_uncommitted_text_and_closes_the_inspector"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_empty_drawing_space_closes_the_inspector"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_another_node_retargets_the_inspector_and_discards_text"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inspector_keeps_the_diagram_scroll_position"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_save_persists_and_load_restores_editor_metadata_trailer"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_destination_row_is_rendered_for_choice_and_static_nodes_but_not_for_decision_nodes"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_destination_terminal_removes_only_the_selected_outgoing_edge"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_destination_accepts_descendants_and_current_value_is_a_no_op"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_before_splices_a_chained_edge_line"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_dirty_text_then_destination_creates_two_ordered_undo_entries"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inspector_remove_button_dispatches_removal_by_node_kind"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_inspector_remove_choices_button_orphans_every_outgoing_branch"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_new_static_button_and_destination_option_have_identical_terminal_orphan_results"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_after_splices_a_static_or_choice_node_without_dropping_its_destination"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_decision_after_splices_blocks_and_choices_with_one_terminal_branch"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_new_static_text_enter_keeps_selection_and_focuses_destination"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_choice_on_inspector_keeps_the_original_decision_selected"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_block_before_splices_incoming_edges_with_their_labels"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_block_before_a_root_node_becomes_the_new_root"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_decision_before_adds_one_leading_choice_and_splices_incoming_edges"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_decision_before_a_root_node_becomes_the_new_root"
+  }
+]

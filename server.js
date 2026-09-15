@@ -23,6 +23,10 @@ if (import.meta.main) Bun.serve({
       return new Response(Bun.file("viewer.js"), { headers: { "Content-Type": "text/javascript" } });
     }
 
+    if (url.pathname === "/mermaid.min.js") {
+      return new Response(Bun.file("node_modules/mermaid/dist/mermaid.min.js"), { headers: { "Content-Type": "text/javascript" } });
+    }
+
     if (url.pathname === "/api/diagrams" && req.method === "GET") {
       const glob = new Bun.Glob("*.mmd");
       const names = await Array.fromAsync(glob.scan({ cwd: "diagrams" }));
