@@ -135,18 +135,29 @@ after(async () => {
   serverProc?.kill();
 });
 
-test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
-  // Step: turn on phone view.
-  await evaluate("document.getElementById('phoneToggle').click()");
-  await sleep(100);
-  // Step: the output frame reports a fixed phone-shaped size.
-  const rect = await evaluate("JSON.stringify(document.getElementById('output').getBoundingClientRect())").then(JSON.parse);
-  const mainHeight = await evaluate("document.getElementById('main').getBoundingClientRect().height");
-  assert.equal(rect.width, 450);
-  assert.ok(Math.abs(rect.height - (mainHeight - 32)) < 1);
-  // Step: the phone bar sits above the diagram, with the buttons inside it.
+test("test_split_workspace_always_renders_regular_and_phone_views_with_distinct_clicks", async () => {
+  // Step: the old mode switch is gone and both panes occupy their fixed shares of the canvas.
+  const layout = await evaluate(`JSON.stringify((() => {
+    const main = document.getElementById('main').getBoundingClientRect();
+    const workspace = document.getElementById('workspace').getBoundingClientRect();
+    const phone = document.getElementById('phoneWorkspace').getBoundingClientRect();
+    return {
+      hasToggle: !!document.getElementById('phoneToggle'),
+      workspaceShare: workspace.width / main.width,
+      phoneShare: phone.width / main.width,
+      regularSvg: !!document.querySelector('#diagram svg'),
+      phoneSvg: !!document.querySelector('#phoneDiagram svg'),
+    };
+  })())`).then(JSON.parse);
+  assert.equal(layout.hasToggle, false);
+  assert.ok(Math.abs(layout.workspaceShare - 0.65) < 0.02);
+  assert.ok(Math.abs(layout.phoneShare - 0.35) < 0.02);
+  assert.equal(layout.regularSvg, true);
+  assert.equal(layout.phoneSvg, true);
+
+  // Step: phone controls sit above only the right-hand phone diagram.
   const bar = await evaluate(`JSON.stringify((() => {
-    const svgTop = document.querySelector('#diagram svg').getBoundingClientRect().top;
+    const svgTop = document.querySelector('#phoneDiagram svg').getBoundingClientRect().top;
     const barBottom = document.getElementById('phoneBar').getBoundingClientRect().bottom;
     const logTop = document.getElementById('logBtn').getBoundingClientRect().top;
     const undoTop = document.getElementById('undoBtn').getBoundingClientRect().top;
@@ -155,6 +166,14 @@ test("test_phone_view_shows_a_fixed_phone_shaped_frame", async () => {
   assert.equal(bar.barAboveSvg, true);
   assert.equal(bar.logAboveSvg, true);
   assert.equal(bar.undoAboveSvg, true);
+
+  // Step: a regular click opens the editor selection while a phone choice advances only the phone path.
+  await evaluate("document.querySelector('#diagram [id*=\"flowchart-Q_THEM_DONE_SPEAKING-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+  assert.equal(await evaluate("selectedEditorNodeId"), 'Q_THEM_DONE_SPEAKING');
+  await evaluate("document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+  await sleep(100);
+  assert.equal(await evaluate("phonePath.length"), 1);
+  assert.equal(await evaluate("selectedEditorNodeId"), 'Q_THEM_DONE_SPEAKING');
 });
 
 const START_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_THEM_DONE_SPEAKING_N"].sort();
@@ -548,7 +567,7 @@ async function resetEditorFixture() {
     body: editorFixtureSource,
   });
   await evaluate(
-    `phoneToggle.checked = false; phoneToggle.dispatchEvent(new Event('change')); loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`
+    `loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`
   );
   await sleep(300);
 }
@@ -736,15 +755,19 @@ async function inspectorState() {
   return JSON.parse(json);
 }
 
-async function inspectorPlacement(id: string) {
-  // Scenario: where the card sits relative to the selected node and the #output box.
+async function inspectorPlacement() {
+  // Scenario: where the card sits relative to the editor drawer and main content area.
   const json = await evaluate(`JSON.stringify((() => {
     const card = document.getElementById('nodeInspector').getBoundingClientRect();
-    const output = document.getElementById('output').getBoundingClientRect();
-    const node = document.querySelector('[id*="flowchart-${id}-"]').getBoundingClientRect();
+    const drawer = document.getElementById('drawer').getBoundingClientRect();
+    const main = document.getElementById('main').getBoundingClientRect();
     return {
-      insideOutput: card.left >= output.left && card.right <= output.right + 1 && card.top >= output.top && card.bottom <= output.bottom + 1,
-      besideNode: card.left >= node.right || card.right <= node.left,
+      atDrawerEdge: Math.abs(card.left - drawer.right) <= 1,
+      atContentTop: Math.abs(card.top - main.top) <= 1,
+      left: card.left,
+      top: card.top,
+      drawerRight: drawer.right,
+      mainTop: main.top,
       width: card.width,
     };
   })())`);
@@ -764,11 +787,11 @@ test("test_clicking_a_question_opens_a_decision_block_inspector", async () => {
   assert.equal(state.hidden, false);
   assert.equal(state.title, "Decision block");
   assert.equal(state.text, "Can I be calm?");
-  // Step: the card sits beside the node and inside the visible #output box.
-  const placement = await inspectorPlacement("Q1");
+  // Step: the card is fixed to the drawer edge at the top of the content area.
+  const placement = await inspectorPlacement();
   assert.ok(placement.width > 0);
-  assert.equal(placement.insideOutput, true);
-  assert.equal(placement.besideNode, true);
+  assert.equal(placement.atDrawerEdge, true);
+  assert.equal(placement.atContentTop, true);
 });
 
 test("test_clicking_a_block_opens_a_static_block_inspector", async () => {
@@ -780,6 +803,28 @@ test("test_clicking_a_block_opens_a_static_block_inspector", async () => {
   assert.equal(state.hidden, false);
   assert.equal(state.title, "static block");
   assert.equal(state.text, "Let it go");
+});
+
+test("test_inspector_is_fixed_while_scrolling_and_tracks_the_editor_drawer", async () => {
+  await evaluate("document.getElementById('diagram').style.minHeight = '2000px'");
+  await selectEditorNode("RAISE_ISSUE");
+  const initial = await inspectorPlacement();
+  // Step: scrolling the diagram does not move the fixed inspector.
+  await evaluate("(() => { const output = document.getElementById('output'); output.scrollTop = 100; output.dispatchEvent(new Event('scroll')); })()");
+  const afterScroll = await inspectorPlacement();
+  assert.equal(afterScroll.left, initial.left);
+  assert.equal(afterScroll.top, initial.top);
+  assert.equal(afterScroll.atDrawerEdge, true, JSON.stringify(afterScroll));
+  assert.equal(afterScroll.atContentTop, true);
+  // Step: toggling the drawer moves the inspector horizontally to its new edge.
+  await evaluate("document.getElementById('drawerToggle').click()");
+  const afterDrawerToggle = await inspectorPlacement();
+  assert.notEqual(afterDrawerToggle.left, initial.left);
+  assert.equal(afterDrawerToggle.top, initial.top);
+  assert.equal(afterDrawerToggle.atDrawerEdge, true);
+  assert.equal(afterDrawerToggle.atContentTop, true);
+  await evaluate("document.getElementById('drawerToggle').click()");
+  await evaluate("document.getElementById('diagram').style.minHeight = ''; document.getElementById('output').scrollTop = 0");
 });
 
 test("test_clicking_a_choice_opens_a_choice_block_inspector", async () => {
@@ -870,10 +915,10 @@ test("test_inspector_keeps_the_diagram_scroll_position", async () => {
   const overflow = await evaluate("JSON.stringify({sh: document.getElementById('output').scrollHeight, ch: document.getElementById('output').clientHeight})").then(JSON.parse);
   assert.ok(overflow.sh > overflow.ch);
   await evaluate("document.getElementById('output').scrollTop = 150");
-  // Step: selecting a node keeps the scroll position, and the card stays inside #output.
+  // Step: selecting a node keeps the scroll position, and the card remains drawer-anchored.
   await clickNode("RAISE_ISSUE");
   assert.equal(await outputScrollTop(), 150);
-  assert.equal((await inspectorPlacement("RAISE_ISSUE")).insideOutput, true);
+  assert.equal((await inspectorPlacement()).atDrawerEdge, true);
   // Step: committing the text with Enter rerenders, saves, and keeps the scroll position.
   await evaluate("(() => { const input = document.getElementById('nodeTextInput'); input.value = 'Other side raises an issue'; input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()");
   await evaluate("window.editorActionPromise");
@@ -897,9 +942,16 @@ test("test_save_persists_and_load_restores_editor_metadata_trailer", async () =>
   const saved = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`).then((r) => r.text());
   const trailer = saved.match(/%%%%====\n%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE\n%% (\{[^\n]+\})\n%%%%====$/);
   assert.ok(trailer);
-  assert.deepEqual(JSON.parse(trailer[1]), {
+  const savedMetadata = JSON.parse(trailer[1]);
+  assert.deepEqual({
+    lastSelectedNodeId: savedMetadata.lastSelectedNodeId,
+    outputScrollLeft: savedMetadata.outputScrollLeft,
+    outputScrollTop: savedMetadata.outputScrollTop,
+  }, {
     lastSelectedNodeId: 'B_RAISE_ISSUE', outputScrollLeft: 0, outputScrollTop: 150,
   });
+  assert.equal(savedMetadata.typeColors.static, '#9fc5e8');
+  assert.deepEqual(savedMetadata.nodeTypes, {});
   assert.equal((saved.match(/%%%%====/g) ?? []).length, 2);
 
   // Step: a load restores the selected node and saved viewport, while Mermaid still renders the comment trailer.
@@ -908,6 +960,35 @@ test("test_save_persists_and_load_restores_editor_metadata_trailer", async () =>
   assert.deepEqual(await inspectorFocus(), { activeId: '', selectedId: 'B_RAISE_ISSUE' });
   assert.equal(await outputScrollTop(), 150);
   await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${SCROLL_FIXTURE_NAME}`, { method: "PUT", body: scrollFixtureSource });
+});
+
+test("test_node_categories_and_colors_persist_and_recolor_both_views", async () => {
+  await resetEditorFixture();
+  await clickNode("B_Start");
+  await evaluate(`(() => {
+    const type = document.getElementById('nodeTypeInput');
+    type.value = 'reflection'; type.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await evaluate("window.editorActionPromise");
+  await evaluate(`(() => {
+    const color = document.getElementById('nodeTypeColorInput');
+    color.value = '#123456'; color.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await evaluate("window.editorActionPromise");
+  const state = await evaluate(`JSON.stringify((() => {
+    const fill = (box) => box.querySelector('[id*="flowchart-B_Start-"] rect').style.fill;
+    return { selected: selectedEditorNodeId, category: document.getElementById('nodeTypeInput').value, regular: fill(document.getElementById('diagram')), phone: fill(document.getElementById('phoneDiagram')) };
+  })())`).then(JSON.parse);
+  assert.deepEqual(state, { selected: 'B_Start', category: 'reflection', regular: 'rgb(18, 52, 86)', phone: 'rgb(18, 52, 86)' });
+  const saved = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`).then((r) => r.text());
+  const metadata = JSON.parse(saved.match(/%% (\{[^\n]+\})\n%%%%====$/)![1]);
+  assert.equal(metadata.nodeTypes.B_Start, 'reflection');
+  assert.equal(metadata.typeColors.reflection, '#123456');
+  await evaluate(`loadDiagram(${JSON.stringify(EDITOR_FIXTURE_NAME)})`);
+  await sleep(300);
+  assert.equal(await evaluate('selectedEditorNodeId'), 'B_Start');
+  assert.equal(await evaluate(`document.querySelector('#phoneDiagram [id*="flowchart-B_Start-"] rect').style.fill`), 'rgb(18, 52, 86)');
+  await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${EDITOR_FIXTURE_NAME}`, { method: 'PUT', body: editorFixtureSource });
 });
 
 async function destinationState() {
@@ -940,6 +1021,24 @@ async function inspectorActions() {
 async function inspectorFocus() {
   return evaluate(`JSON.stringify({ activeId: document.activeElement?.id, selectedId: document.getElementById('selectedNode').textContent })`).then(JSON.parse);
 }
+
+test('test_decision_navigation_counter_tracks_navigation_not_later_selection', async () => {
+  await resetEditorFixture();
+  await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_FIRST{"First decision"}\n  Q_SECOND{"Second decision"}\n  Q_CHOICE_FIRST_YES["Yes"]\n  B_END["End"]\n  B_START --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_YES\n  Q_CHOICE_FIRST_YES --> Q_SECOND\n  Q_SECOND --> B_END');
+  // Step: the counter follows standalone brace-shaped decisions in source order.
+  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '1 / 2');
+  assert.equal(await evaluate("document.getElementById('nextDecisionBtn').nextElementSibling?.id"), 'decisionCounter');
+  // Step: navigating sets the current decision and advances the counter.
+  await evaluate("document.getElementById('nextDecisionBtn').click()");
+  assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_SECOND');
+  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
+  // Step: choosing another node does not change the most recently navigated decision.
+  await selectEditorNode('B_END');
+  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '2 / 2');
+  await evaluate("document.getElementById('previousDecisionBtn').click()");
+  assert.equal(await evaluate("document.getElementById('selectedNode').textContent"), 'Q_FIRST');
+  assert.equal(await evaluate("document.getElementById('decisionCounter').textContent"), '1 / 2');
+});
 
 test("test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order", async () => {
   await resetEditorFixture();
@@ -1364,22 +1463,23 @@ test('test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touchin
   await assertEditorSourceIsSavedAndValid();
 });
 
-test('test_add_choice_on_inspector_moves_focus_to_the_new_choices_destination', async () => {
+test('test_add_choice_on_inspector_keeps_the_original_decision_selected', async () => {
   await resetEditorFixture();
-  await setEditorSource('flowchart TD\n  Q{"Q"} -- Yes --> Y["Y"]');
-  await clickNode('Q');
+  await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_DECISION{"Q"}\n  Q_CHOICE_DECISION_YES["Yes"]\n  B_END["End"]\n  B_START --> Q_DECISION\n  Q_DECISION --> Q_CHOICE_DECISION_YES\n  Q_CHOICE_DECISION_YES --> B_END');
+  await clickNode('Q_DECISION');
   const historyBefore = await evaluate('editorHistory.length');
   await clickInspectorAction('add-choice');
-  // Step: the inspector now shows the new choice block, with its Destination select focused.
+  // Step: the inspector remains on the decision; the new choice is not selected or focused.
   const state = await inspectorState();
   assert.equal(state.hidden, false);
-  assert.equal(state.title, 'choice block');
-  assert.equal(state.text, 'New choice');
-  assert.deepEqual(await inspectorFocus(), { activeId: 'destinationSelect', selectedId: 'Q_NEW' });
-  assert.equal((await destinationState()).value, '');
+  assert.equal(state.title, 'Decision block');
+  assert.equal(state.text, 'Q');
+  assert.deepEqual(await inspectorFocus(), { activeId: '', selectedId: 'Q_DECISION' });
+  const source = await evaluate('codeBox.value');
+  assert.ok(source.includes('Q_CHOICE_DECISION_NEW["New choice"]'));
+  assert.ok(source.includes('Q_DECISION --> Q_CHOICE_DECISION_NEW'));
   // Step: the add-choice commit is exactly one new undo entry.
   assert.equal(await evaluate('editorHistory.length'), historyBefore + 1);
-  await assertEditorSourceIsSavedAndValid();
 });
 
 test('test_insert_static_block_before_splices_incoming_edges_with_their_labels', async () => {

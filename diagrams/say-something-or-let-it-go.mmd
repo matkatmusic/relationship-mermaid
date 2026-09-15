@@ -8,11 +8,32 @@ flowchart TD
   B_HaveConvo["Have the conversation"]
 
   B_Start --> Q_Q1
-  Q_Q1 -- No --> B_LetGo
-  Q_Q1 -- Yes --> Q_Q2
-  Q_Q2 -- No --> B_LetGo
-  Q_Q2 -- Yes --> Q_Q3
-  Q_Q3 -- No --> B_LetGo
-  Q_Q3 -- Yes --> Q_Q4
-  Q_Q4 -- "Not helpful / Move further" --> B_LetGo
-  Q_Q4 -- "Helpful / Move closer" --> B_HaveConvo
+
+  Q_CHOICE_Q1_NEW["Yes"]
+  Q_Q1 --> Q_CHOICE_Q1_NEW
+  Q_CHOICE_Q1_NEW --> Q_Q2
+  Q_CHOICE_Q1_NEW2["No"]
+  Q_Q1 --> Q_CHOICE_Q1_NEW2
+  Q_CHOICE_Q1_NEW2 --> B_LetGo
+  Q_CHOICE_Q2_NEW["Yes"]
+  Q_Q2 --> Q_CHOICE_Q2_NEW
+  Q_CHOICE_Q2_NEW2["No"]
+  Q_Q2 --> Q_CHOICE_Q2_NEW2
+  Q_CHOICE_Q2_NEW2 --> B_LetGo
+  Q_CHOICE_Q2_NEW --> Q_Q3
+  Q_CHOICE_Q3_NEW["Yes"]
+  Q_Q3 --> Q_CHOICE_Q3_NEW
+  Q_CHOICE_Q3_NEW --> Q_Q4
+  Q_CHOICE_Q3_NEW2["No"]
+  Q_Q3 --> Q_CHOICE_Q3_NEW2
+  Q_CHOICE_Q3_NEW2 --> B_LetGo
+  Q_CHOICE_Q4_NEW["Helpful / Move Closer"]
+  Q_Q4 --> Q_CHOICE_Q4_NEW
+  Q_CHOICE_Q4_NEW --> B_HaveConvo
+  Q_CHOICE_Q4_NEW2["Not Helpful/Move Further"]
+  Q_Q4 --> Q_CHOICE_Q4_NEW2
+  Q_CHOICE_Q4_NEW2 --> B_LetGo
+%%%%====
+%% DO NOT MODIFY - AUTOMATICALLY GENERATED DURING EVERY SAVE
+%% {"lastSelectedNodeId":null,"outputScrollLeft":18,"outputScrollTop":1852}
+%%%%====

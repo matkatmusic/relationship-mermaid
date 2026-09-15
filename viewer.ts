@@ -13,12 +13,14 @@ const drawer = document.getElementById('drawer')!;
 const drawerToggle = document.getElementById('drawerToggle')!;
 const openFileBtn = document.getElementById('openFileBtn')!;
 const openFileInput = document.getElementById('openFileInput') as HTMLInputElement;
+const mainBox = document.getElementById('main')!;
 const outputBox = document.getElementById('output')!;
-const phoneToggle = document.getElementById('phoneToggle') as HTMLInputElement;
+const phoneDiagramBox = document.getElementById('phoneDiagram')!;
 const logBtn = document.getElementById('logBtn')!;
 const logBox = document.getElementById('logBox')!;
 const previousDecisionBtn = document.getElementById('previousDecisionBtn')!;
 const nextDecisionBtn = document.getElementById('nextDecisionBtn')!;
+const decisionCounter = document.getElementById('decisionCounter')!;
 let renderId = 0;
 let currentName: string | null = null;
 let watcher: EventSource | null = null;
@@ -30,9 +32,14 @@ const PHONE_INNER = { width: 327, height: 514 };
 const nodeActions = document.getElementById('nodeActions')!;
 const selectedNodeBox = document.getElementById('selectedNode')!;
 let selectedEditorNodeId: string | null = null;
+let currentDecisionId: string | null = null;
 const nodeInspector = document.getElementById('nodeInspector')!;
 const nodeInspectorTitle = document.getElementById('nodeInspectorTitle')!;
 const nodeTextInput = document.getElementById('nodeTextInput') as HTMLInputElement;
+const nodeTypeRow = document.getElementById('nodeTypeRow')!;
+const nodeTypeInput = document.getElementById('nodeTypeInput') as HTMLInputElement;
+const nodeTypeColorRow = document.getElementById('nodeTypeColorRow')!;
+const nodeTypeColorInput = document.getElementById('nodeTypeColorInput') as HTMLInputElement;
 const nodeInspectorDismissBtn = document.getElementById('nodeInspectorDismissBtn')!;
 const destinationRow = document.getElementById('destinationRow')!;
 const destinationSelect = document.getElementById('destinationSelect') as HTMLSelectElement;
@@ -48,6 +55,15 @@ let editorHistory: string[] = [codeBox.value];
 let editorHistoryIndex = 0;
 let editorActionPromise: Promise<void>;
 
+const DEFAULT_TYPE_COLORS: Record<string, string> = {
+  decision: '#f6d365',
+  choice: '#9ed7a4',
+  static: '#9fc5e8',
+  goal: '#c9b6e4',
+};
+let typeColors: Record<string, string> = { ...DEFAULT_TYPE_COLORS };
+let nodeTypes: Record<string, string> = {};
+
 function viewBoxOf(svgText: string) {
   const match = svgText.match(/viewBox="[^"]*?\s([\d.]+)\s([\d.]+)"/)!;
   const [, w, h] = match;
@@ -62,12 +78,8 @@ async function baseScale(edges: Edge[]) {
   const { svg } = await mermaid.render('diagram-scale-' + (renderId++), source);
   const box = viewBoxOf(svg);
   // return Math.min(PHONE_INNER.width / box.width, PHONE_INNER.height / box.height);
-  // return Math.min(PHONE_INNER.width / box.width, diagramBox.clientHeight / box.height);
-  const wasPhone = outputBox.classList.contains('phone');
-  outputBox.classList.add('phone');
-  const screenWidth = diagramBox.clientWidth;
-  const screenHeight = diagramBox.clientHeight;
-  outputBox.classList.toggle('phone', wasPhone);
+  const screenWidth = phoneDiagramBox.clientWidth;
+  const screenHeight = phoneDiagramBox.clientHeight;
   return Math.min(screenWidth / box.width, screenHeight / box.height);
 }
 
@@ -479,6 +491,30 @@ function showEditorValidationError(error: unknown) {
   errorLog.scrollTop = errorLog.scrollHeight;
 }
 
+function decisionNodes(graph: EditorGraph) {
+  // editorGraph only exposes validated, standalone declarations. A question is
+  // therefore exactly a standalone brace-shaped decision for navigation.
+  return [...graph.nodes.values()]
+    .filter(node => node.kind === 'question')
+    .sort((a, b) => a.lineIndex - b.lineIndex);
+}
+
+function updateDecisionCounter(graph: EditorGraph) {
+  const decisions = decisionNodes(graph);
+  if (decisions.length === 0) {
+    currentDecisionId = null;
+    decisionCounter.textContent = '0 / 0';
+    return decisions;
+  }
+  if (!decisions.some(node => node.id === currentDecisionId)) {
+    const selectedDecision = decisions.find(node => node.id === selectedEditorNodeId);
+    currentDecisionId = selectedDecision?.id ?? decisions[0].id;
+  }
+  const current = decisions.findIndex(node => node.id === currentDecisionId) + 1;
+  decisionCounter.textContent = `${current} / ${decisions.length}`;
+  return decisions;
+}
+
 function navigateDecision(step: 1 | -1) {
   let graph: EditorGraph;
   try {
@@ -488,19 +524,17 @@ function navigateDecision(step: 1 | -1) {
     showEditorValidationError(error);
     return;
   }
-  const decisions = [...graph.nodes.values()]
-    .filter(node => node.kind === 'question')
-    .sort((a, b) => a.lineIndex - b.lineIndex);
+  const decisions = updateDecisionCounter(graph);
   if (decisions.length === 0) {
     setStatus('No decisions in this diagram');
     return;
   }
-  const currentIndex = decisions.findIndex(node => node.id === selectedEditorNodeId);
-  const nextIndex = currentIndex < 0
-    ? (step > 0 ? 0 : decisions.length - 1)
-    : (currentIndex + step + decisions.length) % decisions.length;
+  const currentIndex = decisions.findIndex(node => node.id === currentDecisionId);
+  const nextIndex = (currentIndex + step + decisions.length) % decisions.length;
   const decision = decisions[nextIndex];
+  currentDecisionId = decision.id;
   selectEditorNode(decision.id);
+  updateDecisionCounter(graph);
   const el = diagramBox.querySelector('[id*="flowchart-' + decision.id + '-"]');
   if (el)
     el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
@@ -547,6 +581,8 @@ interface EditorMetadata {
   lastSelectedNodeId: string | null;
   outputScrollLeft: number;
   outputScrollTop: number;
+  typeColors?: Record<string, string>;
+  nodeTypes?: Record<string, string>;
 }
 
 const EDITOR_METADATA_FENCE = '%%%%====';
@@ -561,8 +597,15 @@ function splitEditorMetadata(source: string) {
   try {
     const parsed = JSON.parse(matches[matches.length - 1][1]);
     if (typeof parsed.lastSelectedNodeId === 'string' || parsed.lastSelectedNodeId === null) {
-      if (typeof parsed.outputScrollLeft === 'number' && typeof parsed.outputScrollTop === 'number')
-        metadata = parsed;
+      if (typeof parsed.outputScrollLeft === 'number' && typeof parsed.outputScrollTop === 'number') {
+        metadata = {
+          lastSelectedNodeId: parsed.lastSelectedNodeId,
+          outputScrollLeft: parsed.outputScrollLeft,
+          outputScrollTop: parsed.outputScrollTop,
+          typeColors: stringRecord(parsed.typeColors),
+          nodeTypes: stringRecord(parsed.nodeTypes),
+        };
+      }
     }
   }
   catch {
@@ -577,8 +620,26 @@ function sourceWithEditorMetadata(source: string) {
     lastSelectedNodeId: selectedEditorNodeId,
     outputScrollLeft: outputBox.scrollLeft,
     outputScrollTop: outputBox.scrollTop,
+    typeColors,
+    nodeTypes,
   };
   return `${body}\n${EDITOR_METADATA_FENCE}\n%% ${EDITOR_METADATA_WARNING}\n%% ${JSON.stringify(metadata)}\n${EDITOR_METADATA_FENCE}`;
+}
+
+function stringRecord(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return undefined;
+  const result: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === 'string')
+      result[key] = entry;
+  }
+  return result;
+}
+
+function restoreTypeMetadata(metadata: EditorMetadata | null) {
+  typeColors = { ...DEFAULT_TYPE_COLORS, ...(metadata?.typeColors ?? {}) };
+  nodeTypes = { ...(metadata?.nodeTypes ?? {}) };
 }
 
 function setEditorActionPromise(promise: Promise<void>) {
@@ -732,6 +793,79 @@ function editorGraph(): EditorGraph {
 
 function editorNodeKind(id: string, graph: EditorGraph) {
   return graph.nodes.get(id)?.kind;
+}
+
+function effectiveNodeType(node: EditorNode) {
+  if (node.kind === 'question')
+    return 'decision';
+  if (node.kind === 'choice')
+    return 'choice';
+  return nodeTypes[node.id]?.trim() || 'static';
+}
+
+function colorForNode(node: EditorNode) {
+  return typeColors[effectiveNodeType(node)] ?? typeColors.static;
+}
+
+function applyNodeTypeColors(graph: EditorGraph) {
+  for (const box of [diagramBox, phoneDiagramBox]) {
+    for (const nodeEl of box.querySelectorAll('g.node')) {
+      const node = graph.nodes.get(nodeIdOf(nodeEl));
+      if (!node)
+        continue; // Slice stubs and stale metadata entries are intentionally ignored.
+      const color = colorForNode(node);
+      for (const shape of nodeEl.querySelectorAll('rect, path, polygon'))
+        (shape as SVGElement).style.fill = color;
+    }
+  }
+}
+
+async function saveTypeMetadata() {
+  codeBox.value = sourceWithEditorMetadata(codeBox.value);
+  await saveDiagram();
+}
+
+function commitNodeType() {
+  const id = selectedEditorNodeId;
+  if (!id)
+    return;
+  let graph: EditorGraph;
+  try {
+    graph = editorGraph();
+  }
+  catch {
+    return;
+  }
+  const node = graph.nodes.get(id);
+  if (!node || node.kind !== 'block')
+    return;
+  const type = nodeTypeInput.value.trim() || 'static';
+  if (type === 'static')
+    delete nodeTypes[id];
+  else
+    nodeTypes[id] = type;
+  nodeTypeInput.value = type;
+  applyNodeTypeColors(graph);
+  setEditorActionPromise(saveTypeMetadata());
+}
+
+function commitTypeColor() {
+  const id = selectedEditorNodeId;
+  if (!id)
+    return;
+  let graph: EditorGraph;
+  try {
+    graph = editorGraph();
+  }
+  catch {
+    return;
+  }
+  const node = graph.nodes.get(id);
+  if (!node)
+    return;
+  typeColors[effectiveNodeType(node)] = nodeTypeColorInput.value;
+  applyNodeTypeColors(graph);
+  setEditorActionPromise(saveTypeMetadata());
 }
 
 function sourceWithLinesReplaced(graph: EditorGraph, removedLineIndexes: Set<number>, newLines: string[]) {
@@ -1254,9 +1388,14 @@ function renderNodeInspector() {
   nodeInspector.hidden = !node;
   if (!node)
     return;
+  const previewing = !!pendingRemoval;
   nodeInspectorTitle.textContent = INSPECTOR_TITLES[node.kind];
   nodeTextInput.value = node.label;
-  const previewing = !!pendingRemoval;
+  const nodeType = effectiveNodeType(node);
+  nodeTypeRow.hidden = previewing || node.kind !== 'block';
+  nodeTypeColorRow.hidden = previewing;
+  nodeTypeInput.value = node.kind === 'block' ? nodeType : '';
+  nodeTypeColorInput.value = colorForNode(node);
   nodeInspectorRemovalPreview.hidden = !previewing;
   nodeInspectorActions.hidden = previewing;
   nodeInspectorControls.hidden = previewing;
@@ -1315,21 +1454,11 @@ function renderNodeInspector() {
 function positionNodeInspector() {
   if (nodeInspector.hidden)
     return;
-  const nodeEl = diagramBox.querySelector('[id*="flowchart-' + selectedEditorNodeId + '-"]');
-  if (!nodeEl)
-    return;
-  const node = nodeEl.getBoundingClientRect();
-  const output = outputBox.getBoundingClientRect();
-  const gap = 12;
-  const maxWidth = 320;
-  const spaceRight = output.right - node.right - gap;
-  const spaceLeft = node.left - output.left - gap;
-  const fitsRight = spaceRight >= maxWidth;
-  nodeInspector.style.width = Math.max(0, Math.min(maxWidth, Math.max(spaceRight, spaceLeft))) + 'px';
-  const card = nodeInspector.getBoundingClientRect();
-  const preferredLeft = fitsRight || spaceRight >= spaceLeft ? node.right + gap : node.left - gap - card.width;
-  nodeInspector.style.left = Math.max(output.left, Math.min(preferredLeft, output.right - card.width)) + 'px';
-  nodeInspector.style.top = Math.max(output.top, Math.min(node.top, output.bottom - card.height)) + 'px';
+  const drawerRect = drawer.getBoundingClientRect();
+  const mainRect = mainBox.getBoundingClientRect();
+  nodeInspector.style.width = '';
+  nodeInspector.style.left = drawerRect.right + 'px';
+  nodeInspector.style.top = mainRect.top + 'px';
 }
 
 function focusInspectorText() {
@@ -1428,8 +1557,7 @@ async function commitAddChoiceOnDecision(questionId: string, graph: EditorGraph)
   const cid = choiceId(questionId, suffix);
   const newLines = [`  ${cid}["New choice"]`, `  ${questionId} --> ${cid}`];
   await commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines));
-  selectEditorNode(cid);
-  focusInspectorDestination();
+  selectEditorNode(questionId);
 }
 
 function addChoiceOnDecision() {
@@ -1507,10 +1635,11 @@ function commitDestination() {
 
 outputBox.addEventListener('click', (event) => {
   const nodeEl = (event.target as HTMLElement).closest('g.node');
-  if (!phoneToggle.checked) {
-    selectEditorNode(nodeEl ? nodeIdOf(nodeEl) : null);
-    return;
-  }
+  selectEditorNode(nodeEl ? nodeIdOf(nodeEl) : null);
+});
+
+phoneDiagramBox.addEventListener('click', (event) => {
+  const nodeEl = (event.target as HTMLElement).closest('g.node');
   if (!nodeEl)
     return;
   const clicked = nodeIdOf(nodeEl);
@@ -1525,8 +1654,6 @@ outputBox.addEventListener('click', (event) => {
 });
 
 outputBox.addEventListener('dblclick', (event) => {
-  if (phoneToggle.checked)
-    return;
   const nodeEl = (event.target as HTMLElement).closest('g.node');
   if (!nodeEl)
     return;
@@ -1589,6 +1716,8 @@ nodeTextInput.addEventListener('keydown', (event) => {
   event.preventDefault();
   commitNodeText();
 });
+nodeTypeInput.addEventListener('change', commitNodeType);
+nodeTypeColorInput.addEventListener('change', commitTypeColor);
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape')
     return;
@@ -1632,8 +1761,8 @@ window.addEventListener('resize', positionNodeInspector);
 // }
 
 function drawSeparatorBetween(topId: string, belowIds: string[], label: string) {
-  const svg = diagramBox.querySelector('svg')!;
-  const nodeEl = (id: string) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]') as SVGGraphicsElement | null;
+  const svg = phoneDiagramBox.querySelector('svg')!;
+  const nodeEl = (id: string) => phoneDiagramBox.querySelector('[id*="flowchart-' + id + '-"]') as SVGGraphicsElement | null;
   const yOf = (el: SVGGraphicsElement) => Number(el.getAttribute('transform')!.match(/translate\([^,]+,\s*([^)]+)\)/)![1]);
   const top = nodeEl(topId);
   const belowEls: SVGGraphicsElement[] = [];
@@ -1700,8 +1829,8 @@ function drawSeparatorBetween(topId: string, belowIds: string[], label: string) 
 }
 
 function drawLastDecisionMask(ids: string[], edges: Edge[]): void {
-  const svg = diagramBox.querySelector('svg')!;
-  const nodeEl = (id: string) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]') as SVGGraphicsElement | null;
+  const svg = phoneDiagramBox.querySelector('svg')!;
+  const nodeEl = (id: string) => phoneDiagramBox.querySelector('[id*="flowchart-' + id + '-"]') as SVGGraphicsElement | null;
   const yOf = (el: SVGGraphicsElement) => Number(el.getAttribute('transform')!.match(/translate\([^,]+,\s*([^)]+)\)/)![1]);
   const top = nodeEl(ids[0]);
   const choiceEls: SVGGraphicsElement[] = [];
@@ -1736,8 +1865,8 @@ function drawLastDecisionMask(ids: string[], edges: Edge[]): void {
 }
 
 function drawSeparator(ids: string[], leadIns: string[]) {
-  const svg = diagramBox.querySelector('svg')!;
-  const nodeEl = (id: string) => diagramBox.querySelector('[id*="flowchart-' + id + '-"]') as SVGGraphicsElement | null;
+  const svg = phoneDiagramBox.querySelector('svg')!;
+  const nodeEl = (id: string) => phoneDiagramBox.querySelector('[id*="flowchart-' + id + '-"]') as SVGGraphicsElement | null;
   const yOf = (el: SVGGraphicsElement) => Number(el.getAttribute('transform')!.match(/translate\([^,]+,\s*([^)]+)\)/)![1]);
   const topDp = nodeEl(ids[0]);
   if (!topDp)
@@ -1792,7 +1921,7 @@ function drawSeparator(ids: string[], leadIns: string[]) {
 function scrollChoicesIntoView(bottomQ: string | undefined, edges: Edge[]): void {
   const atStart = phonePath.length === 0;
   if (atStart) {
-    diagramBox.scrollTop = 0;
+    phoneDiagramBox.scrollTop = 0;
     return;
   }
   if (!bottomQ)
@@ -1801,7 +1930,7 @@ function scrollChoicesIntoView(bottomQ: string | undefined, edges: Edge[]): void
   for (const [from, to] of edges) {
     const isChoice = from === bottomQ;
     if (isChoice)
-      lastChoice = diagramBox.querySelector('[id*="flowchart-' + to + '-"]');
+      lastChoice = phoneDiagramBox.querySelector('[id*="flowchart-' + to + '-"]');
   }
   if (!lastChoice)
     return;
@@ -1809,15 +1938,14 @@ function scrollChoicesIntoView(bottomQ: string | undefined, edges: Edge[]): void
 }
 
 async function render() {
-  const id = 'diagram-' + (renderId++);
   errorBox.textContent = '';
   try {
     // Validate before Mermaid sees the source. Invalid diagrams remain visible
     // only as their actionable editor error and cannot be edited or rendered.
-    editorGraph();
+    const graph = editorGraph();
+    updateDecisionCounter(graph);
     const edges = parseEdges(codeBox.value);
-    const phone = phoneToggle.checked && edges.length > 0;
-    const ids = phone ? sliceIds(edges) : [];
+    const ids = edges.length > 0 ? sliceIds(edges) : [];
     const siblings = siblingIds(ids, edges);
     const leadIns = leadInIds(ids, siblings, edges);
     const shown = new Set([...ids, ...siblings, ...leadIns]);
@@ -1836,45 +1964,48 @@ async function render() {
       }
     }
     currentBottomQ = bottomQ;
-    const source = phone ? chunkSource(shown, siblings, edges) : codeBox.value;
-    const { svg } = await mermaid.render(id, source);
-    const viewport = { left: outputBox.scrollLeft, top: outputBox.scrollTop };
-    diagramBox.innerHTML = svg;
+    const phoneSource = edges.length > 0 ? chunkSource(shown, siblings, edges) : codeBox.value;
+    const regularViewport = { left: outputBox.scrollLeft, top: outputBox.scrollTop };
+    const phoneViewport = { left: phoneDiagramBox.scrollLeft, top: phoneDiagramBox.scrollTop };
+    const [{ svg: regularSvg }, { svg: phoneSvg }] = await Promise.all([
+      mermaid.render('diagram-' + (renderId++), codeBox.value),
+      mermaid.render('phone-diagram-' + (renderId++), phoneSource),
+    ]);
+    diagramBox.innerHTML = regularSvg;
+    phoneDiagramBox.innerHTML = phoneSvg;
+    applyNodeTypeColors(graph);
     renderEditorSelection();
+    highlightPath();
     if (edges.length > 0) {
       const scale = await baseScale(edges);
-      const svgEl = diagramBox.querySelector('svg')!;
-      const box = viewBoxOf(svg);
-      // svgEl.style.width = box.width * scale + 'px';
-      // const phoneWidth = phone ? Math.max(box.width * scale, PHONE_INNER.width) : box.width * scale;
-      const phoneWidth = phone ? Math.max(box.width * scale, diagramBox.clientWidth) : box.width * scale;
+      const svgEl = phoneDiagramBox.querySelector('svg')!;
+      const box = viewBoxOf(phoneSvg);
+      const phoneWidth = Math.max(box.width * scale, phoneDiagramBox.clientWidth);
       svgEl.style.width = phoneWidth + 'px';
       svgEl.style.height = box.height * scale + 'px';
     }
-    outputBox.scrollLeft = viewport.left;
-    outputBox.scrollTop = viewport.top;
-    if (phone)
-      renderLog(edges);
-      // if (phone)
-      //   drawSeparator(ids, leadIns);
-    const shouldDrawLastDecision = phone && phonePath.length > 0;
+    outputBox.scrollLeft = regularViewport.left;
+    outputBox.scrollTop = regularViewport.top;
+    phoneDiagramBox.scrollLeft = phoneViewport.left;
+    phoneDiagramBox.scrollTop = phoneViewport.top;
+    renderLog(edges);
+    const shouldDrawLastDecision = edges.length > 0 && phonePath.length > 0;
     if (shouldDrawLastDecision)
       drawLastDecisionMask(ids, edges);
     if (shouldDrawLastDecision)
       drawSeparatorBetween(ids[0], choicesOf(ids[0], edges), 'last decision');
-    const shouldDrawBottomSeparator = phone && bottomQ;
+    const shouldDrawBottomSeparator = edges.length > 0 && bottomQ;
     if (shouldDrawBottomSeparator)
       drawSeparatorBetween(bottomQ!, choicesOf(bottomQ!, edges), 'open decision');
-    if (phone)
+    if (edges.length > 0)
       scrollChoicesIntoView(bottomQ, edges);
-    if (!phone)
-      highlightPath();
-      // updateSvgSizingForPhoneMode();
     positionNodeInspector();
     errorLog.textContent = '';
     errorLog.classList.remove('open');
   }
   catch (err) {
+    currentDecisionId = null;
+    decisionCounter.textContent = '0 / 0';
     showEditorValidationError(err);
   }
 }
@@ -1889,6 +2020,7 @@ function setStatus(text: string) {
 
 function setDrawerOpen(open: boolean) {
   drawer.classList.toggle('closed', !open);
+  positionNodeInspector();
 }
 
 async function loadList() {
@@ -1913,7 +2045,9 @@ function resetEditorHistory(text: string) {
 async function loadDiagram(name: string) {
   const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
   const { metadata } = splitEditorMetadata(text);
+  restoreTypeMetadata(metadata);
   currentName = name;
+  currentDecisionId = metadata?.lastSelectedNodeId ?? null;
   codeBox.value = text;
   resetEditorHistory(text);
   await render();
@@ -1945,6 +2079,7 @@ function watchDiagram(name: string) {
     if (isStaleWatcher)
       return;
     if (text !== codeBox.value) {
+      restoreTypeMetadata(splitEditorMetadata(text).metadata);
       codeBox.value = text;
       resetEditorHistory(text);
     }
@@ -1975,6 +2110,8 @@ document.getElementById('newBtn')!.addEventListener('click', () => {
   if (watcher)
     watcher.close();
   currentName = null;
+  currentDecisionId = null;
+  restoreTypeMetadata(null);
   codeBox.value = 'flowchart TD\n  B_NEW[New idea]';
   resetEditorHistory(codeBox.value);
   render();
@@ -1990,6 +2127,7 @@ document.getElementById('resetBtn')!.addEventListener('click', () => {
   highlightPath();
   render();
   outputBox.scrollTo({ top: 0, behavior: 'smooth' });
+  phoneDiagramBox.scrollTo({ top: 0, behavior: 'smooth' });
 });
 document.getElementById('undoBtn')!.addEventListener('click', (event) => {
   event.stopPropagation();
@@ -2003,12 +2141,6 @@ logBtn.addEventListener('click', (event) => {
 });
 drawerToggle.addEventListener('click', () => setDrawerOpen(drawer.classList.contains('closed')));
 selectBox.addEventListener('change', () => loadDiagram(selectBox.value));
-phoneToggle.addEventListener('change', () => {
-  if (phoneToggle.checked)
-    selectEditorNode(null);
-  outputBox.classList.toggle('phone', phoneToggle.checked);
-  render();
-});
 
 openFileBtn.addEventListener('click', () => openFileInput.click());
 openFileInput.addEventListener('change', async () => {
@@ -2018,7 +2150,9 @@ openFileInput.addEventListener('change', async () => {
   if (watcher)
     watcher.close();
   currentName = null;
+  currentDecisionId = null;
   codeBox.value = await file.text();
+  restoreTypeMetadata(splitEditorMetadata(codeBox.value).metadata);
   resetEditorHistory(codeBox.value);
   selectBox.value = '';
   render();
