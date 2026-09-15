@@ -18,6 +18,10 @@ var logBox = document.getElementById("logBox");
 var previousDecisionBtn = document.getElementById("previousDecisionBtn");
 var nextDecisionBtn = document.getElementById("nextDecisionBtn");
 var decisionCounter = document.getElementById("decisionCounter");
+var zoomInBtn = document.getElementById("zoomInBtn");
+var zoomOutBtn = document.getElementById("zoomOutBtn");
+var zoomResetBtn = document.getElementById("zoomResetBtn");
+var zoomLevel = document.getElementById("zoomLevel");
 var renderId = 0;
 var currentName = null;
 var watcher = null;
@@ -26,6 +30,10 @@ var phoneFocusNodeId = null;
 var phoneFocusUsesDecisionContext = false;
 var phonePreviewChoiceId = null;
 var diagramScale = null;
+var mainZoomPercent = 100;
+var MAIN_ZOOM_STEP = 10;
+var MIN_MAIN_ZOOM = 20;
+var MAX_MAIN_ZOOM = 400;
 var chosenAnswers = new Set;
 var phonePath = [];
 var MAX_PHONE_NODES = 8;
@@ -77,6 +85,32 @@ async function baseScale(edges) {
   const screenWidth = phoneDiagramBox.clientWidth;
   const screenHeight = phoneDiagramBox.clientHeight;
   return Math.min(screenWidth / box.width, screenHeight / box.height);
+}
+function applyMainZoom(preserveViewportCenter = true) {
+  zoomLevel.textContent = `${mainZoomPercent}%`;
+  zoomInBtn.disabled = mainZoomPercent >= MAX_MAIN_ZOOM;
+  zoomOutBtn.disabled = mainZoomPercent <= MIN_MAIN_ZOOM;
+  zoomResetBtn.disabled = mainZoomPercent === 100;
+  const svg = diagramBox.querySelector("svg");
+  if (!svg || diagramScale === null)
+    return;
+  const oldWidth = Number.parseFloat(svg.style.width);
+  const oldHeight = Number.parseFloat(svg.style.height);
+  const centerX = outputBox.scrollLeft + outputBox.clientWidth / 2;
+  const centerY = outputBox.scrollTop + outputBox.clientHeight / 2;
+  const zoom = mainZoomPercent / 100;
+  const newWidth = svg.viewBox.baseVal.width * diagramScale * zoom;
+  const newHeight = svg.viewBox.baseVal.height * diagramScale * zoom;
+  svg.style.width = newWidth + "px";
+  svg.style.height = newHeight + "px";
+  if (preserveViewportCenter && oldWidth > 0 && oldHeight > 0) {
+    outputBox.scrollLeft = centerX * newWidth / oldWidth - outputBox.clientWidth / 2;
+    outputBox.scrollTop = centerY * newHeight / oldHeight - outputBox.clientHeight / 2;
+  }
+}
+function setMainZoomPercent(percent) {
+  mainZoomPercent = Math.max(MIN_MAIN_ZOOM, Math.min(MAX_MAIN_ZOOM, Math.round(percent)));
+  applyMainZoom();
 }
 function parentOf(id, edges) {
   let found;
@@ -1609,7 +1643,7 @@ function drawSeparatorBetween(topId, belowIds, label) {
   text.textContent = label;
   svg.appendChild(text);
 }
-function drawLastDecisionMask(ids, edges) {
+function drawLastDecisionMask(ids, edges, openDecisionId) {
   const svg = phoneDiagramBox.querySelector("svg");
   const nodeEl = (id) => phoneDiagramBox.querySelector('[id*="flowchart-' + id + '-"]');
   const yOf = (el) => Number(el.getAttribute("transform").match(/translate\([^,]+,\s*([^)]+)\)/)[1]);
@@ -1627,18 +1661,33 @@ function drawLastDecisionMask(ids, edges) {
   for (const el of choiceEls) {
     bottoms.push(yOf(el) + el.getBBox().height / 2);
   }
-  const maskBottom = Math.max(...bottoms) + 12;
+  let maskBottom = Math.max(...bottoms) + 12;
+  if (openDecisionId && openDecisionId !== ids[0]) {
+    const protectedEls = [];
+    for (const id of [openDecisionId, ...choicesOf(openDecisionId, edges)]) {
+      const el = nodeEl(id);
+      if (el)
+        protectedEls.push(el);
+    }
+    if (protectedEls.length) {
+      const protectedTop = Math.min(...protectedEls.map((el) => yOf(el) - el.getBBox().height / 2));
+      maskBottom = Math.min(maskBottom, protectedTop - 4);
+    }
+  }
   const viewBoxParts = svg.getAttribute("viewBox").split(" ");
   const viewBoxNumbers = [];
   for (const part of viewBoxParts) {
     viewBoxNumbers.push(Number(part));
   }
   const [x, y, width] = viewBoxNumbers;
+  const maskHeight = Math.max(0, maskBottom - y);
+  if (maskHeight === 0)
+    return;
   const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
   rect.setAttribute("x", String(x - 1e4));
   rect.setAttribute("y", String(y));
   rect.setAttribute("width", String(width + 20000));
-  rect.setAttribute("height", String(maskBottom - y));
+  rect.setAttribute("height", String(maskHeight));
   rect.setAttribute("fill", "rgba(0,0,0,0.25)");
   rect.setAttribute("class", "last-decision-mask");
   rect.setAttribute("pointer-events", "none");
@@ -1710,10 +1759,11 @@ async function render() {
       if (diagramScale === null)
         diagramScale = await baseScale(edges);
       const scale = diagramScale;
+      const mainZoom = mainZoomPercent / 100;
       const regularSvgEl = diagramBox.querySelector("svg");
       const regularBox = viewBoxOf(regularSvg);
-      regularSvgEl.style.width = regularBox.width * scale + "px";
-      regularSvgEl.style.height = regularBox.height * scale + "px";
+      regularSvgEl.style.width = regularBox.width * scale * mainZoom + "px";
+      regularSvgEl.style.height = regularBox.height * scale * mainZoom + "px";
       const phoneSvgEl = phoneDiagramBox.querySelector("svg");
       const phoneBox = viewBoxOf(phoneSvg);
       const phoneWidth = Math.max(phoneBox.width * scale, phoneDiagramBox.clientWidth);
@@ -1728,7 +1778,7 @@ async function render() {
     const hasContextualPreviousDecision = phoneFocusUsesDecisionContext && ids[0] !== phoneFocusNodeId && graph.nodes.get(ids[0])?.kind === "question";
     const shouldDrawLastDecision = edges.length > 0 && (phonePath.length > 0 || phonePreviewChoiceId || hasContextualPreviousDecision);
     if (shouldDrawLastDecision)
-      drawLastDecisionMask(ids, edges);
+      drawLastDecisionMask(ids, edges, bottomQ);
     if (shouldDrawLastDecision)
       drawSeparatorBetween(ids[0], choicesOf(ids[0], edges), "last decision");
     const shouldDrawBottomSeparator = edges.length > 0 && bottomQ;
@@ -1855,6 +1905,9 @@ document.getElementById("newBtn").addEventListener("click", () => {
 document.getElementById("saveBtn").addEventListener("click", saveDiagram);
 previousDecisionBtn.addEventListener("click", () => navigateDecision(-1));
 nextDecisionBtn.addEventListener("click", () => navigateDecision(1));
+zoomInBtn.addEventListener("click", () => setMainZoomPercent(mainZoomPercent + MAIN_ZOOM_STEP));
+zoomOutBtn.addEventListener("click", () => setMainZoomPercent(mainZoomPercent - MAIN_ZOOM_STEP));
+zoomResetBtn.addEventListener("click", () => setMainZoomPercent(100));
 document.getElementById("resetBtn").addEventListener("click", () => {
   chosenAnswers.clear();
   phonePath.length = 0;
@@ -1907,5 +1960,6 @@ codeBox.addEventListener("input", () => {
   resetEditorHistory(codeBox.value);
   render();
 });
+applyMainZoom(false);
 loadDiagram("accountability.mmd");
 Object.assign(window, { loadDiagram, codeBox, nodeIdOf, selectEditorNode, addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, removeChoices, undoEditorAction, redoEditorAction, insertStaticBefore, insertDecisionBefore });

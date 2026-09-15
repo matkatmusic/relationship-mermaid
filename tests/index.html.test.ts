@@ -1107,6 +1107,82 @@ test('test_main_view_choice_and_regular_nodes_preview_their_feeding_decision_as_
   assert.equal(await evaluate('currentBottomQ'), 'Q_NEXT');
 });
 
+test('test_header_zoom_controls_resize_only_the_main_mermaid_diagram', async () => {
+  await resetEditorFixture();
+  await evaluate("document.getElementById('zoomResetBtn').click()");
+  const dimensions = () => evaluate(`JSON.stringify((() => {
+    const regularSvg = document.querySelector('#diagram svg');
+    const phoneSvg = document.querySelector('#phoneDiagram svg');
+    return {
+      regularWidth: Number.parseFloat(regularSvg.style.width),
+      regularHeight: Number.parseFloat(regularSvg.style.height),
+      phoneWidth: Number.parseFloat(phoneSvg.style.width),
+      phoneHeight: Number.parseFloat(phoneSvg.style.height),
+      outputWidth: document.getElementById('output').getBoundingClientRect().width,
+      drawerWidth: document.getElementById('drawer').getBoundingClientRect().width,
+      level: document.getElementById('zoomLevel').textContent,
+      buttons: Array.from(document.querySelectorAll('#mainZoomControls button')).map(button => button.id),
+    };
+  })())`).then(JSON.parse);
+  const initial = await dimensions();
+  assert.deepEqual(initial.buttons, ['zoomInBtn', 'zoomOutBtn', 'zoomResetBtn']);
+  assert.equal(initial.level, '100%');
+
+  await evaluate("document.getElementById('zoomInBtn').click()");
+  const zoomed = await dimensions();
+  assert.ok(Math.abs(zoomed.regularWidth / initial.regularWidth - 1.1) < 0.0001, JSON.stringify({ initial, zoomed }));
+  assert.ok(Math.abs(zoomed.regularHeight / initial.regularHeight - 1.1) < 0.0001, JSON.stringify({ initial, zoomed }));
+  assert.equal(zoomed.phoneWidth, initial.phoneWidth);
+  assert.equal(zoomed.phoneHeight, initial.phoneHeight);
+  assert.equal(zoomed.outputWidth, initial.outputWidth);
+  assert.equal(zoomed.drawerWidth, initial.drawerWidth);
+  assert.equal(zoomed.level, '110%');
+
+  await evaluate("document.getElementById('zoomOutBtn').click()");
+  const restoredByMinus = await dimensions();
+  assert.ok(Math.abs(restoredByMinus.regularWidth - initial.regularWidth) < 0.000001);
+  assert.equal(restoredByMinus.level, '100%');
+  await evaluate("document.getElementById('zoomInBtn').click(); document.getElementById('zoomInBtn').click(); document.getElementById('zoomResetBtn').click()");
+  const reset = await dimensions();
+  assert.ok(Math.abs(reset.regularWidth - initial.regularWidth) < 0.000001);
+  assert.equal(reset.level, '100%');
+});
+
+test('test_previous_selection_mask_stops_before_the_open_decision_after_each_phone_choice', async () => {
+  await evaluate("loadDiagram('accountability.mmd')");
+  await sleep(500);
+  await evaluate(`document.querySelector('#phoneDiagram [id*="flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+  await sleep(400);
+  const firstMaskState = await evaluate(`JSON.stringify((() => {
+    const mask = document.querySelector('#phoneDiagram .last-decision-mask').getBoundingClientRect();
+    const openDecision = document.querySelector('#phoneDiagram [id*="flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-"]').getBoundingClientRect();
+    const openChoices = ['Y', 'N'].map(suffix => document.querySelector('#phoneDiagram [id*="flowchart-Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_' + suffix + '-"]').getBoundingClientRect());
+    return { maskBottom: mask.bottom, openDecisionTop: openDecision.top, openChoiceTops: openChoices.map(rect => rect.top) };
+  })())`).then(JSON.parse);
+  assert.ok(firstMaskState.maskBottom <= firstMaskState.openDecisionTop, JSON.stringify(firstMaskState));
+  for (const choiceTop of firstMaskState.openChoiceTops)
+    assert.ok(firstMaskState.maskBottom <= choiceTop, JSON.stringify(firstMaskState));
+  await evaluate(`document.querySelector('#phoneDiagram [id*="flowchart-Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))`);
+  await sleep(400);
+  const maskState = await evaluate(`JSON.stringify((() => {
+    const mask = document.querySelector('#phoneDiagram .last-decision-mask').getBoundingClientRect();
+    const openDecision = document.querySelector('#phoneDiagram [id*="flowchart-Q_CLARIFY_ISSUE_COUNT-"]').getBoundingClientRect();
+    const openChoices = ['NONE', 'ONCE', 'MULTIPLE'].map(suffix => document.querySelector('#phoneDiagram [id*="flowchart-Q_CHOICE_CLARIFY_ISSUE_COUNT_' + suffix + '-"]').getBoundingClientRect());
+    return {
+      maskBottom: mask.bottom,
+      openDecisionTop: openDecision.top,
+      openChoiceTops: openChoices.map(rect => rect.top),
+      phonePath: phonePath.slice(),
+      currentBottomQ,
+    };
+  })())`).then(JSON.parse);
+  assert.deepEqual(maskState.phonePath, ['Q_CHOICE_THEM_DONE_SPEAKING_Y', 'Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N']);
+  assert.equal(maskState.currentBottomQ, 'Q_CLARIFY_ISSUE_COUNT');
+  assert.ok(maskState.maskBottom <= maskState.openDecisionTop, JSON.stringify(maskState));
+  for (const choiceTop of maskState.openChoiceTops)
+    assert.ok(maskState.maskBottom <= choiceTop, JSON.stringify(maskState));
+});
+
 test('test_add_and_insert_actions_preserve_the_zoom_scale_in_both_views', async () => {
   await resetEditorFixture();
   await setEditorSource('flowchart TD\n  B_START["Start"]\n  Q_FIRST{"First?"}\n  Q_CHOICE_FIRST_Y["Yes"]\n  Q_CHOICE_FIRST_N["No"]\n  B_END["End"]\n  B_START --> Q_FIRST\n  Q_FIRST --> Q_CHOICE_FIRST_Y --> B_END\n  Q_FIRST --> Q_CHOICE_FIRST_N');
@@ -1117,6 +1193,7 @@ test('test_add_and_insert_actions_preserve_the_zoom_scale_in_both_views', async 
     };
     return { regular: scale('#diagram svg'), phone: scale('#phoneDiagram svg') };
   })())`).then(JSON.parse);
+  await evaluate("document.getElementById('zoomResetBtn').click(); document.getElementById('zoomInBtn').click()");
   const initial = await scales();
 
   await clickNode('Q_FIRST');
@@ -1130,6 +1207,7 @@ test('test_add_and_insert_actions_preserve_the_zoom_scale_in_both_views', async 
   const afterInsert = await scales();
   assert.ok(Math.abs(afterInsert.regular - initial.regular) < 0.000001);
   assert.ok(Math.abs(afterInsert.phone - initial.phone) < 0.000001);
+  await evaluate("document.getElementById('zoomResetBtn').click()");
 });
 
 test("test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order", async () => {

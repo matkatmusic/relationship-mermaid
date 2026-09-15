@@ -8,6 +8,8 @@
   body { margin: 0; display: flex; flex-direction: column; height: 100vh; font-family: sans-serif; }
   #header { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #ccc; }
   #header button, #header select { padding: 6px 10px; }
+  #mainZoomControls { display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
+  #zoomLevel { min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
   #main { flex: 1; display: flex; min-height: 0; }
   #workspace { flex: 0 0 65%; min-width: 0; display: flex; min-height: 0; }
   #phoneWorkspace { flex: 1 1 35%; min-width: 0; min-height: 0; padding: 12px; box-sizing: border-box; border-left: 1px solid #ccc; display: flex; background: #fafafa; }
@@ -63,6 +65,13 @@
   <button id="previousDecisionBtn">Previous</button>
   <button id="nextDecisionBtn">Next</button>
   <span id="decisionCounter" aria-live="polite">0 / 0</span>
+  <div id="mainZoomControls" role="group" aria-label="Main diagram zoom">
+    <span>Main zoom:</span>
+    <button id="zoomInBtn" type="button" aria-label="Zoom main diagram in">+</button>
+    <button id="zoomOutBtn" type="button" aria-label="Zoom main diagram out">−</button>
+    <button id="zoomResetBtn" type="button">Reset</button>
+    <output id="zoomLevel" aria-live="polite">100%</output>
+  </div>
   <select id="diagramSelect">
     <option value="" disabled selected>Diagrams</option>
   </select>

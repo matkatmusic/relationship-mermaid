@@ -6,9 +6,12 @@ export function isValidName(name) {
 
 const portFlagIndex = process.argv.indexOf("--port");
 const PORT = portFlagIndex === -1 ? 3000 : Number(process.argv[portFlagIndex + 1]);
+const hostnameFlagIndex = process.argv.indexOf("--hostname");
+const HOSTNAME = hostnameFlagIndex === -1 ? "0.0.0.0" : process.argv[hostnameFlagIndex + 1];
 
 if (import.meta.main) Bun.serve({
   port: PORT,
+  hostname: HOSTNAME,
   async fetch(req) {
     const url = new URL(req.url);
 
@@ -77,4 +80,4 @@ if (import.meta.main) Bun.serve({
   },
 });
 
-if (import.meta.main) console.log(`Mermaid viewer running at http://localhost:${PORT}`);
+if (import.meta.main) console.log(`Mermaid viewer running at http://${HOSTNAME}:${PORT}`);
