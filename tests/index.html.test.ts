@@ -4,9 +4,10 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createServer } from "node:net";
 
-const SERVER_PORT = Number(process.env.SERVER_PORT) || 3000;
-const CDP_PORT = Number(process.env.CDP_PORT) || 9333;
+const SERVER_PORT = Number(process.env.SERVER_PORT) || 3010;
+const CDP_PORT = Number(process.env.CDP_PORT) || 9343;
 const CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 let serverProc: ChildProcess;
@@ -20,6 +21,15 @@ function send(method: string, params: Record<string, unknown> = {}) {
     const id = nextId++;
     pending.set(id, resolve);
     ws.send(JSON.stringify({ id, method, params }));
+  });
+}
+
+function isPortFree(port: number) {
+  return new Promise<boolean>((resolve) => {
+    const probe = createServer();
+    probe.once("error", () => resolve(false));
+    probe.once("listening", () => probe.close(() => resolve(true)));
+    probe.listen(port);
   });
 }
 
@@ -58,7 +68,7 @@ async function waitForFunction(name: string, timeoutMs = 5000) {
 async function nodeIds() {
   // Skip stub and unchosen nodes; they are not real slice nodes.
   const json = await evaluate(
-    "JSON.stringify(Array.from(document.querySelectorAll('#diagram g.node')).filter(el => !el.classList.contains('stub') && !el.classList.contains('unchosen')).map(nodeIdOf).sort())"
+    "JSON.stringify(Array.from(document.querySelectorAll('#phoneDiagram g.node')).filter(el => !el.classList.contains('stub') && !el.classList.contains('unchosen')).map(nodeIdOf).sort())"
   );
   return JSON.parse(json);
 }
@@ -74,10 +84,10 @@ async function waitForNodeIds(notEqualTo: string[], timeoutMs = 3000) {
   return ids;
 }
 
-async function labelLineHeight(id: string) {
+async function labelLineHeight(id: string, paneId = "phoneDiagram") {
   // One line's height, not the whole label: labels wrap to different line counts.
   const json = await evaluate(`JSON.stringify((() => {
-    const p = document.querySelector('[id*="flowchart-${id}-"] .nodeLabel p');
+    const p = document.querySelector('#${paneId} [id*="flowchart-${id}-"] .nodeLabel p');
     const range = document.createRange();
     range.selectNodeContents(p);
     return { height: range.getClientRects()[0].height, fontSize: getComputedStyle(p).fontSize };
@@ -87,6 +97,14 @@ async function labelLineHeight(id: string) {
 
 before(async () => {
   // Scenario: start the real server and headless Chrome, then connect via CDP to drive the page like a user.
+  const [serverPortFree, cdpPortFree] = await Promise.all([isPortFree(SERVER_PORT), isPortFree(CDP_PORT)]);
+  if (!serverPortFree || !cdpPortFree) {
+    const problems = [
+      !serverPortFree && `SERVER_PORT ${SERVER_PORT} is busy`,
+      !cdpPortFree && `CDP_PORT ${CDP_PORT} is busy`,
+    ].filter(Boolean);
+    throw new Error(`pick free ports; ${problems.join(", ")}`);
+  }
   spawnSync("bun", ["build", "viewer.ts", "--outfile", "viewer.js"], { stdio: "inherit" });
   serverProc = spawn("bun", ["server.js", "--port", String(SERVER_PORT)], { stdio: "ignore" });
   await waitForPort(SERVER_PORT);
@@ -178,56 +196,55 @@ test("test_split_workspace_always_renders_regular_and_phone_views_with_distinct_
   assert.equal(await evaluate("selectedEditorNodeId"), 'Q_THEM_DONE_SPEAKING');
 });
 
-const START_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_THEM_DONE_SPEAKING_N"].sort();
-const AFTER_Y_SLICE = ["SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_Y", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_Y", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N"].sort();
-const AFTER_N_SLICE = ["RAISE_ISSUE", "SELF_LISTEN", "SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_THEM_DONE_SPEAKING_N"].sort();
+const START_SLICE = ["B_RAISE_ISSUE", "B_SELF_LISTEN", "B_SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_CHOICE_THEM_DONE_SPEAKING_Y", "Q_CHOICE_THEM_DONE_SPEAKING_N"].sort();
+const AFTER_Y_SLICE = ["B_SELF_LISTEN", "B_SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_CHOICE_THEM_DONE_SPEAKING_Y", "Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID", "Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_Y", "Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N"].sort();
+const AFTER_N_SLICE = ["B_RAISE_ISSUE", "B_SELF_LISTEN", "B_SELF_TAKE_NOTES", "Q_THEM_DONE_SPEAKING", "Q_CHOICE_THEM_DONE_SPEAKING_N"].sort();
 
 test("test_phone_view_shows_the_start_slice", async () => {
+  // Step: a prior test's phone click can leave the path dirty; reset first.
+  await evaluate("document.getElementById('resetBtn').click()");
+  await sleep(300);
   // Step: the rendered slice has exactly the start-slice node ids.
   const ids = await nodeIds();
   assert.deepEqual(ids, START_SLICE);
-  // Step: the frame does not scroll.
+  // Step: the phone frame does not scroll.
   const output = await evaluate(
-    "JSON.stringify({sh: document.getElementById('output').scrollHeight, ch: document.getElementById('output').clientHeight, sw: document.getElementById('output').scrollWidth, cw: document.getElementById('output').clientWidth})"
+    "JSON.stringify({sh: document.getElementById('phoneDiagram').scrollHeight, ch: document.getElementById('phoneDiagram').clientHeight, sw: document.getElementById('phoneDiagram').scrollWidth, cw: document.getElementById('phoneDiagram').clientWidth})"
   ).then(JSON.parse);
   assert.ok(output.sh <= output.ch);
   assert.ok(output.sw <= output.cw);
   // Step: a stub line leads out of the bottom decision node.
   const stubEdge = await evaluate(
-    "JSON.stringify(Array.from(document.querySelectorAll('#diagram path.flowchart-link')).some(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID')))"
+    "JSON.stringify(Array.from(document.querySelectorAll('#phoneDiagram path.flowchart-link')).some(el => el.id.includes('L_Q_CHOICE_THEM_DONE_SPEAKING_Y_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID')))"
   );
   assert.equal(stubEdge, "true");
   // Step: the stub node itself is present but invisible.
   const stubNode = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-\"].stub'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram [id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-\"].stub'))"
   );
   assert.equal(stubNode, "true");
   // Step: the tiny stub box does not blow up the diagram's scale.
   const widths = await evaluate(
-    "JSON.stringify({svg: document.querySelector('#diagram svg').getBoundingClientRect().width, output: document.getElementById('output').getBoundingClientRect().width})"
+    "JSON.stringify({svg: document.querySelector('#phoneDiagram svg').getBoundingClientRect().width, output: document.getElementById('phoneDiagram').getBoundingClientRect().width})"
   ).then(JSON.parse);
   assert.ok(widths.svg >= widths.output * 0.6);
   // Step: exactly one dashed separator marks the bottom decision point as pending.
   const separatorCount = await evaluate(
-    "JSON.stringify(document.querySelectorAll('#diagram svg line.separator').length)"
+    "JSON.stringify(document.querySelectorAll('#phoneDiagram svg line.separator').length)"
   );
   assert.equal(separatorCount, "1");
   // Step: one label reads "open decision", and there is no last-decision mask at the start slice.
   const startLabels = await evaluate(
-    "JSON.stringify(Array.from(document.querySelectorAll('#diagram svg text.separator-label')).map(el => el.textContent))"
+    "JSON.stringify(Array.from(document.querySelectorAll('#phoneDiagram svg text.separator-label')).map(el => el.textContent))"
   ).then(JSON.parse);
   assert.deepEqual(startLabels, ["open decision"]);
   const startMask = await evaluate(
-    "JSON.stringify(!!document.querySelector('#diagram svg rect.last-decision-mask'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram svg rect.last-decision-mask'))"
   );
   assert.equal(startMask, "false");
   // Step: the edge from the bottom decision point into its stub target is dotted.
-  // const dottedEdge = await evaluate(
-  //   "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Q_THEM_DONE_SPEAKING_Y_'))?.classList.contains('edge-pattern-dotted'))"
-  // );
-  // assert.equal(dottedEdge, "true");
   const dottedEdge = await evaluate(
-    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_Y_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID'))?.classList.contains('edge-pattern-dotted'))"
+    "JSON.stringify(!!Array.from(document.querySelectorAll('#phoneDiagram path.flowchart-link')).find(el => el.id.includes('L_Q_CHOICE_THEM_DONE_SPEAKING_Y_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID'))?.classList.contains('edge-pattern-dotted'))"
   );
   assert.equal(dottedEdge, "true");
 });
@@ -235,24 +252,24 @@ test("test_phone_view_shows_the_start_slice", async () => {
 test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async () => {
   // Step: click the "Yes" answer under "are they done speaking".
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   const ids = await waitForNodeIds(START_SLICE);
   // Step: the slice now centers on the clicked node and its next decision point.
   assert.deepEqual(ids, AFTER_Y_SLICE);
   // Step: a line shows where the slice came from, above the top decision point.
   const topStubEdge = await evaluate(
-    "JSON.stringify(Array.from(document.querySelectorAll('#diagram path.flowchart-link')).some(el => el.id.includes('L_SELF_TAKE_NOTES_Q_THEM_DONE_SPEAKING')))"
+    "JSON.stringify(Array.from(document.querySelectorAll('#phoneDiagram path.flowchart-link')).some(el => el.id.includes('L_B_SELF_TAKE_NOTES_Q_THEM_DONE_SPEAKING')))"
   );
   assert.equal(topStubEdge, "true");
   // Step: that lead-in node is now shown normally, not as an invisible stub.
   const topStubNode = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-SELF_TAKE_NOTES-\"].stub'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram [id*=\"flowchart-B_SELF_TAKE_NOTES-\"].stub'))"
   );
   assert.equal(topStubNode, "false");
   // Step: there are now two separators, one for the answered decision and one for the pending one.
   const separators = await evaluate(
-    "JSON.stringify({ lineCount: document.querySelectorAll('#diagram svg line.separator').length, labelTexts: Array.from(document.querySelectorAll('#diagram svg text.separator-label')).map(el => el.textContent), labelYs: Array.from(document.querySelectorAll('#diagram svg text.separator-label')).map(el => Number(el.getAttribute('y'))) })"
+    "JSON.stringify({ lineCount: document.querySelectorAll('#phoneDiagram svg line.separator').length, labelTexts: Array.from(document.querySelectorAll('#phoneDiagram svg text.separator-label')).map(el => el.textContent), labelYs: Array.from(document.querySelectorAll('#phoneDiagram svg text.separator-label')).map(el => Number(el.getAttribute('y'))) })"
   ).then(JSON.parse);
   assert.equal(separators.lineCount, 2);
   assert.deepEqual([...separators.labelTexts].sort(), ["last decision", "open decision"]);
@@ -261,10 +278,10 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
   assert.ok(lastDecisionY < openDecisionY);
   // Step: a light mask covers the answered "last decision" chunk, ending before the still-open decision point.
   const mask = await evaluate(`JSON.stringify((() => {
-    const rect = document.querySelector('#diagram svg rect.last-decision-mask');
+    const rect = document.querySelector('#phoneDiagram svg rect.last-decision-mask');
     const yOf = (el) => Number(el.getAttribute('transform').match(/translate\\([^,]+,\\s*([^)]+)\\)/)[1]);
-    const doneSpeakingYY = yOf(document.querySelector('[id*="flowchart-Q_THEM_DONE_SPEAKING_Y-"]'));
-    const understandY = yOf(document.querySelector('[id*="flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-"]'));
+    const doneSpeakingYY = yOf(document.querySelector('#phoneDiagram [id*="flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-"]'));
+    const understandY = yOf(document.querySelector('#phoneDiagram [id*="flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID-"]'));
     return {
       exists: !!rect,
       height: rect && Number(rect.getAttribute('height')),
@@ -279,40 +296,40 @@ test("test_clicking_a_decision_node_slices_to_the_next_decision_point", async ()
   assert.ok(mask.bottom < mask.understandY);
   // Step: the unchosen "No" answer shows dimmed instead of disappearing.
   const unchosenNode = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"].unchosen'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_N-\"].unchosen'))"
   );
   assert.equal(unchosenNode, "true");
   // Step: a sibling is never also a stub, so it keeps its full-size box.
   const siblingNotStub = await evaluate(
-    "JSON.stringify(!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"].stub'))"
+    "JSON.stringify(!document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_N-\"].stub'))"
   );
   assert.equal(siblingNotStub, "true");
-  // Step: "Me: Listen" already has a real predecessor (the "No" loop-back), so RAISE_ISSUE's stub arrow is dropped.
+  // Step: "Me: Listen" already has a real predecessor (the "No" loop-back), so B_RAISE_ISSUE's stub arrow is dropped.
   const raiseIssueNode = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-RAISE_ISSUE-\"]'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram [id*=\"flowchart-B_RAISE_ISSUE-\"]'))"
   );
   assert.equal(raiseIssueNode, "false");
   // Step: the dimmed "No" answer still has a real dashed arrow into "Me: Listen".
   const noToListenEdge = await evaluate(
-    "JSON.stringify(!!Array.from(document.querySelectorAll('#diagram path.flowchart-link')).find(el => el.id.includes('L_Q_THEM_DONE_SPEAKING_N_SELF_LISTEN'))?.classList.contains('edge-pattern-dotted'))"
+    "JSON.stringify(!!Array.from(document.querySelectorAll('#phoneDiagram path.flowchart-link')).find(el => el.id.includes('L_Q_CHOICE_THEM_DONE_SPEAKING_N_B_SELF_LISTEN'))?.classList.contains('edge-pattern-dotted'))"
   );
   assert.equal(noToListenEdge, "true");
   // Step: no stray dashed arrow reaches the "don't understand" question except from its real predecessor.
   const understandTargets = await evaluate(`JSON.stringify(
-    Array.from(document.querySelectorAll('#diagram path.flowchart-link'))
+    Array.from(document.querySelectorAll('#phoneDiagram path.flowchart-link'))
       .map(el => el.id.match(/^L_(.+?)_Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_\\d/))
       .filter(Boolean)
       .map(m => m[1])
   )`).then(JSON.parse);
-  for (const source of understandTargets) assert.equal(source, "Q_THEM_DONE_SPEAKING_Y");
+  for (const source of understandTargets) assert.equal(source, "Q_CHOICE_THEM_DONE_SPEAKING_Y");
   // Step: the 8-node budget caps how many real (non-stub) nodes are shown.
   const realNodeCount = await evaluate(
-    "JSON.stringify(Array.from(document.querySelectorAll('#diagram g.node')).filter(el => !el.classList.contains('stub')).length)"
+    "JSON.stringify(Array.from(document.querySelectorAll('#phoneDiagram g.node')).filter(el => !el.classList.contains('stub')).length)"
   );
   assert.ok(JSON.parse(realNodeCount) <= 8);
   // Step: clicking a sibling of the last decision point does nothing; it is no longer clickable.
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await sleep(100);
   const idsAfterSiblingClick = await nodeIds();
@@ -332,11 +349,11 @@ test("test_reset_returns_to_the_start_slice", async () => {
 test("test_back_button_undoes_one_choice_at_a_time", async () => {
   // Step: click "Yes" under "done speaking", then "No" under "do I understand everything they said".
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(START_SLICE);
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   const deeperSlice = await waitForNodeIds(AFTER_Y_SLICE);
   // Step: press Back once.
@@ -354,14 +371,14 @@ test("test_back_button_undoes_one_choice_at_a_time", async () => {
 test("test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer", async () => {
   // Step: click the "No" answer under "are they done speaking".
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   const ids = await waitForNodeIds(START_SLICE);
   // Step: the slice shows the static lead-in nodes plus the chosen decision and answer.
   assert.deepEqual(ids, AFTER_N_SLICE);
   // Step: the unchosen "Yes" answer shows dimmed.
   const unchosenNode = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"].unchosen'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"].unchosen'))"
   );
   assert.equal(unchosenNode, "true");
   // Step: reset so later tests start clean, since a sibling click no longer replaces the path.
@@ -372,14 +389,14 @@ test("test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_ans
 test("test_phone_view_handles_a_diagram_with_no_edges", async () => {
   // Step: replace the code with a diagram that has no edges, while phone view is on.
   await evaluate(
-    "codeBox.value = 'flowchart TD\\n  A[Only one box]'; codeBox.dispatchEvent(new Event('input'))"
+    "codeBox.value = 'flowchart TD\\n  B_ONLY_ONE_BOX[Only one box]'; codeBox.dispatchEvent(new Event('input'))"
   );
   await sleep(500);
   // Step: no error is shown, and the single node still renders.
   const errorText = await evaluate("document.getElementById('error').textContent");
   assert.equal(errorText, "");
   const hasNodeA = await evaluate(
-    "JSON.stringify(!!document.querySelector('[id*=\"flowchart-A-\"]'))"
+    "JSON.stringify(!!document.querySelector('#phoneDiagram [id*=\"flowchart-B_ONLY_ONE_BOX-\"]'))"
   );
   assert.equal(hasNodeA, "true");
   // Step: restore the accountability diagram for any tests that follow.
@@ -390,11 +407,11 @@ test("test_phone_view_handles_a_diagram_with_no_edges", async () => {
 test("test_decision_log_reflects_choices_and_undo", async () => {
   // Step: click "Yes" under "done speaking", then "No" under "do I understand everything they said".
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(START_SLICE);
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(AFTER_Y_SLICE);
   // Step: open the decision log.
@@ -411,11 +428,11 @@ test("test_decision_log_reflects_choices_and_undo", async () => {
   // Step: the drawer reaches up into the phone frame.
   const drawerRect = await evaluate(`JSON.stringify((() => {
     const logBox = document.getElementById('logBox');
-    const output = document.getElementById('output');
+    const phoneOutput = document.getElementById('phoneOutput');
     const logRect = logBox.getBoundingClientRect();
-    const outputRect = output.getBoundingClientRect();
+    const phoneRect = phoneOutput.getBoundingClientRect();
     return {
-      reachesUp: logRect.top < outputRect.top + 0.6 * outputRect.height,
+      reachesUp: logRect.top < phoneRect.top + 0.6 * phoneRect.height,
       tallEnough: logRect.height > 100,
     };
   })())`).then(JSON.parse);
@@ -448,7 +465,7 @@ test("test_decision_log_reflects_choices_and_undo", async () => {
   const isClosed = await evaluate("document.getElementById('logBox').classList.contains('open')");
   assert.equal(isClosed, false);
   const svgVisible = await evaluate(`JSON.stringify((() => {
-    const svg = document.querySelector('#diagram svg');
+    const svg = document.querySelector('#phoneDiagram svg');
     const r = svg.getBoundingClientRect();
     const el = document.elementFromPoint(r.left + r.width / 2, r.bottom - 10);
     return { insideSvg: svg === el || svg.contains(el) };
@@ -457,56 +474,50 @@ test("test_decision_log_reflects_choices_and_undo", async () => {
 });
 
 test("test_font_size_is_the_same_in_every_view", async () => {
-  // Step: measure one line of RAISE_ISSUE's label in the phone start slice.
-  const startLabel = await labelLineHeight("RAISE_ISSUE");
+  // Step: measure one line of B_RAISE_ISSUE's label in the phone start slice.
+  const startLabel = await labelLineHeight("B_RAISE_ISSUE", "phoneDiagram");
   // Step: click "Yes" under "done speaking" to slice to the next decision point.
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   await waitForNodeIds(START_SLICE);
   // Step: measure one line of Q_THEM_DONE_SPEAKING's label in the new phone slice.
-  const afterYLabel = await labelLineHeight("Q_THEM_DONE_SPEAKING");
+  const afterYLabel = await labelLineHeight("Q_THEM_DONE_SPEAKING", "phoneDiagram");
   // Step: the label line height stays the same across phone slices.
   assert.ok(Math.abs(afterYLabel.height - startLabel.height) < 1);
-  // Step: the svg is not shrunk smaller than its set style size.
+  // Step: the phone svg is not shrunk smaller than its set style size.
   const svgFit = await evaluate(`JSON.stringify((() => {
-    const svg = document.querySelector('#diagram svg');
+    const svg = document.querySelector('#phoneDiagram svg');
     return { rendered: svg.getBoundingClientRect().width, styled: parseFloat(svg.style.width) };
   })())`).then(JSON.parse);
   assert.ok(Math.abs(svgFit.rendered - svgFit.styled) < 1);
-  // Step: untick phone view.
-  await evaluate("document.getElementById('phoneToggle').click()");
-  await sleep(300);
-  // Step: measure one line of RAISE_ISSUE's label in the full web view.
-  const webLabel = await labelLineHeight("RAISE_ISSUE");
-  // Step: the same label line height shows in the web view as in phone view.
+  // Step: the same label line height shows in the always-visible regular view.
+  const webLabel = await labelLineHeight("B_RAISE_ISSUE", "diagram");
   assert.ok(Math.abs(webLabel.height - startLabel.height) < 1);
-  // Step: re-enable phone view so later tests are unaffected.
-  await evaluate("document.getElementById('phoneToggle').click()");
-  await sleep(300);
 });
 
 test("test_clicking_a_decision_node_scrolls_the_new_choices_into_view", async () => {
   // Step: click "Yes" under "done speaking", then "No" under "do I understand everything they said".
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_THEM_DONE_SPEAKING_Y-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
-  await sleep(200);
+  await sleep(300);
   await evaluate(
-    "document.querySelector('[id*=\"flowchart-Q_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
+    "document.querySelector('#phoneDiagram [id*=\"flowchart-Q_CHOICE_DO_I_UNDERSTAND_EVERYTHING_THEY_SAID_N-\"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))"
   );
   const clarifySlice = await waitForNodeIds(AFTER_Y_SLICE);
+  await sleep(200);
   // Step: the new slice overflows the phone frame, so this test actually exercises scrolling.
   const overflow = await evaluate(
-    "JSON.stringify({sh: document.getElementById('diagram').scrollHeight, ch: document.getElementById('diagram').clientHeight})"
+    "JSON.stringify({sh: document.getElementById('phoneDiagram').scrollHeight, ch: document.getElementById('phoneDiagram').clientHeight})"
   ).then(JSON.parse);
   assert.ok(overflow.sh > overflow.ch);
   // Step: every choice of the new bottom decision point sits fully inside the visible container.
   const fits = await evaluate(`JSON.stringify((() => {
-    const container = document.getElementById('diagram').getBoundingClientRect();
-    const ids = ['Q_CLARIFY_ISSUE_COUNT_NONE', 'Q_CLARIFY_ISSUE_COUNT_ONCE', 'Q_CLARIFY_ISSUE_COUNT_MULTIPLE'];
+    const container = document.getElementById('phoneDiagram').getBoundingClientRect();
+    const ids = ['Q_CHOICE_CLARIFY_ISSUE_COUNT_NONE', 'Q_CHOICE_CLARIFY_ISSUE_COUNT_ONCE', 'Q_CHOICE_CLARIFY_ISSUE_COUNT_MULTIPLE'];
     return ids.map(id => {
-      const rect = document.querySelector('[id*="flowchart-' + id + '-"]').getBoundingClientRect();
+      const rect = document.querySelector('#phoneDiagram [id*="flowchart-' + id + '-"]').getBoundingClientRect();
       return { id, top: rect.top, bottom: rect.bottom, containerTop: container.top, containerBottom: container.bottom };
     });
   })())`).then(JSON.parse);
@@ -517,7 +528,7 @@ test("test_clicking_a_decision_node_scrolls_the_new_choices_into_view", async ()
   // Step: press Reset; the diagram scrolls back to the top.
   await evaluate("document.getElementById('resetBtn').click()");
   await waitForNodeIds(clarifySlice);
-  const scrollTop = await evaluate("JSON.stringify(document.getElementById('diagram').scrollTop)");
+  const scrollTop = await evaluate("JSON.stringify(document.getElementById('phoneDiagram').scrollTop)");
   assert.equal(scrollTop, "0");
 });
 
@@ -529,19 +540,19 @@ test("test_syntax_error_keeps_last_good_diagram_and_shows_error_log", async () =
   }
   // Step: set valid diagram text and confirm it renders.
   await evaluate(
-    "codeBox.value = 'flowchart TD\\n  A[ok] --> B[good]'; codeBox.dispatchEvent(new Event('input'))"
+    "codeBox.value = 'flowchart TD\\n  B_OK[ok]\\n  B_GOOD[good]\\n  B_OK --> B_GOOD'; codeBox.dispatchEvent(new Event('input'))"
   );
   await sleep(300);
   const hasSvg = await evaluate("!!document.querySelector('#diagram svg')");
   assert.equal(hasSvg, true);
   // Step: set broken diagram text; the last good svg stays and the error log opens.
   await evaluate(
-    "codeBox.value = 'flowchart TD\\n  A[ok] --> '; codeBox.dispatchEvent(new Event('input'))"
+    "codeBox.value = 'flowchart TD\\n  B_OK[ok]\\n  B_GOOD[good]\\n  B_OK --> '; codeBox.dispatchEvent(new Event('input'))"
   );
   await sleep(500);
   const stillHasSvg = await evaluate("!!document.querySelector('#diagram svg')");
   assert.equal(stillHasSvg, true);
-  const hasNodeB = await evaluate('!!document.querySelector(\'[id*="flowchart-B-"]\')');
+  const hasNodeB = await evaluate('!!document.querySelector(\'#diagram [id*="flowchart-B_GOOD-"]\')');
   assert.equal(hasNodeB, true);
   const errorLogOpen = await evaluate("document.getElementById('errorLog').classList.contains('open')");
   assert.equal(errorLogOpen, true);
@@ -549,7 +560,7 @@ test("test_syntax_error_keeps_last_good_diagram_and_shows_error_log", async () =
   assert.ok(errorLogText.length > 0);
   // Step: fix the diagram text; the error log closes again.
   await evaluate(
-    "codeBox.value = 'flowchart TD\\n  A[ok] --> B[good]'; codeBox.dispatchEvent(new Event('input'))"
+    "codeBox.value = 'flowchart TD\\n  B_OK[ok]\\n  B_GOOD[good]\\n  B_OK --> B_GOOD'; codeBox.dispatchEvent(new Event('input'))"
   );
   await sleep(300);
   const errorLogClosed = await evaluate("document.getElementById('errorLog').classList.contains('open')");
@@ -1104,8 +1115,7 @@ test('test_decision_navigation_uses_the_nearest_graph_neighbor_and_focuses_both_
     return x >= pane.left && x <= pane.right && y >= pane.top && y <= pane.bottom;
   })()`);
   assert.equal(mainFocusVisible, true);
-  // Step: Next also starts at the selected regular block's closest downstream
-  // decision, even though the navigation counter is already on that decision.
+  // Step: Next starts at the selected block's closest downstream decision, even if the counter is already there.
   await clickNode('B_MIDDLE');
   await evaluate("document.getElementById('nextDecisionBtn').click()");
   await sleep(300);
@@ -1483,7 +1493,7 @@ test('test_inspector_remove_choices_button_orphans_every_outgoing_branch', async
   assert.equal((await inspectorState()).hidden, true);
   await assertEditorSourceIsSavedAndValid();
 
-  // Step: an immediate choice node shared by another node's incoming edge loses that edge too, while the other node remains.
+  // Step: removing choices deletes a shared choice node; other nodes stay.
   await setEditorSource('flowchart TD\n  Q{"Q"}\n  Q --> Q_X\n  Q_X["X"]\n  Q_X --> Down["Down"]\n  Other["Other"] --> Q_X');
   await clickNode('Q');
   await clickInspectorAction('remove-choices');
