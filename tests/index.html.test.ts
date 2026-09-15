@@ -944,6 +944,38 @@ test("test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_
   assert.equal((await destinationState()).dismiss, 'Cancel');
 });
 
+async function destinationRender() {
+  // Reads the destination row's rendered display, label text, and option count.
+  return evaluate(`JSON.stringify((() => {
+    const row = document.getElementById('destinationRow');
+    const select = document.getElementById('destinationSelect');
+    return { display: getComputedStyle(row).display, labelText: row.querySelector('span').textContent, optionCount: select.options.length };
+  })())`).then(JSON.parse);
+}
+
+test("test_destination_row_is_rendered_for_choice_and_static_nodes_but_not_for_decision_nodes", async () => {
+  await resetEditorFixture();
+  // Selecting a choice node with an explicit destination paints and labels the row with a populated menu.
+  await selectEditorNode('Q1');
+  await runEditorAction('addChoice');
+  await clickNode('Q1_NO');
+  let render = await destinationRender();
+  assert.notEqual(render.display, 'none');
+  assert.equal(render.labelText, 'Destination:');
+  assert.ok(render.optionCount > 0);
+  // Step: select the LetGo static block; the destination row is painted, labelled, and its menu is populated.
+  await clickNode('LetGo');
+  render = await destinationRender();
+  assert.notEqual(render.display, 'none');
+  assert.equal(render.labelText, 'Destination:');
+  assert.ok(render.optionCount > 0);
+  // Step: select the Q1 decision node; the destination row is not painted and its menu is empty.
+  await clickNode('Q1');
+  render = await destinationRender();
+  assert.equal(render.display, 'none');
+  assert.equal(render.optionCount, 0);
+});
+
 test("test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan", async () => {
   await resetEditorFixture();
   await setEditorSource('flowchart TD\n  A["A"] --> B["B"]\n  B --> C["C"]\n  C --> D{"D"}');
