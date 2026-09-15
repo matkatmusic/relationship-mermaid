@@ -769,61 +769,6 @@
     "difficulty": 4
   },
   {
-    "taskNumber": 30,
-    "version": "d2fd89861c96c4d7c9c342d70a8324330d5c7224",
-    "title": "Fix .inspector-destination-row CSS so decision nodes actually hide the destination dropdown",
-    "userDescription": "Visual change: If selected node's type is 'decision', do not show the 'destination' dropdown.",
-    "goal": [
-      "- Selecting a decision (question) node shows no 'Destination:' label or dropdown in the rendered widget, not just the `hidden` DOM property",
-      "- Selecting a choice or static block node still shows the destination label and a populated dropdown, same as today",
-      "- `npm test` passes"
-    ],
-    "notInScope": [
-      "- Other places where a CSS rule might override the `[hidden]` attribute are not audited or fixed here",
-      "- The destination dropdown's option list contents/ordering for non-decision nodes are unchanged"
-    ],
-    "problemSolvedByTask": "Editor UI is signaling to the user that the user can select the destination that a decision node can lead to, and the user should not be able to.",
-    "description": "Root cause confirmed: in index.html, the `.inspector-destination-row { display: flex; ... }` rule has no `:not([hidden])` guard, unlike the sibling rule `.inspector-grid:not([hidden]) { display: grid; ... }` a few lines above it, which already establishes the pattern for this exact problem. viewer.ts correctly sets `destinationRow.hidden = !hasDestination` for decision/question nodes, but the unguarded CSS `display: flex` beats the `[hidden]` attribute's UA-stylesheet `display: none`, so the row stays visible with an empty select. Fix is to add `:not([hidden])` to the `.inspector-destination-row` selector, mirroring `.inspector-grid`.",
-    "modifiableFiles": [
-      "index.html"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "select a choice node, assert the widget's html includes the destination label and non-empty menu. repeat the test using 'static node'.  select a question node, assert the widget's html does not have the destination label or menu component.",
-    "difficulty": 2
-  },
-  {
-    "taskNumber": 31,
-    "version": "9b33b648157c12f5b6c0ab3e4f91a98d99f6c402",
-    "title": "Fix destination dropdown to select the node's real outgoing destination, even when it is kind 'choice'",
-    "userDescription": "Bug: When a static or choice node is selected, the 'destination' dropdown menu's selected indexis not the block the selected node leads to; Set the destination dropdown's index to the block that the selected node leads to.",
-    "goal": [
-      "- Selecting a static or choice node whose outgoing edge already points somewhere sets destinationSelect.value to that destination's id, not '' (Terminal)",
-      "- This works even when the real destination is currently excluded from the option list because its kind === 'choice'",
-      "- `npm test` passes"
-    ],
-    "notInScope": [
-      "- The naming-convention heuristic that decides 'choice' vs 'block' kind (viewer.ts:570-574) is not reworked here, only how the destination dropdown handles its result",
-      "- The separate bug where the destination row stays visible for decision nodes is task #30"
-    ],
-    "problemSolvedByTask": "Destination dropdown lies about the graph",
-    "description": "Confirmed root cause in viewer.ts: renderNodeInspector's destination-options loop (~line 1114-1117) skips any candidate node with kind === 'choice', so outgoingDestination(node.id, graph) can return an id that was never added as an <option>, leaving destinationSelect.value unmatched and silently defaulting to the 'Terminal' option (value ''). Node kind is assigned in the graph parser (viewer.ts ~line 570-574) by a naming-convention heuristic (id starts with fromId + '_' plus an unlabeled edge), not a reliable structural signal, so a real destination node can still be misclassified as 'choice'. Fix is to stop excluding kind === 'choice' candidates from the options loop (or otherwise guarantee the true destination always has a matching option) so destinationSelect.value correctly reflects outgoingDestination(node.id, graph).",
-    "modifiableFiles": [
-      "viewer.ts",
-      "tests/viewer.test.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "Load a diagram with a static/choice node that already has a real outgoing edge to an existing block, select that node, and assert destinationSelect.value equals the real destination's id (not '' / Terminal).",
-    "difficulty": 3
-  },
-  {
     "taskNumber": 32,
     "version": "1850b592fabfc5d2c4c97a1a7398bc0dce6e1af7",
     "title": "Fix shared edge-line parser to correctly handle a chained A --> B --> C on one line",
@@ -942,49 +887,6 @@
     "hasTests": true,
     "tests": "Build A --> B --> C, select B, click 'insert decision block after', assert the result has B --> Q_NEW, Q_NEW --> Q_NEW_CHOICE_Y --> C, and Q_NEW --> Q_NEW_CHOICE_N (a terminal second choice). Repeat selecting a choice node.",
     "difficulty": 6
-  },
-  {
-    "taskNumber": 36,
-    "version": "05bcd98ed113ed4acc15e5ba857fca8d8a9bb0f0",
-    "title": "Header Next/Previous decision-nav buttons, backed by a strict Q_/Q_CHOICE/B_ naming-convention parser",
-    "userDescription": "Feature: Header Nav buttons that cycle through decision points, allowing the user to quickly navigate a diagram.  button clicks literally walk the .mmd file from top to bottom, looking for the next 'Q_*{ }' line.  Requirement: diagrams updated to use specific naming convention for choice blocks(Q_CHOICE*[]), decision blocks (Q_*{}), and static blocks(B_*[]), parser updated to only support these naming conventions else diagram flagged as invalid and node identifiers must be updated first.",
-    "goal": [
-      "- Header Next/Previous buttons select and scroll/pan to the next/previous Q_* decision node in file order, wrapping around at the ends",
-      "- The parser enforces the naming convention: decision ids start with `Q_` (brace shape), choice ids start with `Q_CHOICE` (bracket shape), static ids start with `B_` (bracket shape)",
-      "- A diagram with non-compliant ids refuses to render/edit and lists exactly which ids are wrong and what prefix they need",
-      "- All 4 existing diagrams (accountability.mmd, financial-investments.mmd, say-something-or-let-it-go.mmd, stop-causing-harms.mmd) are renamed to comply and load cleanly under the new strict parser",
-      "- `npm test` passes"
-    ],
-    "notInScope": [
-      "- No reusable auto-rename/migration tooling is built; the 4 files are renamed by hand as part of this task",
-      "- Existing descriptive choice suffixes (_Y/_N/_MULTIPLE etc.) are unchanged; only the required prefixes are enforced"
-    ],
-    "problemSolvedByTask": "No quick way to jump between decisions in a big diagram",
-    "description": "editorGraph() in viewer.ts (parseEditorToken + recordDecl) classifies node kind heuristically today: brace shape {} means question/decision; bracket/rounded shape reached via an unlabeled edge whose target id starts with fromId + '_' means choice; everything else means block. parseEditorToken also recognizes a rounded/stadium shape ([\"...\"]), tagged 'other', which the new B_+bracket rule must reject or force a conversion for. index.html's #header div has no Next/Previous buttons yet; the existing scrollToNextQuestion(edges) helper in viewer.ts only finds the next unanswered Q_ node along the current trail for phone view, it does not cycle all decisions with wraparound. tests/index.html.test.ts hardcodes EDITOR_FIXTURE_NAME = 'say-something-or-let-it-go.mmd' and asserts against its literal ids (Start, Q1, Q1_NO, LetGo, HaveConvo, etc.), so renaming that diagram's ids requires updating this test file's assertions too. say-something-or-let-it-go.mmd and stop-causing-harms.mmd start with a rounded-shape entry node (Start/Root), neither brace nor bracket, so both must be renamed to a B_ id and converted to bracket shape. financial-investments.mmd uses unprefixed ids (A, B, C, E_BORROW, NEED_MONEY_ROUTE, ARE_TERMS_REASONABLE, etc.) with no convention at all. accountability.mmd already uses Q_ for decisions but GOAL_* for static blocks instead of B_, and choice ids lack the required Q_CHOICE prefix. viewer.js is the bun-built artifact of viewer.ts and changes whenever viewer.ts changes.",
-    "modifiableFiles": [
-      "viewer.ts",
-      "viewer.js",
-      "index.html",
-      "diagrams/accountability.mmd",
-      "diagrams/financial-investments.mmd",
-      "diagrams/say-something-or-let-it-go.mmd",
-      "diagrams/stop-causing-harms.mmd",
-      "tests/viewer.test.ts",
-      "tests/index.html.test.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "Load a compliant diagram with 3 Q_* decisions, click Next repeatedly and assert selection cycles through all 3 then wraps; click Previous and assert it goes backward. Separately, load a diagram with a non-compliant id (e.g. plain 'A') and assert the editor shows the invalid-diagram message listing 'A' instead of rendering.",
-    "difficulty": 8,
-    "blockedBy": [
-      {
-        "taskNumber": 32,
-        "reason": "editorGraph() builds its node/edge model via the same parseEditorEdgeLine/parseEditorToken functions task 32 fixes, and that parser currently drops the trailing node and corrupts the middle node's label on any chained `A --> B --> C` line. accountability.mmd has 47+ such chained lines and financial-investments.mmd has 3, both in the set of 4 files this task must rename every node id in — the shared parser must stop mangling chained-edge nodes before this task's validation and rename work can be done correctly."
-      }
-    ]
   },
   {
     "taskNumber": 37,
