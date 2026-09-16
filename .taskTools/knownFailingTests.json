@@ -5,26 +5,6 @@
   },
   {
     "file": "tests/index.html.test.ts",
-    "name": "test_clicking_a_decision_node_slices_to_the_next_decision_point"
-  },
-  {
-    "file": "tests/index.html.test.ts",
-    "name": "test_reset_returns_to_the_start_slice"
-  },
-  {
-    "file": "tests/index.html.test.ts",
-    "name": "test_back_button_undoes_one_choice_at_a_time"
-  },
-  {
-    "file": "tests/index.html.test.ts",
-    "name": "test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer"
-  },
-  {
-    "file": "tests/index.html.test.ts",
-    "name": "test_phone_view_handles_a_diagram_with_no_edges"
-  },
-  {
-    "file": "tests/index.html.test.ts",
     "name": "test_decision_log_reflects_choices_and_undo"
   },
   {
@@ -133,10 +113,6 @@
   },
   {
     "file": "tests/index.html.test.ts",
-    "name": "test_insert_static_before_splices_a_chained_edge_line"
-  },
-  {
-    "file": "tests/index.html.test.ts",
     "name": "test_dirty_text_then_destination_creates_two_ordered_undo_entries"
   },
   {
@@ -157,27 +133,11 @@
   },
   {
     "file": "tests/index.html.test.ts",
-    "name": "test_insert_static_after_splices_a_static_or_choice_node_without_dropping_its_destination"
-  },
-  {
-    "file": "tests/index.html.test.ts",
-    "name": "test_insert_decision_after_splices_blocks_and_choices_with_one_terminal_branch"
-  },
-  {
-    "file": "tests/index.html.test.ts",
     "name": "test_new_static_text_enter_keeps_selection_and_focuses_destination"
   },
   {
     "file": "tests/index.html.test.ts",
-    "name": "test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus"
-  },
-  {
-    "file": "tests/index.html.test.ts",
     "name": "test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges"
-  },
-  {
-    "file": "tests/index.html.test.ts",
-    "name": "test_add_choice_on_inspector_keeps_the_original_decision_selected"
   },
   {
     "file": "tests/index.html.test.ts",

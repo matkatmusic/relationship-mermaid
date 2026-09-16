@@ -15,8 +15,7 @@ import { positionNodeInspector } from './node-inspector.ts';
 export async function render() {
   errorBox.textContent = '';
   try {
-    // Validate before Mermaid sees the source. Invalid diagrams remain visible
-    // only as their actionable editor error and cannot be edited or rendered.
+    // Validate first; invalid diagrams only show their editor error, not editing or rendering.
     const graph = editorGraph();
     discardInvalidPhonePreview(graph);
     updateDecisionCounter(graph);
@@ -47,10 +46,14 @@ export async function render() {
     const phoneSource = edges.length > 0 ? chunkSource(shown, siblings, edges) : codeBox.value;
     const regularViewport = { left: outputBox.scrollLeft, top: outputBox.scrollTop };
     const phoneViewport = { left: phoneDiagramBox.scrollLeft, top: phoneDiagramBox.scrollTop };
+    const myRenderId = state.renderId;
     const [{ svg: regularSvg }, { svg: phoneSvg }] = await Promise.all([
       mermaid.render('diagram-' + (state.renderId++), codeBox.value),
       mermaid.render('phone-diagram-' + (state.renderId++), phoneSource),
     ]);
+    // A newer render() started while this one was awaiting Mermaid; drop this stale result.
+    if (state.renderId !== myRenderId + 2)
+      return;
     diagramBox.innerHTML = regularSvg;
     phoneDiagramBox.innerHTML = phoneSvg;
     applyNodeTypeColors(graph);

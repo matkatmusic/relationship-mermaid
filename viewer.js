@@ -1268,10 +1268,13 @@ async function render() {
     const phoneSource = edges.length > 0 ? chunkSource(shown, siblings, edges) : codeBox.value;
     const regularViewport = { left: outputBox.scrollLeft, top: outputBox.scrollTop };
     const phoneViewport = { left: phoneDiagramBox.scrollLeft, top: phoneDiagramBox.scrollTop };
+    const myRenderId = state.renderId;
     const [{ svg: regularSvg }, { svg: phoneSvg }] = await Promise.all([
       mermaid.render("diagram-" + state.renderId++, codeBox.value),
       mermaid.render("phone-diagram-" + state.renderId++, phoneSource)
     ]);
+    if (state.renderId !== myRenderId + 2)
+      return;
     diagramBox.innerHTML = regularSvg;
     phoneDiagramBox.innerHTML = phoneSvg;
     applyNodeTypeColors(graph);
