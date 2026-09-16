@@ -827,12 +827,6 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "The existing ~48 failing editor tests in tests/index.html.test.ts must all pass; npm test is green.",
-    "difficulty": 5,
-    "blockedBy": [
-      {
-        "taskNumber": 39,
-        "reason": "task 39 renames diagrams/stop-causing-harms.mmd to the Q_/Q_CHOICE/B_ convention and updates its test assertions in tests/index.html.test.ts; that file still uses the old LetGo/Q1{...} ids (verified via grep, 0 Q_/B_ matches), so this reconciliation task cannot assume all diagrams/*.mmd are already renamed, and both tasks edit tests/index.html.test.ts for the same fixtures."
-      }
-    ]
+    "difficulty": 5
   }
 ]
