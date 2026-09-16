@@ -1,0 +1,3 @@
+[submodule "mermaid-editor"]
+	path = mermaid-editor
+	url = https://github.com/matkatmusic/mermaid-editor.git
