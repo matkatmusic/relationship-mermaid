@@ -310,6 +310,7 @@ function splitEditorMetadata(source) {
         lastSelectedNodeId,
         outputScrollLeft: typeof parsed.outputScrollLeft === "number" ? parsed.outputScrollLeft : undefined,
         outputScrollTop: typeof parsed.outputScrollTop === "number" ? parsed.outputScrollTop : undefined,
+        mainZoomPercent: typeof parsed.mainZoomPercent === "number" ? parsed.mainZoomPercent : undefined,
         typeColors: stringRecord(parsed.typeColors),
         nodeTypes: stringRecord(parsed.nodeTypes)
       };
@@ -323,6 +324,7 @@ function sourceWithEditorMetadata(source) {
     lastSelectedNodeId: state.selectedEditorNodeId,
     outputScrollLeft: outputBox.scrollLeft,
     outputScrollTop: outputBox.scrollTop,
+    mainZoomPercent: state.mainZoomPercent,
     typeColors: state.typeColors,
     nodeTypes: state.nodeTypes
   };
@@ -685,228 +687,6 @@ function focusInspectorDestination() {
   destinationSelect.focus();
 }
 
-// diagram-io.ts
-function setStatus(text) {
-  statusBox.textContent = text;
-  setTimeout(() => {
-    if (statusBox.textContent === text)
-      statusBox.textContent = "";
-  }, 2000);
-}
-function setDrawerOpen(open) {
-  drawer.classList.toggle("closed", !open);
-  positionNodeInspector();
-}
-async function loadList() {
-  const names = await fetch("/api/diagrams").then((r) => r.json());
-  selectBox.innerHTML = '<option value="" disabled ' + (state.currentName ? "" : "selected") + ">Diagrams</option>";
-  for (const name of names) {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    if (name === state.currentName)
-      option.selected = true;
-    selectBox.appendChild(option);
-  }
-}
-function resetEditorHistory(text) {
-  state.editorHistory = [text];
-  state.editorHistoryIndex = 0;
-  selectEditorNode(null);
-}
-function restoreMainViewport(metadata, graph) {
-  const hasSavedLeft = typeof metadata?.outputScrollLeft === "number";
-  const hasSavedTop = typeof metadata?.outputScrollTop === "number";
-  if (hasSavedLeft)
-    outputBox.scrollLeft = metadata.outputScrollLeft;
-  if (hasSavedTop)
-    outputBox.scrollTop = metadata.outputScrollTop;
-  if (hasSavedLeft && hasSavedTop)
-    return;
-  const firstNode = graph.nodes.values().next().value;
-  if (!firstNode)
-    return;
-  const node = diagramBox.querySelector('[id*="flowchart-' + firstNode.id + '-"]');
-  if (!node)
-    return;
-  const outputRect = outputBox.getBoundingClientRect();
-  const nodeRect = node.getBoundingClientRect();
-  const nodeLeft = outputBox.scrollLeft + nodeRect.left - outputRect.left;
-  const nodeTop = outputBox.scrollTop + nodeRect.top - outputRect.top;
-  if (!hasSavedLeft)
-    outputBox.scrollLeft = Math.max(0, nodeLeft - 12);
-  if (!hasSavedTop)
-    outputBox.scrollTop = Math.max(0, nodeTop - 12);
-}
-async function loadDiagram(name) {
-  const text = await fetch("/api/diagrams/" + encodeURIComponent(name)).then((r) => r.text());
-  const { metadata } = splitEditorMetadata(text);
-  restoreTypeMetadata(metadata);
-  state.currentName = name;
-  phonePath.length = 0;
-  state.phoneFocusNodeId = null;
-  state.phoneFocusUsesDecisionContext = false;
-  state.phonePreviewChoiceId = null;
-  state.diagramScale = null;
-  state.currentDecisionId = metadata?.lastSelectedNodeId ?? null;
-  codeBox.value = text;
-  resetEditorHistory(text);
-  await render();
-  let graph = null;
-  try {
-    graph = editorGraph();
-  } catch {}
-  if (metadata) {
-    if (graph?.nodes.has(metadata.lastSelectedNodeId ?? ""))
-      selectEditorNode(metadata.lastSelectedNodeId);
-  }
-  if (graph)
-    restoreMainViewport(metadata, graph);
-  loadList();
-  watchDiagram(name);
-}
-function watchDiagram(name) {
-  if (state.watcher)
-    state.watcher.close();
-  const source = new EventSource("/api/watch/" + encodeURIComponent(name));
-  state.watcher = source;
-  source.onmessage = async () => {
-    const text = await fetch("/api/diagrams/" + encodeURIComponent(name)).then((r) => r.text());
-    const isStaleWatcher = state.watcher !== source;
-    if (isStaleWatcher)
-      return;
-    if (text !== codeBox.value) {
-      restoreTypeMetadata(splitEditorMetadata(text).metadata);
-      codeBox.value = text;
-      resetEditorHistory(text);
-    }
-    render();
-  };
-}
-async function saveDiagram() {
-  let name = state.currentName;
-  if (!name) {
-    name = prompt("Name this diagram (letters, numbers, - and _ only):");
-    if (!name)
-      return;
-    if (!name.endsWith(".mmd"))
-      name += ".mmd";
-  }
-  await fetch("/api/diagrams/" + encodeURIComponent(name), {
-    method: "PUT",
-    body: codeBox.value
-  });
-  state.currentName = name;
-  setStatus("Saved " + name);
-  loadList();
-  watchDiagram(name);
-}
-
-// decision-nav.ts
-function decisionNodes(graph) {
-  return [...graph.nodes.values()].filter((node) => node.kind === "question").sort((a, b) => a.lineIndex - b.lineIndex);
-}
-function nearestDecisionFrom(id, step, graph) {
-  const visited = new Set([id]);
-  let frontier = [id];
-  while (frontier.length) {
-    const nextFrontier = [];
-    for (const nodeId of frontier) {
-      for (const edge of graph.edges) {
-        const neighbor = step === 1 ? edge.from === nodeId ? edge.to : null : edge.to === nodeId ? edge.from : null;
-        if (!neighbor || visited.has(neighbor))
-          continue;
-        visited.add(neighbor);
-        if (graph.nodes.get(neighbor)?.kind === "question")
-          return graph.nodes.get(neighbor);
-        nextFrontier.push(neighbor);
-      }
-    }
-    frontier = nextFrontier;
-  }
-}
-function nearestFeedingChoice(id, graph) {
-  const visited = new Set([id]);
-  let frontier = [id];
-  while (frontier.length) {
-    const nextFrontier = [];
-    for (const nodeId of frontier) {
-      const node = graph.nodes.get(nodeId);
-      const isChoiceFedByDecision = node?.kind === "choice" && graph.edges.some((edge) => edge.to === nodeId && graph.nodes.get(edge.from)?.kind === "question");
-      if (isChoiceFedByDecision)
-        return nodeId;
-      for (const edge of graph.edges) {
-        if (edge.to !== nodeId || visited.has(edge.from))
-          continue;
-        visited.add(edge.from);
-        nextFrontier.push(edge.from);
-      }
-    }
-    frontier = nextFrontier;
-  }
-  return null;
-}
-function discardInvalidPhonePreview(graph) {
-  if (state.phoneFocusNodeId && graph.nodes.get(state.phoneFocusNodeId)?.kind !== "question") {
-    state.phoneFocusNodeId = null;
-    state.phoneFocusUsesDecisionContext = false;
-  }
-  if (state.phonePreviewChoiceId && nearestFeedingChoice(state.phonePreviewChoiceId, graph) !== state.phonePreviewChoiceId)
-    state.phonePreviewChoiceId = null;
-}
-function updateDecisionCounter(graph) {
-  const decisions = decisionNodes(graph);
-  if (decisions.length === 0) {
-    state.currentDecisionId = null;
-    decisionCounter.textContent = "0 / 0";
-    return decisions;
-  }
-  if (!decisions.some((node) => node.id === state.currentDecisionId)) {
-    const selectedDecision = decisions.find((node) => node.id === state.selectedEditorNodeId);
-    state.currentDecisionId = selectedDecision?.id ?? decisions[0].id;
-  }
-  const current = decisions.findIndex((node) => node.id === state.currentDecisionId) + 1;
-  decisionCounter.textContent = `${current} / ${decisions.length}`;
-  return decisions;
-}
-function centerNodeInViewport(container, diagram, id) {
-  const node = diagram.querySelector('[id*="flowchart-' + id + '-"]');
-  if (!node)
-    return;
-  const containerRect = container.getBoundingClientRect();
-  const nodeRect = node.getBoundingClientRect();
-  container.scrollLeft += nodeRect.left + nodeRect.width / 2 - containerRect.left - container.clientWidth / 2;
-  container.scrollTop += nodeRect.top + nodeRect.height / 2 - containerRect.top - container.clientHeight / 2;
-}
-async function navigateDecision(step) {
-  let graph;
-  try {
-    graph = editorGraph();
-  } catch (error) {
-    showEditorValidationError(error);
-    return;
-  }
-  const decisions = updateDecisionCounter(graph);
-  if (decisions.length === 0) {
-    setStatus("No decisions in this diagram");
-    return;
-  }
-  const selected = graph.nodes.get(state.selectedEditorNodeId ?? "");
-  const nearest = selected ? nearestDecisionFrom(selected.id, step, graph) : undefined;
-  const anchorId = selected?.kind === "question" ? selected.id : state.currentDecisionId;
-  const currentIndex = decisions.findIndex((node) => node.id === anchorId);
-  const nextIndex = (currentIndex + step + decisions.length) % decisions.length;
-  const decision = nearest ?? decisions[nextIndex];
-  state.currentDecisionId = decision.id;
-  state.phoneFocusNodeId = decision.id;
-  state.phoneFocusUsesDecisionContext = true;
-  state.phonePreviewChoiceId = null;
-  selectEditorNode(decision.id);
-  updateDecisionCounter(graph);
-  await render();
-  centerNodeInViewport(outputBox, diagramBox, decision.id);
-}
-
 // graph-slice.ts
 function parentOf(id, edges) {
   let found;
@@ -1100,6 +880,230 @@ function applyMainZoom(preserveViewportCenter = true) {
 function setMainZoomPercent(percent) {
   state.mainZoomPercent = Math.max(MIN_MAIN_ZOOM, Math.min(MAX_MAIN_ZOOM, Math.round(percent)));
   applyMainZoom();
+}
+
+// diagram-io.ts
+function setStatus(text) {
+  statusBox.textContent = text;
+  setTimeout(() => {
+    if (statusBox.textContent === text)
+      statusBox.textContent = "";
+  }, 2000);
+}
+function setDrawerOpen(open) {
+  drawer.classList.toggle("closed", !open);
+  positionNodeInspector();
+}
+async function loadList() {
+  const names = await fetch("/api/diagrams").then((r) => r.json());
+  selectBox.innerHTML = '<option value="" disabled ' + (state.currentName ? "" : "selected") + ">Diagrams</option>";
+  for (const name of names) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    if (name === state.currentName)
+      option.selected = true;
+    selectBox.appendChild(option);
+  }
+}
+function resetEditorHistory(text) {
+  state.editorHistory = [text];
+  state.editorHistoryIndex = 0;
+  selectEditorNode(null);
+}
+function restoreMainViewport(metadata, graph) {
+  const hasSavedLeft = typeof metadata?.outputScrollLeft === "number";
+  const hasSavedTop = typeof metadata?.outputScrollTop === "number";
+  if (hasSavedLeft)
+    outputBox.scrollLeft = metadata.outputScrollLeft;
+  if (hasSavedTop)
+    outputBox.scrollTop = metadata.outputScrollTop;
+  if (hasSavedLeft && hasSavedTop)
+    return;
+  const firstNode = graph.nodes.values().next().value;
+  if (!firstNode)
+    return;
+  const node = diagramBox.querySelector('[id*="flowchart-' + firstNode.id + '-"]');
+  if (!node)
+    return;
+  const outputRect = outputBox.getBoundingClientRect();
+  const nodeRect = node.getBoundingClientRect();
+  const nodeLeft = outputBox.scrollLeft + nodeRect.left - outputRect.left;
+  const nodeTop = outputBox.scrollTop + nodeRect.top - outputRect.top;
+  if (!hasSavedLeft)
+    outputBox.scrollLeft = Math.max(0, nodeLeft - 12);
+  if (!hasSavedTop)
+    outputBox.scrollTop = Math.max(0, nodeTop - 12);
+}
+async function loadDiagram(name) {
+  const text = await fetch("/api/diagrams/" + encodeURIComponent(name)).then((r) => r.text());
+  const { metadata } = splitEditorMetadata(text);
+  restoreTypeMetadata(metadata);
+  state.currentName = name;
+  phonePath.length = 0;
+  state.phoneFocusNodeId = null;
+  state.phoneFocusUsesDecisionContext = false;
+  state.phonePreviewChoiceId = null;
+  state.diagramScale = null;
+  state.currentDecisionId = metadata?.lastSelectedNodeId ?? null;
+  state.mainZoomPercent = metadata?.mainZoomPercent ?? 100;
+  codeBox.value = text;
+  resetEditorHistory(text);
+  await render();
+  applyMainZoom(false);
+  let graph = null;
+  try {
+    graph = editorGraph();
+  } catch {}
+  if (metadata) {
+    if (graph?.nodes.has(metadata.lastSelectedNodeId ?? ""))
+      selectEditorNode(metadata.lastSelectedNodeId);
+  }
+  if (graph)
+    restoreMainViewport(metadata, graph);
+  loadList();
+  watchDiagram(name);
+}
+function watchDiagram(name) {
+  if (state.watcher)
+    state.watcher.close();
+  const source = new EventSource("/api/watch/" + encodeURIComponent(name));
+  state.watcher = source;
+  source.onmessage = async () => {
+    const text = await fetch("/api/diagrams/" + encodeURIComponent(name)).then((r) => r.text());
+    const isStaleWatcher = state.watcher !== source;
+    if (isStaleWatcher)
+      return;
+    if (text !== codeBox.value) {
+      restoreTypeMetadata(splitEditorMetadata(text).metadata);
+      codeBox.value = text;
+      resetEditorHistory(text);
+    }
+    render();
+  };
+}
+async function saveDiagram() {
+  let name = state.currentName;
+  if (!name) {
+    name = prompt("Name this diagram (letters, numbers, - and _ only):");
+    if (!name)
+      return;
+    if (!name.endsWith(".mmd"))
+      name += ".mmd";
+  }
+  await fetch("/api/diagrams/" + encodeURIComponent(name), {
+    method: "PUT",
+    body: codeBox.value
+  });
+  state.currentName = name;
+  setStatus("Saved " + name);
+  loadList();
+  watchDiagram(name);
+}
+
+// decision-nav.ts
+function decisionNodes(graph) {
+  return [...graph.nodes.values()].filter((node) => node.kind === "question").sort((a, b) => a.lineIndex - b.lineIndex);
+}
+function nearestDecisionFrom(id, step, graph) {
+  const visited = new Set([id]);
+  let frontier = [id];
+  while (frontier.length) {
+    const nextFrontier = [];
+    for (const nodeId of frontier) {
+      for (const edge of graph.edges) {
+        const neighbor = step === 1 ? edge.from === nodeId ? edge.to : null : edge.to === nodeId ? edge.from : null;
+        if (!neighbor || visited.has(neighbor))
+          continue;
+        visited.add(neighbor);
+        if (graph.nodes.get(neighbor)?.kind === "question")
+          return graph.nodes.get(neighbor);
+        nextFrontier.push(neighbor);
+      }
+    }
+    frontier = nextFrontier;
+  }
+}
+function nearestFeedingChoice(id, graph) {
+  const visited = new Set([id]);
+  let frontier = [id];
+  while (frontier.length) {
+    const nextFrontier = [];
+    for (const nodeId of frontier) {
+      const node = graph.nodes.get(nodeId);
+      const isChoiceFedByDecision = node?.kind === "choice" && graph.edges.some((edge) => edge.to === nodeId && graph.nodes.get(edge.from)?.kind === "question");
+      if (isChoiceFedByDecision)
+        return nodeId;
+      for (const edge of graph.edges) {
+        if (edge.to !== nodeId || visited.has(edge.from))
+          continue;
+        visited.add(edge.from);
+        nextFrontier.push(edge.from);
+      }
+    }
+    frontier = nextFrontier;
+  }
+  return null;
+}
+function discardInvalidPhonePreview(graph) {
+  if (state.phoneFocusNodeId && graph.nodes.get(state.phoneFocusNodeId)?.kind !== "question") {
+    state.phoneFocusNodeId = null;
+    state.phoneFocusUsesDecisionContext = false;
+  }
+  if (state.phonePreviewChoiceId && nearestFeedingChoice(state.phonePreviewChoiceId, graph) !== state.phonePreviewChoiceId)
+    state.phonePreviewChoiceId = null;
+}
+function updateDecisionCounter(graph) {
+  const decisions = decisionNodes(graph);
+  if (decisions.length === 0) {
+    state.currentDecisionId = null;
+    decisionCounter.textContent = "0 / 0";
+    return decisions;
+  }
+  if (!decisions.some((node) => node.id === state.currentDecisionId)) {
+    const selectedDecision = decisions.find((node) => node.id === state.selectedEditorNodeId);
+    state.currentDecisionId = selectedDecision?.id ?? decisions[0].id;
+  }
+  const current = decisions.findIndex((node) => node.id === state.currentDecisionId) + 1;
+  decisionCounter.textContent = `${current} / ${decisions.length}`;
+  return decisions;
+}
+function centerNodeInViewport(container, diagram, id) {
+  const node = diagram.querySelector('[id*="flowchart-' + id + '-"]');
+  if (!node)
+    return;
+  const containerRect = container.getBoundingClientRect();
+  const nodeRect = node.getBoundingClientRect();
+  container.scrollLeft += nodeRect.left + nodeRect.width / 2 - containerRect.left - container.clientWidth / 2;
+  container.scrollTop += nodeRect.top + nodeRect.height / 2 - containerRect.top - container.clientHeight / 2;
+}
+async function navigateDecision(step) {
+  let graph;
+  try {
+    graph = editorGraph();
+  } catch (error) {
+    showEditorValidationError(error);
+    return;
+  }
+  const decisions = updateDecisionCounter(graph);
+  if (decisions.length === 0) {
+    setStatus("No decisions in this diagram");
+    return;
+  }
+  const selected = graph.nodes.get(state.selectedEditorNodeId ?? "");
+  const nearest = selected ? nearestDecisionFrom(selected.id, step, graph) : undefined;
+  const anchorId = selected?.kind === "question" ? selected.id : state.currentDecisionId;
+  const currentIndex = decisions.findIndex((node) => node.id === anchorId);
+  const nextIndex = (currentIndex + step + decisions.length) % decisions.length;
+  const decision = nearest ?? decisions[nextIndex];
+  state.currentDecisionId = decision.id;
+  state.phoneFocusNodeId = decision.id;
+  state.phoneFocusUsesDecisionContext = true;
+  state.phonePreviewChoiceId = null;
+  selectEditorNode(decision.id);
+  updateDecisionCounter(graph);
+  await render();
+  centerNodeInViewport(outputBox, diagramBox, decision.id);
 }
 
 // phone-separators.ts
@@ -1337,7 +1341,7 @@ async function commitEditorSource(source, options) {
   selectEditorNode(null);
 }
 function enqueueEditorAction(action) {
-  setEditorActionPromise(state.editorActionPromise.then(action));
+  setEditorActionPromise(state.editorActionPromise.catch(() => {}).then(action));
 }
 function runEditorAction(action) {
   enqueueEditorAction(action);

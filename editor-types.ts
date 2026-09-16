@@ -39,6 +39,7 @@ export interface EditorMetadata {
   lastSelectedNodeId: string | null;
   outputScrollLeft?: number;
   outputScrollTop?: number;
+  mainZoomPercent?: number;
   typeColors?: Record<string, string>;
   nodeTypes?: Record<string, string>;
 }

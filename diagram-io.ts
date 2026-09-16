@@ -5,6 +5,7 @@ import { selectEditorNode } from './editor-actions.ts';
 import type { EditorGraph, EditorMetadata, EditorNode } from './editor-types.ts';
 import { editorGraph, restoreTypeMetadata, splitEditorMetadata } from './editor-graph.ts';
 import { render } from './render.ts';
+import { applyMainZoom } from './zoom.ts';
 
 export function setStatus(text: string) {
   statusBox.textContent = text;
@@ -74,9 +75,11 @@ export async function loadDiagram(name: string) {
   state.phonePreviewChoiceId = null;
   state.diagramScale = null;
   state.currentDecisionId = metadata?.lastSelectedNodeId ?? null;
+  state.mainZoomPercent = metadata?.mainZoomPercent ?? 100;
   codeBox.value = text;
   resetEditorHistory(text);
   await render();
+  applyMainZoom(false);
   let graph: EditorGraph | null = null;
   try {
     graph = editorGraph();

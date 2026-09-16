@@ -22,7 +22,8 @@ export async function commitEditorSource(source: string, options?: { recordHisto
 }
 
 export function enqueueEditorAction(action: () => Promise<void>) {
-  setEditorActionPromise(state.editorActionPromise.then(action));
+  // A rejected action must not permanently block every action queued after it.
+  setEditorActionPromise(state.editorActionPromise.catch(() => {}).then(action));
 }
 
 export function runEditorAction(action: () => Promise<void>) {

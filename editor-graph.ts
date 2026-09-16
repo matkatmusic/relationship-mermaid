@@ -20,6 +20,7 @@ export function splitEditorMetadata(source: string) {
         lastSelectedNodeId,
         outputScrollLeft: typeof parsed.outputScrollLeft === 'number' ? parsed.outputScrollLeft : undefined,
         outputScrollTop: typeof parsed.outputScrollTop === 'number' ? parsed.outputScrollTop : undefined,
+        mainZoomPercent: typeof parsed.mainZoomPercent === 'number' ? parsed.mainZoomPercent : undefined,
         typeColors: stringRecord(parsed.typeColors),
         nodeTypes: stringRecord(parsed.nodeTypes),
       };
@@ -37,6 +38,7 @@ export function sourceWithEditorMetadata(source: string) {
     lastSelectedNodeId: state.selectedEditorNodeId,
     outputScrollLeft: outputBox.scrollLeft,
     outputScrollTop: outputBox.scrollTop,
+    mainZoomPercent: state.mainZoomPercent,
     typeColors: state.typeColors,
     nodeTypes: state.nodeTypes,
   };
