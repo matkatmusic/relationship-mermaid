@@ -1129,5 +1129,40 @@
         "reason": "Task 41 moves index.html, dom.ts, and state.ts into the mermaid-editor submodule; this task's edits to those files should land after task 41 completes."
       }
     ]
+  },
+  {
+    "taskNumber": 44,
+    "version": "4720ced72e9d60681bc4638863d5e10427100c2f",
+    "title": "Functions-only toggle: build the diagram filter (step 2 of 3)",
+    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"function-routing.ts\"]. Step 2 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): add filtering to loaded .mmd file and generate the filtered .mmd that gets rendered instead.",
+    "goal": [
+      "- function-routing.ts exports a filter: mermaid source in, filtered source out",
+      "- Edges are rerouted directly between function nodes"
+    ],
+    "notInScope": [
+      "- Wiring the filter into the live render pipeline or toggle — that's a sibling task (render.ts)",
+      "- Changing how taskTools:mermaid generates .mmd files"
+    ],
+    "problemSolvedByTask": "Code structure diagrams are too dense to read, and I need a high level view of code flow",
+    "description": "Create function-routing.ts, a pure module with a function that takes a diagram's mermaid source (parsed via the same node/edge model editor-graph.ts and diagram-source.ts already use) and returns a filtered source string. Function-definition nodes are B_ nodes whose label matches an identifier(...) call-signature shape (e.g. isPromptLine(entry: ...), shouldBlock(marker: string, ...)); every other B_/Q_/Q_CHOICE_ node is dropped. For each pair of function nodes, redraw a direct edge between them whenever the caller's body (traced from its own function node down through the graph) reaches a node that points at the callee's function node, so the reduced diagram still shows accurate call routing. Not yet called from anywhere — this task only builds and unit-tests the filter function itself.",
+    "modifiableFiles": [
+      "function-routing.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "function-routing.ts"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Feed function-routing.ts's filter a sample source (e.g. ask-dont-dump-issues.mmd's content) and assert it returns only function-declaration nodes with edges rerouted directly between them.",
+    "difficulty": 5,
+    "blockedBy": [
+      {
+        "taskNumber": 41,
+        "reason": "Task 41 relocates the viewer/renderer codebase into the mermaid-editor submodule, including where this new function-routing.ts module should live; this task should land after task 41 completes."
+      }
+    ]
   }
 ]
