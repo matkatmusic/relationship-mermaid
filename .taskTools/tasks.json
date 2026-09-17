@@ -766,7 +766,35 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "For each editor button handler, add a node:test case in tests/index.html.test.ts (or a new tests/*.test.ts file following its load-fixture-then-evaluate-in-page pattern) shaped as: 1) Arrange: load diagrams/say-something-or-let-it-go.mmd as the starting diagram state via the existing resetEditorFixture/selectEditorNode helpers. 2) Act: call the handler function directly in-page (e.g. window.addChoice(), window.removeBlock()) — not a simulated button click. 3) Assert: the resulting diagram state (node list / mermaid source, via assertEditorSourceIsSavedAndValid or equivalent) matches what that action should produce. Example: test('removeBlock deletes the selected block and reconnects its neighbors', () => { resetEditorFixture(); selectEditorNode('someBlockId'); window.removeBlock(); assert the block is gone and upstream/downstream nodes are reconnected; }); removeBlock() currently has no coverage at all and should be included.",
-    "difficulty": 4
+    "difficulty": 4,
+    "run": {
+      "active": true,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-29",
+      "leaseRunId": "55bb4afe-8a77-4fb4-be78-5980616b670b",
+      "history": [
+        {
+          "runId": "55bb4afe-8a77-4fb4-be78-5980616b670b",
+          "startedAt": "2026-09-17T01:44:37-07:00",
+          "endedAt": null,
+          "exitType": null,
+          "exitNote": null,
+          "modifiedFiles": [],
+          "commits": [],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "taskNumber": 39,
@@ -995,7 +1023,35 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "e2e: `bun run build` succeeds from inside mermaid-editor/, and relationship-mermaid still loads/serves the viewer correctly through the submodule.",
-    "difficulty": 7
+    "difficulty": 7,
+    "run": {
+      "active": true,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41",
+      "leaseRunId": "13223046-c06d-4174-b680-f8db8854a4b6",
+      "history": [
+        {
+          "runId": "13223046-c06d-4174-b680-f8db8854a4b6",
+          "startedAt": "2026-09-17T01:44:35-07:00",
+          "endedAt": null,
+          "exitType": null,
+          "exitNote": null,
+          "modifiedFiles": [],
+          "commits": [],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "taskNumber": 42,
@@ -1037,6 +1093,40 @@
       {
         "taskNumber": 41,
         "reason": "Task 41 moves every one of these same viewer/renderer files (render.ts, dom.ts, state.ts, index.html, tests/index.html.test.ts) into the mermaid-editor submodule; this task's file paths and the new function-routing.ts's location depend on where those files end up, so it should land after task 41 completes."
+      }
+    ]
+  },
+  {
+    "taskNumber": 43,
+    "version": "47b97a022edc520eb58d5da63ea27273e553a401",
+    "title": "Functions-only toggle: add the checkbox to the web page (step 1 of 3)",
+    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"index.html\",\"dom.ts\",\"state.ts\"]. Step 1 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): add toggle to web page only.",
+    "goal": [
+      "- A 'functions only' checkbox exists in the page header",
+      "- state.ts exposes a functionsOnly boolean flag (default false)"
+    ],
+    "notInScope": [
+      "- Building the function-node filter itself — that's a sibling task (function-routing.ts)",
+      "- Wiring the checkbox to trigger a live re-render — that's a sibling task (render.ts)"
+    ],
+    "problemSolvedByTask": "First step toward a less dense code-flow view — the UI control needs to exist before the filtering and wiring behind it can be built.",
+    "description": "Add a 'functions only' checkbox to index.html's header, following the app's existing toggle-control markup pattern. Expose its element reference via dom.ts (a const export, same pattern as zoomInBtn/zoomOutBtn). Add a `functionsOnly: boolean` flag (default false) to state.ts. No change listener and no rendering behavior yet — the checkbox exists but does nothing when toggled; that wiring is a later sibling task.",
+    "modifiableFiles": [
+      "index.html",
+      "dom.ts",
+      "state.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "e2e: the 'functions only' checkbox exists in the page and is unchecked by default.",
+    "difficulty": 2,
+    "blockedBy": [
+      {
+        "taskNumber": 41,
+        "reason": "Task 41 moves index.html, dom.ts, and state.ts into the mermaid-editor submodule; this task's edits to those files should land after task 41 completes."
       }
     ]
   }
