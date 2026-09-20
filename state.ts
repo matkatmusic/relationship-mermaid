@@ -36,6 +36,7 @@ export const state = {
   editorHistory: [codeBox.value] as string[],
   editorHistoryIndex: 0,
   editorActionPromise: undefined as unknown as Promise<void>,
+  editSeq: 0,
   typeColors: { ...DEFAULT_TYPE_COLORS } as Record<string, string>,
   nodeTypes: {} as Record<string, string>,
 };

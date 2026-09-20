@@ -103,12 +103,19 @@ export function watchDiagram(name: string) {
   const source = new EventSource('/api/watch/' + encodeURIComponent(name));
   state.watcher = source;
   source.onmessage = async () => {
+    const editSeqAtFetchStart = state.editSeq;
     const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
     const isStaleWatcher = state.watcher !== source;
-    if (isStaleWatcher)
+    // A local edit landed while this fetch was in flight, so this response predates it;
+    // applying it here would revert the just-committed edit before its own save reaches disk.
+    const isStaleFetch = state.editSeq !== editSeqAtFetchStart;
+    if (isStaleWatcher || isStaleFetch)
+      return;
+    const fetchedMetadata = splitEditorMetadata(text).metadata;
+    if (typeof fetchedMetadata?.revision === 'number' && fetchedMetadata.revision < state.editSeq)
       return;
     if (text !== codeBox.value) {
-      restoreTypeMetadata(splitEditorMetadata(text).metadata);
+      restoreTypeMetadata(fetchedMetadata);
       codeBox.value = text;
       resetEditorHistory(text);
     }

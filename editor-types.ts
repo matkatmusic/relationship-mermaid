@@ -42,6 +42,7 @@ export interface EditorMetadata {
   mainZoomPercent?: number;
   typeColors?: Record<string, string>;
   nodeTypes?: Record<string, string>;
+  revision?: number;
 }
 
 export const EDITOR_METADATA_FENCE = '%%%%====';

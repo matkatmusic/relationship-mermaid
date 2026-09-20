@@ -23,6 +23,7 @@ export function splitEditorMetadata(source: string) {
         mainZoomPercent: typeof parsed.mainZoomPercent === 'number' ? parsed.mainZoomPercent : undefined,
         typeColors: stringRecord(parsed.typeColors),
         nodeTypes: stringRecord(parsed.nodeTypes),
+        revision: typeof parsed.revision === 'number' ? parsed.revision : undefined,
       };
     }
   }
@@ -41,6 +42,7 @@ export function sourceWithEditorMetadata(source: string) {
     mainZoomPercent: state.mainZoomPercent,
     typeColors: state.typeColors,
     nodeTypes: state.nodeTypes,
+    revision: state.editSeq,
   };
   return `${body}\n${EDITOR_METADATA_FENCE}\n%% ${EDITOR_METADATA_WARNING}\n%% ${JSON.stringify(metadata)}\n${EDITOR_METADATA_FENCE}`;
 }

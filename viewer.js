@@ -71,6 +71,7 @@ var state = {
   editorHistory: [codeBox.value],
   editorHistoryIndex: 0,
   editorActionPromise: undefined,
+  editSeq: 0,
   typeColors: { ...DEFAULT_TYPE_COLORS },
   nodeTypes: {}
 };
@@ -312,7 +313,8 @@ function splitEditorMetadata(source) {
         outputScrollTop: typeof parsed.outputScrollTop === "number" ? parsed.outputScrollTop : undefined,
         mainZoomPercent: typeof parsed.mainZoomPercent === "number" ? parsed.mainZoomPercent : undefined,
         typeColors: stringRecord(parsed.typeColors),
-        nodeTypes: stringRecord(parsed.nodeTypes)
+        nodeTypes: stringRecord(parsed.nodeTypes),
+        revision: typeof parsed.revision === "number" ? parsed.revision : undefined
       };
     }
   } catch {}
@@ -326,7 +328,8 @@ function sourceWithEditorMetadata(source) {
     outputScrollTop: outputBox.scrollTop,
     mainZoomPercent: state.mainZoomPercent,
     typeColors: state.typeColors,
-    nodeTypes: state.nodeTypes
+    nodeTypes: state.nodeTypes,
+    revision: state.editSeq
   };
   return `${body}
 ${EDITOR_METADATA_FENCE}
@@ -970,12 +973,17 @@ function watchDiagram(name) {
   const source = new EventSource("/api/watch/" + encodeURIComponent(name));
   state.watcher = source;
   source.onmessage = async () => {
+    const editSeqAtFetchStart = state.editSeq;
     const text = await fetch("/api/diagrams/" + encodeURIComponent(name)).then((r) => r.text());
     const isStaleWatcher = state.watcher !== source;
-    if (isStaleWatcher)
+    const isStaleFetch = state.editSeq !== editSeqAtFetchStart;
+    if (isStaleWatcher || isStaleFetch)
+      return;
+    const fetchedMetadata = splitEditorMetadata(text).metadata;
+    if (typeof fetchedMetadata?.revision === "number" && fetchedMetadata.revision < state.editSeq)
       return;
     if (text !== codeBox.value) {
-      restoreTypeMetadata(splitEditorMetadata(text).metadata);
+      restoreTypeMetadata(fetchedMetadata);
       codeBox.value = text;
       resetEditorHistory(text);
     }
@@ -1327,6 +1335,7 @@ async function render() {
 
 // editor-actions.ts
 async function commitEditorSource(source, options) {
+  state.editSeq++;
   source = sourceWithEditorMetadata(source);
   await mermaid.parse(source);
   codeBox.value = source;

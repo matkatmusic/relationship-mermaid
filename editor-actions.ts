@@ -7,6 +7,7 @@ import { saveDiagram } from './diagram-io.ts';
 import { renderNodeInspector } from './node-inspector.ts';
 
 export async function commitEditorSource(source: string, options?: { recordHistory?: boolean }) {
+  state.editSeq++;
   source = sourceWithEditorMetadata(source);
   await mermaid.parse(source);
   codeBox.value = source;
