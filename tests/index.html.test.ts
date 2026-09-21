@@ -660,6 +660,36 @@ test("test_add_block_in_middle_splices_the_edge", async () => {
   await assertEditorSourceIsSavedAndValid();
 });
 
+test("test_remove_block_deletes_the_selected_terminal_block", async () => {
+  await resetEditorFixture();
+  // Step: select the terminal block "Let it go" and remove it.
+  await selectEditorNode("B_LetGo");
+  await runEditorAction("removeBlock");
+  const source = await evaluate("codeBox.value");
+  // Step: its declaration and every inbound edge are gone; it has no successors, so nothing is reconnected.
+  assert.ok(!source.includes('B_LetGo["Let it go"]'));
+  assert.ok(!source.includes("--> B_LetGo"));
+  await assertEditorSourceIsSavedAndValid();
+});
+
+test("test_remove_block_deletes_the_selected_block_and_reconnects_its_neighbors", async () => {
+  await resetEditorFixture();
+  // Step: splice a new static block between B_Start and Q_Q1 so it has one predecessor and one successor.
+  await selectEditorNode("B_Start");
+  await runEditorAction("addBlockAfter");
+  let source = await evaluate("codeBox.value");
+  const splicedId = source.match(/B_Start --> (B_NEW_\d+)/)[1];
+  assert.ok(source.includes(`${splicedId} --> Q_Q1`));
+  assert.ok(!source.includes("B_Start --> Q_Q1"));
+  // Step: remove the spliced block; its one predecessor reconnects straight to its one successor.
+  await selectEditorNode(splicedId);
+  await runEditorAction("removeBlock");
+  source = await evaluate("codeBox.value");
+  assert.ok(!source.includes(`${splicedId}["New block"]`));
+  assert.ok(source.includes("B_Start --> Q_Q1"));
+  await assertEditorSourceIsSavedAndValid();
+});
+
 test("test_remove_choice_orphans_its_downstream_path", async () => {
   await resetEditorFixture();
   // Step: normalize Q1's "No" branch into an explicit choice node.
