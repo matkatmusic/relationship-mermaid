@@ -46,8 +46,10 @@ export function restoreMainViewport(metadata: EditorMetadata | null, graph: Edit
     outputBox.scrollLeft = metadata.outputScrollLeft!;
   if (hasSavedTop)
     outputBox.scrollTop = metadata.outputScrollTop!;
-  if (hasSavedLeft && hasSavedTop)
-    return;
+  if (hasSavedLeft) {
+    if (hasSavedTop)
+      return;
+  }
   const firstNode = graph.nodes.values().next().value as EditorNode | undefined;
   if (!firstNode)
     return;
@@ -97,15 +99,32 @@ export async function loadDiagram(name: string) {
   watchDiagram(name);
 }
 
+let lastSavedDiagramText: string | null = null;
+let watchedDiagramName: string | null = null;
+let pendingSaveCount = 0;
+let saveVersion = 0;
+
 export function watchDiagram(name: string) {
   if (state.watcher)
     state.watcher.close();
+  watchedDiagramName = name;
   const source = new EventSource('/api/watch/' + encodeURIComponent(name));
   state.watcher = source;
   source.onmessage = async () => {
+    const versionAtFetchStart = saveVersion;
+    const saveInFlightAtFetchStart = pendingSaveCount > 0;
     const text = await fetch('/api/diagrams/' + encodeURIComponent(name)).then(r => r.text());
     const isStaleWatcher = state.watcher !== source;
     if (isStaleWatcher)
+      return;
+    // The server may answer this GET from the file before that save's PUT lands, returning pre-edit text.
+    if (saveInFlightAtFetchStart)
+      return;
+    // A save (ours or one still in flight when this fetch started, or one that started and finished
+    // while this fetch was in flight) triggered this notification; not an external edit to react to.
+    if (pendingSaveCount > 0 || saveVersion !== versionAtFetchStart)
+      return;
+    if (text === lastSavedDiagramText)
       return;
     if (text !== codeBox.value) {
       restoreTypeMetadata(splitEditorMetadata(text).metadata);
@@ -125,13 +144,31 @@ export async function saveDiagram() {
     if (!name.endsWith('.mmd'))
       name += '.mmd';
   }
-  await fetch('/api/diagrams/' + encodeURIComponent(name), {
-    method: 'PUT',
-    body: codeBox.value,
-  });
+  lastSavedDiagramText = codeBox.value;
+  pendingSaveCount++;
+  saveVersion++;
+  try {
+    await fetch('/api/diagrams/' + encodeURIComponent(name), {
+      method: 'PUT',
+      body: codeBox.value,
+    });
+  }
+  finally {
+    pendingSaveCount--;
+  }
   state.currentName = name;
   setStatus('Saved ' + name);
   loadList();
-  watchDiagram(name);
+  // Don't reopen the watcher here: it's already watching this file from loadDiagram,
+  // and reopening on every save raced a still-in-flight old watcher's onmessage against the new one.
+  const hasNoWatcher = !state.watcher;
+  if (hasNoWatcher) {
+    watchDiagram(name);
+  }
+  else {
+    const isWatchingSomethingElse = watchedDiagramName !== name;
+    if (isWatchingSomethingElse)
+      watchDiagram(name);
+  }
 }
 

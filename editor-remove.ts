@@ -23,6 +23,8 @@ export function removeChoice() {
     if (otherEndpoint !== id)
       preserveInlineDecl(edge, otherEndpoint, graph, newLines);
   }
+  // Clear selection before committing so the saved metadata doesn't point at the node this removes.
+  selectEditorNode(null);
   setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
 }
 
@@ -55,6 +57,8 @@ export function removeBlock() {
   for (const predecessor of predecessors)
     for (const successor of successors)
       newLines.push(`  ${predecessor} --> ${successor}`);
+  // Clear selection before committing so the saved metadata doesn't point at the node this removes.
+  selectEditorNode(null);
   setEditorActionPromise(commitEditorSource(sourceWithLinesReplaced(graph, removedLineIndexes, newLines)));
 }
 

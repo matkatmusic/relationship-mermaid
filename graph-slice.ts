@@ -51,7 +51,14 @@ export function contextualDecisionSliceIds(decisionId: string, edges: Edge[]) {
   const visited = new Set(reversed);
   let node = decisionId;
   for (;;) {
-    const incoming = edges.find(([, to]) => to === node);
+    let incoming: Edge | undefined;
+    for (const edge of edges) {
+      const leadsToNode = edge[1] === node;
+      if (leadsToNode) {
+        incoming = edge;
+        break;
+      }
+    }
     if (!incoming)
       break;
     const predecessor = incoming[0];
@@ -82,6 +89,7 @@ export function sliceIds(edges: Edge[]) {
       ? [parentOf(last, edges), last]
       : [edges[0][0]];
   let node = ids[ids.length - 1];
+  const visited = new Set(ids);
   for (;;) {
     const next = [];
     for (const [from, to] of edges) {
@@ -93,6 +101,9 @@ export function sliceIds(edges: Edge[]) {
     if (next.length > 1)
       return ids.concat(next);
     node = next[0];
+    if (visited.has(node))
+      return ids;
+    visited.add(node);
     ids.push(node);
   }
 }
