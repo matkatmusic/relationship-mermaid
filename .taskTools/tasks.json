@@ -740,63 +740,6 @@
     ]
   },
   {
-    "taskNumber": 29,
-    "version": "7bbbf2d2cfdc84ff14a3954c21e68eb8e20f5ab6",
-    "title": "Unit tests for each editor button's handler: starting diagram state, call handler, assert resulting state",
-    "userDescription": "write tests to cover the expected behavior of each button click in the editor widget, expressed as: `starting diagram state, button click event occurs, asserting expected diagram state.",
-    "goal": [
-      "- Each editor button handler (addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, advanceRemovalPreview, confirmQuestionRemoval, cancelQuestionRemoval, undoEditorAction, redoEditorAction) has a passing test",
-      "- `npm test` passes with no regressions in the existing suite",
-      "- New tests live under tests/, following the existing file conventions",
-      "- Tests use diagrams/say-something-or-let-it-go.mmd as the starting diagram state"
-    ],
-    "notInScope": [
-      "- DOM/e2e click simulation (document.getElementById(id).click()) is out of scope; tests call the handler function directly",
-      "- Non-button triggers (keyboard shortcuts, drag-and-drop) are out of scope",
-      "- Fixing any bug a test uncovers is a separate task, not bundled into this one"
-    ],
-    "problemSolvedByTask": "No regression safety net",
-    "description": "The editor widget is the node-editing button set wired in viewer.ts (lines ~1293-1303): addQuestionAfterBtn, addBlockAfterBtn, removeQuestionBtn, removeBlockBtn, addChoiceBtn, removeChoiceBtn (in index.html's #nodeActions panel), nextRemovalPathBtn, confirmRemoveQuestionBtn, cancelRemoveQuestionBtn (in #nodeInspectorRemovalPreview), and editorUndoBtn/editorRedoBtn (header). Each is bound via addEventListener('click', ...) to addQuestionAfter, addBlockAfter, removeQuestion, removeBlock, addChoice, removeChoice, advanceRemovalPreview, confirmQuestionRemoval, cancelQuestionRemoval, undoEditorAction, and redoEditorAction respectively. tests/index.html.test.ts already exercises most of these via its runEditorAction() helper (which calls window.<fn>() directly), but removeBlock() has no test coverage at all.",
-    "modifiableFiles": [
-      "tests/index.html.test.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "For each editor button handler, add a node:test case in tests/index.html.test.ts (or a new tests/*.test.ts file following its load-fixture-then-evaluate-in-page pattern) shaped as: 1) Arrange: load diagrams/say-something-or-let-it-go.mmd as the starting diagram state via the existing resetEditorFixture/selectEditorNode helpers. 2) Act: call the handler function directly in-page (e.g. window.addChoice(), window.removeBlock()) — not a simulated button click. 3) Assert: the resulting diagram state (node list / mermaid source, via assertEditorSourceIsSavedAndValid or equivalent) matches what that action should produce. Example: test('removeBlock deletes the selected block and reconnects its neighbors', () => { resetEditorFixture(); selectEditorNode('someBlockId'); window.removeBlock(); assert the block is gone and upstream/downstream nodes are reconnected; }); removeBlock() currently has no coverage at all and should be included.",
-    "difficulty": 4,
-    "run": {
-      "active": true,
-      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-29",
-      "leaseRunId": "55bb4afe-8a77-4fb4-be78-5980616b670b",
-      "history": [
-        {
-          "runId": "55bb4afe-8a77-4fb4-be78-5980616b670b",
-          "startedAt": "2026-09-17T01:44:37-07:00",
-          "endedAt": null,
-          "exitType": null,
-          "exitNote": null,
-          "modifiedFiles": [],
-          "commits": [],
-          "implementationNotesFile": null,
-          "taskTests": null,
-          "fullSuite": null,
-          "stepResults": [
-            {
-              "stepId": "init-submodules",
-              "script": "initTaskSubmodules",
-              "result": {
-                "initialized": false
-              }
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
     "taskNumber": 39,
     "version": "3b2d3b7e390abf5e632d3385c17a110713a06718",
     "title": "[DEFERRED] Rename stop-causing-harms.mmd to the Q_/Q_CHOICE/B_ convention and update test assertions for all renamed ids",
@@ -1048,53 +991,23 @@
                 "initialized": false
               }
             }
-          ]
+          ],
+          "attempts": {
+            "planReview": 1
+          },
+          "countedPasses": {
+            "planReview": [
+              "3f8f935e-f067-466b-90ed-397f9e2213bb"
+            ]
+          },
+          "tailCursor": {
+            "block": "pipeline-failuresExit.mmd::READ_FAILURES_PUBLICATION_STATE",
+            "input": "{\"box\":\"FAILURES_EXIT\",\"scriptSignal\":\"continue\",\"taskNumber\":41,\"runId\":\"13223046-c06d-4174-b680-f8db8854a4b6\",\"projectRoot\":\"/Users/matkatmusicllc/Programming/relationship-mermaid\",\"worktree\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41\",\"branch\":\"task-41\",\"docsMode\":\"AUTOGEN\",\"planFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41/plans/plan.json\",\"exitType\":\"block-failed\",\"exitNote\":\"pipeline-implementTask.mmd::IMPLEMENT_TASK exited 1\\nError: Command failed: npm ci --no-audit --no-fund\",\"outcome\":\"PLAN\",\"clarifyRequest\":\"\",\"reviewOutputFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41/plans/codex-review.json\",\"verdict\":\"AMEND_THEN_ACCEPT\",\"notes\":\"[move-tooling-and-lockfiles] Add mermaid-editor/package-lock.json and mermaid-editor/bun.lock to createsFiles; replace the two deletion entries with unchanged mv operations into mermaid-editor/. Update verify-moved-editor to require both moved lockfiles and run `bun install --frozen-lockfile` before the build.\\n\\nDurable because: The submodule retains the dependency resolution used by its package.json and can be installed and built independently, while neither root lockfile remains in relationship-mermaid.\"}"
+          }
         }
       ]
-    }
-  },
-  {
-    "taskNumber": 42,
-    "version": "ca702dcb303bb62736b3695df54fa090734bf6d3",
-    "title": "Add a 'functions only' toggle to the diagram renderer",
-    "userDescription": "add a 'functions only' toggle to the renderer, so that when you view a diagram that is showing the routing in a source file, it hides all of the individual expressions that make up a function, and just shows the routing of all the function calls.  for context: see the '/Users/matkatmusicllc/Programming/dotfiles/.taskTools/diagrams/claude/hooks/ask-dont-dump-issues.mmd' file, which is a generated diagram from the source file '/Users/matkatmusicllc/Programming/dotfiles/claude/hooks/ask-dont-dump-issues.ts'",
-    "goal": [
-      "- A 'functions only' toggle exists in the viewer UI",
-      "- Enabling it hides all non-function-declaration nodes, leaving only nodes tagged with the function-declaration type/class and the edges routing between them",
-      "- Disabling it restores the original diagram exactly, with no permanent change to the underlying .mmd source",
-      "- The 'functions only' toggle also filters the phone view's diagram, not just the main diagram view"
-    ],
-    "notInScope": [
-      "- Changing how taskTools:mermaid generates .mmd files"
-    ],
-    "problemSolvedByTask": "Code structure diagrams are too dense to read, and I need a high level view of code flow",
-    "description": "In diagrams generated by taskTools:mermaid (example: dotfiles' claude/hooks/ask-dont-dump-issues.ts -> .taskTools/diagrams/.../ask-dont-dump-issues.mmd), function-definition nodes are B_ nodes whose label is a call signature like isPromptLine(entry: ...) or shouldBlock(marker: string, ...), while every other B_ node is a single expression/statement and every Q_/Q_CHOICE_ node is a decision branch. A call from inside one function to another shows up as an edge from a statement node straight into the callee's B_ function node. 'Functions only' means: keep just the function-definition B_ nodes, and redraw an edge between two function nodes whenever the caller's body (traced from its own function node down through the graph) reaches a node that points at the callee's function node - then hide every plain B_/Q_/Q_CHOICE_ node. render.ts is the current render() pipeline that renders both the main SVG (from codeBox.value) and the phone SVG (from chunkSource's phoneSource) via two parallel mermaid.render calls; the functions-only filter needs to apply to both sources when the toggle is on, so the phone view (and its graph-slice.ts/phone-separators.ts decision-navigation overlays) also reflects the filtered diagram. state.ts holds render-affecting UI flags (phoneFocusNodeId, mainZoomPercent, etc.) and needs a new boolean flag (e.g. functionsOnly) toggled from a checkbox added to index.html's header, following the existing phoneToggle pattern (id + change listener wired through dom.ts). editor-graph.ts's EditorNode only has kind 'question' | 'block' | 'choice' - there is no existing notion of a function-definition node, so detecting one is a new heuristic (label matches an identifier(...) call-signature shape) rather than an existing classifier. tests/index.html.test.ts is the single large browser-driven test file where this toggle's test would go.",
-    "modifiableFiles": [
-      "index.html",
-      "dom.ts",
-      "state.ts",
-      "render.ts",
-      "function-routing.ts",
-      "graph-slice.ts",
-      "phone-separators.ts",
-      "tests/index.html.test.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "createsFiles": [
-      "function-routing.ts"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "Function declaration lines are categorized as a specific class for coloring purposes. When the toggle is enabled, only elements of that \"function declaration\" class are actually displayed. Ideally this mode just takes an input diagram, and then filters it for all of the items in that \"function declarations\" class, and keeps only those items in the diagram that it emits for rendering.",
-    "difficulty": 8,
-    "blockedBy": [
-      {
-        "taskNumber": 41,
-        "reason": "Task 41 moves every one of these same viewer/renderer files (render.ts, dom.ts, state.ts, index.html, tests/index.html.test.ts) into the mermaid-editor submodule; this task's file paths and the new function-routing.ts's location depend on where those files end up, so it should land after task 41 completes."
-      }
-    ]
+    },
+    "codexReviewNotes": "the task declares tests but the plan does not name: tests/test-viewer.js or tests/viewer.test.js, tests/test-dom.ts or tests/dom.test.ts or dom.test.ts, tests/test-render-helpers.ts or tests/render-helpers.test.ts or render-helpers.test.ts, tests/test-editor-actions.ts or tests/editor-actions.test.ts or editor-actions.test.ts, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-remove.ts or tests/editor-remove.test.ts or editor-remove.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts, tests/test-editor-events.ts or tests/editor-events.test.ts or editor-events.test.ts, tests/test-editor-graph.ts or tests/editor-graph.test.ts or editor-graph.test.ts, tests/test-editor-types.ts or tests/editor-types.test.ts or editor-types.test.ts, tests/test-zoom.ts or tests/zoom.test.ts or zoom.test.ts, tests/test-diagram-io.ts or tests/diagram-io.test.ts or diagram-io.test.ts, tests/test-diagram-source.ts or tests/diagram-source.test.ts or diagram-source.test.ts, tests/test-decision-nav.ts or tests/decision-nav.test.ts or decision-nav.test.ts, tests/test-node-inspector.ts or tests/node-inspector.test.ts or node-inspector.test.ts, tests/test-node-type-colors.ts or tests/node-type-colors.test.ts or node-type-colors.test.ts, tests/test-phone-separators.ts or tests/phone-separators.test.ts or phone-separators.test.ts, tests/test-graph-slice.ts or tests/graph-slice.test.ts or graph-slice.test.ts, tests/test-render.ts or tests/render.test.ts or render.test.ts, tests/test-source-edit.ts or tests/source-edit.test.ts or source-edit.test.ts, tests/test-state.ts or tests/state.test.ts or state.test.ts, tests/test-main-events.ts or tests/main-events.test.ts or main-events.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-dom.ts or tests/dom.test.ts or mermaid-editor/dom.test.ts, tests/test-render-helpers.ts or tests/render-helpers.test.ts or mermaid-editor/render-helpers.test.ts, tests/test-editor-actions.ts or tests/editor-actions.test.ts or mermaid-editor/editor-actions.test.ts, tests/test-editor-add.ts or tests/editor-add.test.ts or mermaid-editor/editor-add.test.ts, tests/test-editor-remove.ts or tests/editor-remove.test.ts or mermaid-editor/editor-remove.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or mermaid-editor/editor-commit.test.ts, tests/test-editor-events.ts or tests/editor-events.test.ts or mermaid-editor/editor-events.test.ts, tests/test-editor-graph.ts or tests/editor-graph.test.ts or mermaid-editor/editor-graph.test.ts, tests/test-editor-types.ts or tests/editor-types.test.ts or mermaid-editor/editor-types.test.ts, tests/test-zoom.ts or tests/zoom.test.ts or mermaid-editor/zoom.test.ts, tests/test-diagram-io.ts or tests/diagram-io.test.ts or mermaid-editor/diagram-io.test.ts, tests/test-diagram-source.ts or tests/diagram-source.test.ts or mermaid-editor/diagram-source.test.ts, tests/test-decision-nav.ts or tests/decision-nav.test.ts or mermaid-editor/decision-nav.test.ts, tests/test-node-inspector.ts or tests/node-inspector.test.ts or mermaid-editor/node-inspector.test.ts, tests/test-node-type-colors.ts or tests/node-type-colors.test.ts or mermaid-editor/node-type-colors.test.ts, tests/test-phone-separators.ts or tests/phone-separators.test.ts or mermaid-editor/phone-separators.test.ts, tests/test-graph-slice.ts or tests/graph-slice.test.ts or mermaid-editor/graph-slice.test.ts, tests/test-render.ts or tests/render.test.ts or mermaid-editor/render.test.ts, tests/test-source-edit.ts or tests/source-edit.test.ts or mermaid-editor/source-edit.test.ts, tests/test-state.ts or tests/state.test.ts or mermaid-editor/state.test.ts, tests/test-main-events.ts or tests/main-events.test.ts or mermaid-editor/main-events.test.ts"
   },
   {
     "taskNumber": 43,
