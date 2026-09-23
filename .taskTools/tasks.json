@@ -801,49 +801,7 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "The existing ~48 failing editor tests in tests/index.html.test.ts must all pass; npm test is green.",
-    "difficulty": 5,
-    "run": {
-      "active": true,
-      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-40",
-      "leaseRunId": "7e1e434f-f27a-4ab7-9520-39d65f2486c2",
-      "history": [
-        {
-          "runId": "7e1e434f-f27a-4ab7-9520-39d65f2486c2",
-          "startedAt": "2026-09-16T08:45:43-07:00",
-          "endedAt": null,
-          "exitType": null,
-          "exitNote": null,
-          "modifiedFiles": [],
-          "commits": [],
-          "implementationNotesFile": null,
-          "taskTests": null,
-          "fullSuite": null,
-          "stepResults": [
-            {
-              "stepId": "init-submodules",
-              "script": "initTaskSubmodules",
-              "result": {
-                "initialized": false
-              }
-            }
-          ],
-          "attempts": {
-            "planReview": 2
-          },
-          "countedPasses": {
-            "planReview": [
-              "db141cac-ae98-4b47-aa51-1608bf2599b3",
-              "c2d84c62-a77d-4636-b798-211b9ebad3d0"
-            ]
-          },
-          "tailCursor": {
-            "block": "pipeline-failuresExit.mmd::READ_FAILURES_PUBLICATION_STATE",
-            "input": "{\"box\":\"FAILURES_EXIT\",\"scriptSignal\":\"continue\",\"taskNumber\":40,\"runId\":\"7e1e434f-f27a-4ab7-9520-39d65f2486c2\",\"projectRoot\":\"/Users/matkatmusicllc/Programming/relationship-mermaid\",\"worktree\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-40\",\"branch\":\"task-40\",\"docsMode\":\"AUTOGEN\",\"planFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-40/plans/plan.json\",\"exitType\":\"plan-scrapped\",\"exitNote\":\"codex did not accept the plan in two reviews\",\"outcome\":\"PLAN\",\"clarifyRequest\":\"\",\"reviewOutputFile\":\"\",\"verdict\":\"AMEND\",\"notes\":\"the task declares tests but the plan does not name: tests/test-viewer.ts or tests/viewer.test.ts or viewer.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts\"}"
-          }
-        }
-      ]
-    },
-    "codexReviewNotes": "the task declares tests but the plan does not name: tests/test-viewer.ts or tests/viewer.test.ts or viewer.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts"
+    "difficulty": 5
   },
   {
     "taskNumber": 41,
@@ -968,16 +926,16 @@
     "tests": "e2e: `bun run build` succeeds from inside mermaid-editor/, and relationship-mermaid still loads/serves the viewer correctly through the submodule.",
     "difficulty": 7,
     "run": {
-      "active": true,
+      "active": false,
       "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41",
-      "leaseRunId": "13223046-c06d-4174-b680-f8db8854a4b6",
+      "leaseRunId": "3464efdc-0abf-44bc-9bb5-5f524cc35818",
       "history": [
         {
-          "runId": "13223046-c06d-4174-b680-f8db8854a4b6",
-          "startedAt": "2026-09-17T01:44:35-07:00",
-          "endedAt": null,
-          "exitType": null,
-          "exitNote": null,
+          "runId": "3464efdc-0abf-44bc-9bb5-5f524cc35818",
+          "startedAt": "2026-09-23T01:21:21-07:00",
+          "endedAt": "2026-09-23T01:52:49-07:00",
+          "exitType": "plan-scrapped",
+          "exitNote": "codex did not accept the plan in two reviews",
           "modifiedFiles": [],
           "commits": [],
           "implementationNotesFile": null,
@@ -993,21 +951,24 @@
             }
           ],
           "attempts": {
-            "planReview": 1
+            "clarify": 1,
+            "planReview": 2
           },
           "countedPasses": {
+            "clarify": [
+              "64a420c7-804e-47be-b760-c6c53e1bc7a8"
+            ],
             "planReview": [
-              "3f8f935e-f067-466b-90ed-397f9e2213bb"
+              "af984a25-c8d6-49d9-baf2-b3d005a4cb5c",
+              "20c99158-44f2-4fbe-8f20-c5639c2d3bc0"
             ]
           },
-          "tailCursor": {
-            "block": "pipeline-failuresExit.mmd::READ_FAILURES_PUBLICATION_STATE",
-            "input": "{\"box\":\"FAILURES_EXIT\",\"scriptSignal\":\"continue\",\"taskNumber\":41,\"runId\":\"13223046-c06d-4174-b680-f8db8854a4b6\",\"projectRoot\":\"/Users/matkatmusicllc/Programming/relationship-mermaid\",\"worktree\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41\",\"branch\":\"task-41\",\"docsMode\":\"AUTOGEN\",\"planFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41/plans/plan.json\",\"exitType\":\"block-failed\",\"exitNote\":\"pipeline-implementTask.mmd::IMPLEMENT_TASK exited 1\\nError: Command failed: npm ci --no-audit --no-fund\",\"outcome\":\"PLAN\",\"clarifyRequest\":\"\",\"reviewOutputFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41/plans/codex-review.json\",\"verdict\":\"AMEND_THEN_ACCEPT\",\"notes\":\"[move-tooling-and-lockfiles] Add mermaid-editor/package-lock.json and mermaid-editor/bun.lock to createsFiles; replace the two deletion entries with unchanged mv operations into mermaid-editor/. Update verify-moved-editor to require both moved lockfiles and run `bun install --frozen-lockfile` before the build.\\n\\nDurable because: The submodule retains the dependency resolution used by its package.json and can be installed and built independently, while neither root lockfile remains in relationship-mermaid.\"}"
-          }
+          "tailCursor": null
         }
       ]
     },
-    "codexReviewNotes": "the task declares tests but the plan does not name: tests/test-viewer.js or tests/viewer.test.js, tests/test-dom.ts or tests/dom.test.ts or dom.test.ts, tests/test-render-helpers.ts or tests/render-helpers.test.ts or render-helpers.test.ts, tests/test-editor-actions.ts or tests/editor-actions.test.ts or editor-actions.test.ts, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-remove.ts or tests/editor-remove.test.ts or editor-remove.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts, tests/test-editor-events.ts or tests/editor-events.test.ts or editor-events.test.ts, tests/test-editor-graph.ts or tests/editor-graph.test.ts or editor-graph.test.ts, tests/test-editor-types.ts or tests/editor-types.test.ts or editor-types.test.ts, tests/test-zoom.ts or tests/zoom.test.ts or zoom.test.ts, tests/test-diagram-io.ts or tests/diagram-io.test.ts or diagram-io.test.ts, tests/test-diagram-source.ts or tests/diagram-source.test.ts or diagram-source.test.ts, tests/test-decision-nav.ts or tests/decision-nav.test.ts or decision-nav.test.ts, tests/test-node-inspector.ts or tests/node-inspector.test.ts or node-inspector.test.ts, tests/test-node-type-colors.ts or tests/node-type-colors.test.ts or node-type-colors.test.ts, tests/test-phone-separators.ts or tests/phone-separators.test.ts or phone-separators.test.ts, tests/test-graph-slice.ts or tests/graph-slice.test.ts or graph-slice.test.ts, tests/test-render.ts or tests/render.test.ts or render.test.ts, tests/test-source-edit.ts or tests/source-edit.test.ts or source-edit.test.ts, tests/test-state.ts or tests/state.test.ts or state.test.ts, tests/test-main-events.ts or tests/main-events.test.ts or main-events.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-dom.ts or tests/dom.test.ts or mermaid-editor/dom.test.ts, tests/test-render-helpers.ts or tests/render-helpers.test.ts or mermaid-editor/render-helpers.test.ts, tests/test-editor-actions.ts or tests/editor-actions.test.ts or mermaid-editor/editor-actions.test.ts, tests/test-editor-add.ts or tests/editor-add.test.ts or mermaid-editor/editor-add.test.ts, tests/test-editor-remove.ts or tests/editor-remove.test.ts or mermaid-editor/editor-remove.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or mermaid-editor/editor-commit.test.ts, tests/test-editor-events.ts or tests/editor-events.test.ts or mermaid-editor/editor-events.test.ts, tests/test-editor-graph.ts or tests/editor-graph.test.ts or mermaid-editor/editor-graph.test.ts, tests/test-editor-types.ts or tests/editor-types.test.ts or mermaid-editor/editor-types.test.ts, tests/test-zoom.ts or tests/zoom.test.ts or mermaid-editor/zoom.test.ts, tests/test-diagram-io.ts or tests/diagram-io.test.ts or mermaid-editor/diagram-io.test.ts, tests/test-diagram-source.ts or tests/diagram-source.test.ts or mermaid-editor/diagram-source.test.ts, tests/test-decision-nav.ts or tests/decision-nav.test.ts or mermaid-editor/decision-nav.test.ts, tests/test-node-inspector.ts or tests/node-inspector.test.ts or mermaid-editor/node-inspector.test.ts, tests/test-node-type-colors.ts or tests/node-type-colors.test.ts or mermaid-editor/node-type-colors.test.ts, tests/test-phone-separators.ts or tests/phone-separators.test.ts or mermaid-editor/phone-separators.test.ts, tests/test-graph-slice.ts or tests/graph-slice.test.ts or mermaid-editor/graph-slice.test.ts, tests/test-render.ts or tests/render.test.ts or mermaid-editor/render.test.ts, tests/test-source-edit.ts or tests/source-edit.test.ts or mermaid-editor/source-edit.test.ts, tests/test-state.ts or tests/state.test.ts or mermaid-editor/state.test.ts, tests/test-main-events.ts or tests/main-events.test.ts or mermaid-editor/main-events.test.ts"
+    "clarifyRequest": "Add mermaid-editor/package-lock.json and mermaid-editor/bun.lock to task 41's createsFiles. Both destination files are absent, while the root copies are required build tooling that must move for the submodule to install and build independently; the required createsFiles list currently forbids adding either path.",
+    "codexReviewNotes": "[tests-red] Replace the byte-preserving-move instruction for tests/index.html.test.ts with the same move plus these exact destination edits at old lines 604 and 813: change each `execFileSync(\"git\", [\"show\", \\`HEAD:diagrams/${...}\\`], { encoding: \"utf8\" })` to `execFileSync(\"git\", [\"-C\", \"..\", \"show\", \\`HEAD:diagrams/${...}\\`], { encoding: \"utf8\" })`. Keep the new server-location test insertion after old line 178.\n\nDurable because: The fixture source is explicitly read from the parent relationship-mermaid repository, where diagrams remain after the relocation, regardless of the test process's mermaid-editor working directory.\n\n[move-tooling-and-server] Replace the server `new` pseudo-code with exact valid destination lines: `import { resolve } from \"node:path\";`, `const editorDir = import.meta.dir;`, `const diagramsDir = resolve(editorDir, \"..\", \"diagrams\");`, `Bun.file(resolve(editorDir, \"index.html\"))`, `Bun.file(resolve(editorDir, \"viewer.js\"))`, `Bun.file(resolve(editorDir, \"node_modules/mermaid/dist/mermaid.min.js\"))`, `glob.scan({ cwd: diagramsDir })`, `Bun.file(resolve(diagramsDir, name))`, `Bun.write(resolve(diagramsDir, name), text)`, and `watch(resolve(diagramsDir, name), ...)`.\n\nDurable because: The destination code is syntactically executable and anchors every editor asset to the submodule while addressing diagrams through its retained parent location.\n\n[move-tooling-and-server] Add `mermaid-editor/package-lock.json` and `mermaid-editor/bun.lock` to the top-level `createsFiles` array, and replace “Keep createsFiles unchanged” with the explicit declaration that these two absent destinations are created by the move.\n\nDurable because: The plan's declared created-file set will match every new build-tooling file required for a standalone mermaid-editor install."
   },
   {
     "taskNumber": 43,

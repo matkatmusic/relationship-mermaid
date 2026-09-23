@@ -1,7 +1,31 @@
 [
   {
     "file": "tests/index.html.test.ts",
+    "name": "test_split_workspace_always_renders_regular_and_phone_views_with_distinct_clicks"
+  },
+  {
+    "file": "tests/index.html.test.ts",
     "name": "test_phone_view_shows_the_start_slice"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_a_decision_node_slices_to_the_next_decision_point"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_reset_returns_to_the_start_slice"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_back_button_undoes_one_choice_at_a_time"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_phone_view_handles_a_diagram_with_no_edges"
   },
   {
     "file": "tests/index.html.test.ts",
@@ -29,7 +53,15 @@
   },
   {
     "file": "tests/index.html.test.ts",
+    "name": "test_add_block_after_terminal_block"
+  },
+  {
+    "file": "tests/index.html.test.ts",
     "name": "test_add_block_in_middle_splices_the_edge"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_remove_choice_orphans_its_downstream_path"
   },
   {
     "file": "tests/index.html.test.ts",
@@ -73,6 +105,10 @@
   },
   {
     "file": "tests/index.html.test.ts",
+    "name": "test_escape_discards_uncommitted_text_and_closes_the_inspector"
+  },
+  {
+    "file": "tests/index.html.test.ts",
     "name": "test_clicking_empty_drawing_space_closes_the_inspector"
   },
   {
@@ -86,6 +122,34 @@
   {
     "file": "tests/index.html.test.ts",
     "name": "test_save_persists_and_load_restores_editor_metadata_trailer"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_load_uses_the_first_node_position_when_scroll_metadata_is_missing"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_node_categories_and_colors_persist_and_recolor_both_views"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_decision_navigation_uses_the_nearest_graph_neighbor_and_focuses_both_views"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_main_view_choice_and_regular_nodes_preview_their_feeding_decision_as_chosen"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_header_zoom_controls_resize_only_the_main_mermaid_diagram"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_previous_selection_mask_stops_before_the_open_decision_after_each_phone_choice"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_and_insert_actions_preserve_the_zoom_scale_in_both_views"
   },
   {
     "file": "tests/index.html.test.ts",
@@ -113,6 +177,10 @@
   },
   {
     "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_before_splices_a_chained_edge_line"
+  },
+  {
+    "file": "tests/index.html.test.ts",
     "name": "test_dirty_text_then_destination_creates_two_ordered_undo_entries"
   },
   {
@@ -133,11 +201,39 @@
   },
   {
     "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_after_splices_a_static_or_choice_node_without_dropping_its_destination"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_static_after_a_terminal_node_matches_terminal_add_static_behavior"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_decision_after_splices_blocks_and_choices_with_one_terminal_branch"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_insert_decision_after_a_terminal_node_creates_two_terminal_choices"
+  },
+  {
+    "file": "tests/index.html.test.ts",
     "name": "test_new_static_text_enter_keeps_selection_and_focuses_destination"
   },
   {
     "file": "tests/index.html.test.ts",
+    "name": "test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_new_decision_text_enter_commits_the_new_decision"
+  },
+  {
+    "file": "tests/index.html.test.ts",
     "name": "test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_add_choice_on_inspector_keeps_the_original_decision_selected"
   },
   {
     "file": "tests/index.html.test.ts",
@@ -154,5 +250,13 @@
   {
     "file": "tests/index.html.test.ts",
     "name": "test_insert_decision_before_a_root_node_becomes_the_new_root"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_all_committed_diagrams_validate_with_mermaid"
+  },
+  {
+    "file": "tests/index.html.test.ts",
+    "name": "test_viewer_js_build_matches_committed_bundle"
   }
 ]
