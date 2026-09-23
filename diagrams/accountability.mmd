@@ -55,21 +55,27 @@ flowchart TD
   
   Q_FEELING_EMPATHY{"Me: ask self 'Do I feel genuine empathy?'"}
   Q_CHOICE_FEELING_EMPATHY_Y[Yes]
-  Q_CHOICE_FEELING_EMPATHY_N[No] %% --> Q_DO_I_UNDERSTAND_THEIR_LOSS or a self-reflect path
+  Q_CHOICE_FEELING_EMPATHY_N[No]
+  %% --> Q_DO_I_UNDERSTAND_THEIR_LOSS or a self-reflect path
 
 %% TODO: add arrows for these
   Q_DO_I_UNDERSTAND_THEIR_LOSS{"Me: ask self 'Do I undersatnd the loss you suffered?'"}
 Q_CHOICE_DO_I_UNDERSTAND_THEIR_LOSS_Y[Yes]
-Q_CHOICE_DO_I_UNDERSTAND_THEIR_LOSS_N[No] %% --> Q_HAVE_I_EXPERIENCED_SIMILAR_LOSS
+Q_CHOICE_DO_I_UNDERSTAND_THEIR_LOSS_N[No]
+%% --> Q_HAVE_I_EXPERIENCED_SIMILAR_LOSS
 
 %% TODO: add arrows for these
   Q_HAVE_I_EXPERIENCED_SIMILAR_LOSS{"Me: ask self 'Have I experienced a similar type of loss?'"}
-Q_CHOICE_HAVE_I_EXPERIENCED_SIMILAR_LOSS_Y[Yes] %% --> Q_DO_I_REMEMBER_MY_LOSS_FEELINGS
-Q_CHOICE_HAVE_I_EXPERIENCED_SIMILAR_LOSS_N[No] %% --> not sure yet
+Q_CHOICE_HAVE_I_EXPERIENCED_SIMILAR_LOSS_Y[Yes]
+%% --> Q_DO_I_REMEMBER_MY_LOSS_FEELINGS
+Q_CHOICE_HAVE_I_EXPERIENCED_SIMILAR_LOSS_N[No]
+%% --> not sure yet
   
   Q_DO_I_REMEMBER_MY_LOSS_FEELINGS{"Me: ask self 'Do I remember the feelings I felt when I experienced my similar loss?'"}
-Q_CHOICE_DO_I_REMEMBER_MY_LOSS_FEELINGS_Y[Yes] %% --> remember them, reference them, then make a SIS
-Q_CHOICE_DO_I_REMEMBER_MY_LOSS_FEELINGS_N[No] %% --> not sure yet
+Q_CHOICE_DO_I_REMEMBER_MY_LOSS_FEELINGS_Y[Yes]
+%% --> remember them, reference them, then make a SIS
+Q_CHOICE_DO_I_REMEMBER_MY_LOSS_FEELINGS_N[No]
+%% --> not sure yet
   
   Q_EMPATHY_NO_COUNT{"how many times have I answered No to feeling empathy?"}
   Q_CHOICE_EMPATHY_NO_COUNT_ONCE[Once]
