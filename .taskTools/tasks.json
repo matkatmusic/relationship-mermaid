@@ -25,7 +25,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 10
+    "difficulty": 1,
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 2,
@@ -58,13 +59,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Stay on one decision point past the limit, see the break prompt",
-    "difficulty": 8,
+    "difficulty": 2,
     "blockedBy": [
       {
         "taskNumber": 1,
         "reason": "Task 1 builds the couples mobile app itself (spec, mobile framework/backend, issue-raiser/issue-causer modes, and diagram-navigation state tracking) and none of that exists yet in the repo (modifiableFiles is empty, readOnlyFiles is \"*\", no spec written). This task's check-in prompts and decision-point timers are features layered on top of that app's raiser mode and diagram-navigation state, so they have nothing to attach to until task 1 produces the app/spec."
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 3,
@@ -95,13 +97,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Agree a loop-back time, see it land on the phone calendar and get a notification",
-    "difficulty": 10,
+    "difficulty": 1,
     "blockedBy": [
       {
         "taskNumber": 2,
         "reason": "Notifications for check-ins need the check-in feature to exist first, and task 2 is what builds issue-raiser check-ins; this task only adds notifications and calendar-reminder integration on top of that."
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 4,
@@ -138,7 +141,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 5
+    "difficulty": 8,
+    "splitWorthiness": 8
   },
   {
     "taskNumber": 5,
@@ -175,13 +179,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 6,
@@ -218,13 +223,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 7,
@@ -261,13 +267,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 8,
@@ -304,13 +311,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 9,
@@ -347,13 +355,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 10,
@@ -390,13 +399,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 11,
@@ -433,13 +443,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 12,
@@ -472,13 +483,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click a question diamond in the viewer and its article section opens",
-    "difficulty": 6,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 13,
@@ -518,7 +530,8 @@
         "taskNumber": 2,
         "reason": "This task needs separate notepads shown to the issue-raiser vs. the note-taker, but index.html has no concept of roles at all right now — just one global chosenAnswers Set with no per-user state. Task 2 is the task that adds a role selector so the app knows who the issue-raiser is; this task's per-role notepad/journal has nothing to attach to until that role concept exists."
       }
-    ]
+    ],
+    "splitWorthiness": 8
   },
   {
     "taskNumber": 14,
@@ -549,13 +562,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Write an entry, share it, and see it appear in the partner's view of the same issue; unshare it and see it disappear",
-    "difficulty": 5,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 13,
         "reason": "Sharing needs journal entries to exist first"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 15,
@@ -589,13 +603,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Tag two issues, search by tag, see only those two",
-    "difficulty": 8,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 1,
         "reason": "Task 1 is what creates issues as data objects at all (\"they can log issues, and the app tracks issues\") — the repo currently has no issue entity anywhere (index.html/server.js have zero mention of issues, tags, or search), so there is nothing to make searchable or taggable until task 1 builds the issue-tracking data model."
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 16,
@@ -627,13 +642,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Create an issue whose text contains a word already used as a tag; see that tag suggested; accept it and see it on the issue",
-    "difficulty": 6,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 15,
         "reason": "Suggestions need tags and issues to exist first"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 17,
@@ -666,7 +682,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 1
+    "difficulty": 2,
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 18,
@@ -698,13 +715,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Serve the folder with a plain static server (bunx serve .), open the page, pick accountability.mmd, see it render with no server API",
-    "difficulty": 4,
+    "difficulty": 2,
     "blockedBy": [
       {
         "taskNumber": 17,
         "reason": "The fallback reads diagrams/index.json, which that task creates"
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 19,
@@ -731,13 +749,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 2,
+    "difficulty": 1,
     "blockedBy": [
       {
         "taskNumber": 18,
         "reason": "Pages has no server, so the viewer fallback must be in place before the page can work there"
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 39,
@@ -766,7 +785,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Update tests/index.html.test.ts's EDITOR_FIXTURE_NAME and all its hardcoded id literals (Start→new B_ id, Q1→new Q_ id, etc.) to match the renamed say-something-or-let-it-go.mmd; update tests/viewer.test.ts similarly if it references any renamed ids; assert `npm test` passes end to end.",
-    "difficulty": 5
+    "difficulty": 4,
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 43,
@@ -794,7 +814,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "e2e: the 'functions only' checkbox exists in the page and is unchecked by default.",
-    "difficulty": 2
+    "difficulty": 8,
+    "splitWorthiness": 8
   },
   {
     "taskNumber": 44,
@@ -823,7 +844,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Feed function-routing.ts's filter a sample source (e.g. ask-dont-dump-issues.mmd's content) and assert it returns only function-declaration nodes with edges rerouted directly between them.",
-    "difficulty": 5
+    "difficulty": 2,
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 45,
@@ -853,7 +875,7 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Load a code-flow diagram, enable the toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored.",
-    "difficulty": 5,
+    "difficulty": 10,
     "blockedBy": [
       {
         "taskNumber": 43,
@@ -862,6 +884,47 @@
       {
         "taskNumber": 44,
         "reason": "This task calls the filter function that sibling task 44 builds in function-routing.ts."
+      }
+    ],
+    "splitWorthiness": 10
+  },
+  {
+    "taskNumber": 46,
+    "version": "82d6a8f7113250caaf26001e6eff9c1269cc79b8",
+    "title": "Functions-only toggle: wire the toggle into render.ts (45 child 1 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"render.ts\"]`. Child 1 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): wire the toggle into render.ts. In render.ts's render() pipeline, when state.functionsOnly is true, pass both codeBox.value (main view) and the phone view's chunkSource output through function-routing.ts's filter before calling mermaid.render, for both the main and phone diagrams. Add a change listener on the toggle checkbox (from task 43) that flips state.functionsOnly and triggers a re-render. Disabling the toggle must restore the original diagram exactly. Not in scope: guarding graph-slice.ts or phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- Toggling the checkbox on re-renders the main and phone diagrams through function-routing.ts's filter",
+      "- Toggling the checkbox off restores the original diagram exactly"
+    ],
+    "notInScope": [
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
+    ],
+    "problemSolvedByTask": "The checkbox and filter exist but nothing connects them; the render never applies the filter.",
+    "description": "render.ts's render() function (mermaid-editor/render.ts) currently calls mermaid.render('diagram-...', codeBox.value) for the main view and mermaid.render('phone-diagram-...', phoneSource) for the phone view, where phoneSource is chunkSource(shown, siblings, edges) from diagram-source.ts. Neither state.functionsOnly nor a toggle checkbox exist yet in state.ts/dom.ts (sibling task 43), and function-routing.ts's filter does not exist yet (sibling task 44); this child only edits render.ts and assumes those exports once unblocked. The change: when state.functionsOnly is true, run both codeBox.value and the computed phoneSource through function-routing.ts's filter before each mermaid.render call, for both diagrams. Also attach a 'change' listener to the toggle checkbox (imported from dom.ts) that flips state.functionsOnly and calls render() again, so disabling it re-renders with the unfiltered source. render.ts already exists (5.2K, 120 lines), so this is a single-file edit with no new files.",
+    "modifiableFiles": [
+      "render.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4,
+    "blockedBy": [
+      {
+        "taskNumber": 43,
+        "reason": "This task adds a change listener on the toggle checkbox and reads/flips state.functionsOnly, but neither the checkbox nor that state field exists in the codebase yet; task 43 creates both."
+      },
+      {
+        "taskNumber": 44,
+        "reason": "This task calls function-routing.ts's filter function before mermaid.render, but function-routing.ts does not exist in the repo yet; task 44 builds it."
       }
     ]
   }
