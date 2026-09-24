@@ -2137,5 +2137,46 @@
       "2bf08917468882390fe36cc5fcbff9929a31df0c"
     ],
     "closureNote": "user resolved all tests in the task-29 worktree and confirmed the suite is green; closed manually at user request"
+  },
+  {
+    "taskNumber": 40,
+    "version": "ce517bf09b0683fcc108175a724c08ec6ae2d3e8",
+    "title": "Green the editor test suite: fix viewer.ts choice-id naming and update stale test fixtures",
+    "userDescription": "Editor test suite is ~48 tests red on HEAD 90efd53 after the tasks 32-37 Codex work landed. Two failure groups: (1) stale fixtures in tests/index.html.test.ts assert pre-rename node ids (e.g. Q1{\"Can I stay calm?\"}, LetGo[...], A[\"A\"] --> B[\"B\"]) while diagrams/*.mmd were renamed to the new Q_/Q_CHOICE/B_ convention; (2) task-37 naming not fully landed in viewer.ts — tests assert new-convention ids (B_NEW_1[\"New static block\"], Q_NEW_1{\"New Decision\"}, B_B --> Q_NEW_1) but the code still emits old ids. Reconcile both: update genuinely-stale test expectations to match renamed diagrams, and make viewer.ts emit the strict B_/Q_ naming its tests require, until `npm test` is green. Files: viewer.ts, viewer.js, tests/index.html.test.ts, diagrams/*.mmd.",
+    "goal": [
+      "- `npm test` passes with zero failing editor tests",
+      "- viewer.ts emits strict Q_/Q_CHOICE/B_ ids (e.g. B_NEW_1, Q_NEW_1, Q_NEW_1_Y) that its tests assert",
+      "- Stale fixtures in tests/index.html.test.ts are updated to the renamed diagram node ids/labels",
+      "- No leftover pre-rename node ids remain in the test assertions"
+    ],
+    "notInScope": [
+      "- Adding new editor actions or diagrams",
+      "- Changing the Q_/Q_CHOICE/B_ naming convention itself",
+      "- server.js changes",
+      "- Renaming diagrams/stop-causing-harms.mmd and its assertions — owned by task 39"
+    ],
+    "problemSolvedByTask": "The editor test suite is broadly red after the 32-37 work, so real regressions are hidden and the naming convention is only half-applied.",
+    "description": "Ran `npm test` on HEAD ce517bf and confirmed 47 red tests, all in tests/index.html.test.ts. Root cause 1: diagrams/say-something-or-let-it-go.mmd (the EDITOR_FIXTURE_NAME read at module load) already uses the renamed convention (B_Start, Q_Q1, B_LetGo, B_HaveConvo, Q_CHOICE_Q1_NEW, and label \"Can I be calm?\"), but the test file still calls clickNode/selectEditorNode with pre-rename bare ids (Start, Q1..Q4, LetGo, HaveConvo) and asserts old labels/edges (e.g. Q1{\"Can I stay calm?\"}, A[\"A\"] --> B[\"B\"]); clickNode's `[id*=\"flowchart-${id}-\"]` selector then matches nothing, so the triggered action never fires and downstream assertions fail. Root cause 2: viewer.ts's addQuestionAfter (uses choiceId(qId,'Y'/'N')), insertDecisionBefore (choiceId(decisionId,'NEW')), and commitInsertDecisionAfter (choiceId(decisionId,'Y'/'N')) all route freshly-generated Q_NEW_n ids through choiceId(), which strips a leading \"Q_\" and reprefixes with \"Q_CHOICE_\", yielding Q_CHOICE_NEW_1_Y instead of the Q_NEW_1_Y the tests expect; choiceId() is correct as-is for addChoice/addChoiceOnDecision, which operate on existing named decisions like Q_DECISION. Fix: in those three viewer.ts call sites, build choice ids as `${decisionId}_SUFFIX` directly instead of via choiceId(); in tests/index.html.test.ts, update every stale node-id/label/edge reference to match the current diagrams/say-something-or-let-it-go.mmd content. viewer.js is a generated build artifact (bun build viewer.ts --outfile viewer.js, run automatically by `npm test`) and only changes as a byproduct of the viewer.ts edit. diagrams/*.mmd files were inspected and are already on the new B_/Q_/Q_CHOICE_ convention, so no diagram file needs editing.",
+    "modifiableFiles": [
+      "viewer.ts",
+      "viewer.js",
+      "tests/index.html.test.ts",
+      "editor-add.ts",
+      "editor-commit.ts",
+      "diagrams/say-something-or-let-it-go.mmd"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "The existing ~48 failing editor tests in tests/index.html.test.ts must all pass; npm test is green.",
+    "difficulty": 5,
+    "completionDate": "2026-09-23",
+    "commitHashes": [
+      "1f08cf9",
+      "c5db0cb"
+    ],
+    "closureNote": "manually completed by user: editor suite green at 66/66 after fixes on the mermaid-editor develop branch and merge of staging"
   }
 ]
