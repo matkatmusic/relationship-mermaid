@@ -927,5 +927,44 @@
         "reason": "This task calls function-routing.ts's filter function before mermaid.render, but function-routing.ts does not exist in the repo yet; task 44 builds it."
       }
     ]
+  },
+  {
+    "taskNumber": 47,
+    "version": "86d3c3d1a4385ce071960236e6526f7905069bd9",
+    "title": "Functions-only toggle: make graph-slice.ts safe for a functions-only diagram (45 child 2 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"graph-slice.ts\"]`. Child 2 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make graph-slice.ts safe for a functions-only diagram. Verify graph-slice.ts's decision-path slicing (sliceIds/siblingIds/leadInIds) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- sliceIds, siblingIds, and leadInIds keep working or no-op when state.functionsOnly is true, with no thrown errors"
+    ],
+    "notInScope": [
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
+    ],
+    "problemSolvedByTask": "graph-slice.ts generates a valid functions-only diagram with correct node names and properly linked nodes, and the phone view doesn't break on this generated diagram",
+    "description": "graph-slice.ts's sliceIds() walks forward from edges[0][0] (or phonePath's last entry) using generic out-degree branching (next.length > 1), with no Q_/Q_CHOICE_-specific check, so its forward walk already tolerates a functions-only edge list structurally. siblingIds() and leadInIds() both gate on `hasDecisionContext = state.phoneFocusUsesDecisionContext || state.phonePreviewChoiceId || phonePath.length` and return [] immediately when false; render.ts's existing phonePathIsStale purge (outside this task's files) already clears phonePath once its ids stop matching the current edge list, so toggling functionsOnly on will make that guard false and these two functions already no-op gracefully. contextualDecisionSliceIds()'s backward walk only breaks early via `predecessor.startsWith('Q_') && !predecessor.startsWith('Q_CHOICE')` (isPreviousDecision); a functions-only diagram has no Q_ nodes, so that condition never fires and the loop instead walks all the way to the graph root, reachable only when state.phoneFocusUsesDecisionContext is true. leadInIds() also calls isAnswerId (from render-helpers.ts), which matches a `Q_CHOICE_<name>_` prefix and will always return false against function nodes, weakening its 'isStatic' heuristic to `outgoingCount <= 1` alone rather than crashing. This task adds an explicit `state.functionsOnly` guard in contextualDecisionSliceIds (the one path lacking a natural no-op) and confirms by reading the sibling decision-nav.ts wiring whether phoneFocusUsesDecisionContext can ever be true in functions-only mode before deciding whether the guard is reachable.",
+    "modifiableFiles": [
+      "graph-slice.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4,
+    "blockedBy": [
+      {
+        "taskNumber": 43,
+        "reason": "graph-slice.ts's fix must branch on state.functionsOnly, but that flag doesn't exist in state.ts yet — it's added by task 43."
+      },
+      {
+        "taskNumber": 44,
+        "reason": "This task verifies graph-slice.ts's sliceIds/siblingIds/leadInIds against the filtered diagram's edge shape, but function-routing.ts (the filter that produces that filtered diagram) doesn't exist yet — it's built by task 44."
+      }
+    ]
   }
 ]
