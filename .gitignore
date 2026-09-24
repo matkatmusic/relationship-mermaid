@@ -4,3 +4,4 @@ __pycache__/
 .taskTools/runs/
 **/plans/checkpoint.json
 .taskTools/workflows/
+node_modules/

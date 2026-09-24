@@ -2351,5 +2351,49 @@
       "c5db0cb"
     ],
     "closureNote": "verified by user: all editor files live only in the mermaid-editor submodule and the parent root holds only diagrams and task bookkeeping"
+  },
+  {
+    "taskNumber": 45,
+    "version": "0c66200cf0903b5627ae1b0ce823a3d9aaa6cc02",
+    "title": "Functions-only toggle: wire toggle to live-filter the render (step 3 of 3)",
+    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"render.ts\",\"graph-slice.ts\",\"phone-separators.ts\",\"tests/index.html.test.ts\"]. Step 3 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): make toggle perform live filtering of web page render.",
+    "goal": [
+      "- Enabling the toggle live-filters both main and phone view diagrams",
+      "- Disabling it restores the original diagram exactly",
+      "- Phone-view decision overlays don't break when functions-only is active"
+    ],
+    "notInScope": [
+      "- Building the toggle UI or the filter function themselves — those are sibling tasks",
+      "- Changing how taskTools:mermaid generates .mmd files"
+    ],
+    "problemSolvedByTask": "The toggle does nothing and there's no proof that the filtering produces a valid diagram; this task proves the filtering works.",
+    "description": "In render.ts's render() pipeline, when state.functionsOnly is true, pass both codeBox.value (main view) and the phone view's chunkSource output through function-routing.ts's filter before calling mermaid.render, for both the main and phone diagrams. Wire a change listener on the toggle checkbox (added in a sibling task) that flips state.functionsOnly and triggers a re-render. Verify graph-slice.ts's decision-path slicing (sliceIds/siblingIds/leadInIds) and phone-separators.ts's overlay drawing (drawLastDecisionMask, drawSeparatorBetween, scrollChoicesIntoView) either keep working against the filtered diagram or gracefully no-op when functions-only is active, since they assume the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Add the end-to-end test to tests/index.html.test.ts.",
+    "modifiableFiles": [
+      "render.ts",
+      "graph-slice.ts",
+      "phone-separators.ts",
+      "tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Load a code-flow diagram, enable the toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored.",
+    "difficulty": 10,
+    "blockedBy": [
+      {
+        "taskNumber": 43,
+        "reason": "This task wires the toggle checkbox and state.functionsOnly flag that sibling task 43 creates."
+      },
+      {
+        "taskNumber": 44,
+        "reason": "This task calls the filter function that sibling task 44 builds in function-routing.ts."
+      }
+    ],
+    "splitWorthiness": 10,
+    "completionDate": "2026-09-23",
+    "commitHashes": [],
+    "closureNote": "Split into 46, 47, 48, 49"
   }
 ]
