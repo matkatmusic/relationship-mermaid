@@ -802,11 +802,15 @@
       "- Wiring the checkbox to trigger a live re-render — that's a sibling task (render.ts)"
     ],
     "problemSolvedByTask": "First step toward a less dense code-flow view — the UI control needs to exist before the filtering and wiring behind it can be built.",
-    "description": "Add a 'functions only' checkbox to index.html's header, following the app's existing toggle-control markup pattern. Expose its element reference via dom.ts (a const export, same pattern as zoomInBtn/zoomOutBtn). Add a `functionsOnly: boolean` flag (default false) to state.ts. No change listener and no rendering behavior yet — the checkbox exists but does nothing when toggled; that wiring is a later sibling task.",
+    "description": "Add a 'functions only' checkbox to index.html's header, following the app's existing toggle-control markup pattern. Expose its element reference via dom.ts (a const export, same pattern as zoomInBtn/zoomOutBtn). Add a `functionsOnly: boolean` flag (default false) to state.ts. No change listener and no rendering behavior yet — the checkbox exists but does nothing when toggled; that wiring is a later sibling task.\n\n## Clarification answer (2026-09-24)\n\nYes. The live files are in the mermaid-editor folder, not the repo root. Edit `mermaid-editor/index.html` (header has `zoomInBtn` at line 70, use its markup pattern), `mermaid-editor/dom.ts` (`export const zoomInBtn = document.getElementById(...)` at line 25 is the pattern), and `mermaid-editor/state.ts` (the state object, add `functionsOnly: false`). Write the e2e test in `mermaid-editor/tests/index.html.test.ts`. `mermaid-editor/server.js` serves `mermaid-editor/index.html`. Do not create root-level files: the root has no index.html, dom.ts, or state.ts.",
     "modifiableFiles": [
       "index.html",
       "dom.ts",
-      "state.ts"
+      "state.ts",
+      "mermaid-editor/index.html",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/state.ts",
+      "mermaid-editor/tests/index.html.test.ts"
     ],
     "readOnlyFiles": [
       "*"
@@ -815,7 +819,41 @@
     "hasTests": true,
     "tests": "e2e: the 'functions only' checkbox exists in the page and is unchecked by default.",
     "difficulty": 8,
-    "splitWorthiness": 8
+    "splitWorthiness": 8,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-43",
+      "leaseRunId": "29b7f866-7623-4640-bcda-2b523ef27701",
+      "history": [
+        {
+          "runId": "29b7f866-7623-4640-bcda-2b523ef27701",
+          "startedAt": "2026-09-23T19:51:53-07:00",
+          "endedAt": "2026-09-23T20:02:01-07:00",
+          "exitType": "clarify-stuck",
+          "exitNote": "the planner asked twice for something the docs cannot supply. worktree preserved.",
+          "modifiedFiles": [],
+          "commits": [],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            }
+          ],
+          "tailCursor": null
+        }
+      ]
+    },
+    "createsFiles": [
+      "index.html",
+      "dom.ts",
+      "state.ts"
+    ]
   },
   {
     "taskNumber": 44,
