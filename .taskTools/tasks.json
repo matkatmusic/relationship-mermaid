@@ -966,5 +966,44 @@
         "reason": "This task verifies graph-slice.ts's sliceIds/siblingIds/leadInIds against the filtered diagram's edge shape, but function-routing.ts (the filter that produces that filtered diagram) doesn't exist yet — it's built by task 44."
       }
     ]
+  },
+  {
+    "taskNumber": 48,
+    "version": "e10dba29eaba94835ebd25b86ba23999b8a8b8f4",
+    "title": "Functions-only toggle: make phone-separators.ts safe for a functions-only diagram (45 child 3 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"phone-separators.ts\"]`. Child 3 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make phone-separators.ts safe for a functions-only diagram. Verify phone-separators.ts's overlay drawing (drawLastDecisionMask, drawSeparatorBetween, scrollChoicesIntoView) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- drawLastDecisionMask, drawSeparatorBetween, and scrollChoicesIntoView keep working or no-op when state.functionsOnly is true, with no thrown errors"
+    ],
+    "notInScope": [
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
+    ],
+    "problemSolvedByTask": "phone-separators.ts draws masks and separators around Q_ nodes; with functions-only active those nodes are gone and the overlays may break.",
+    "description": "phone-separators.ts exports drawLastDecisionMask(ids, edges, openDecisionId), drawSeparatorBetween(topId, belowIds, label), and scrollChoicesIntoView(bottomQ, edges), all called from render.ts's render(). drawLastDecisionMask and drawSeparatorBetween already return early via a nodeEl() lookup (hasTopAndChoices/hasTopAndBelow) that is null when a Q_/Q_CHOICE_ id has no matching SVG element in phoneDiagramBox, so they likely already no-op once render.ts starts feeding mermaid a functions-only-filtered phone source. render.ts computes ids/edges from parseEdges(codeBox.value), the unfiltered source, so these still-decision-tree ids keep reaching phone-separators.ts regardless of state.functionsOnly; only the rendered SVG changes shape. The risk case is scrollChoicesIntoView: when state.phoneFocusNodeId is set it unconditionally calls decision-nav.ts's centerNodeInViewport(phoneDiagramBox, phoneDiagramBox, state.phoneFocusNodeId), a file outside this task's scope, which may not tolerate a filtered-out focus node. state.functionsOnly does not exist anywhere in the codebase yet (added by blocking task 43); this task should add an explicit state.functionsOnly guard, or confirm the existing null-checks are sufficient, once that flag lands. Scope is phone-separators.ts only; render.ts wiring, graph-slice.ts guards, and the end-to-end test are sibling children of task 45.",
+    "modifiableFiles": [
+      "phone-separators.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4,
+    "blockedBy": [
+      {
+        "taskNumber": 43,
+        "reason": "This task must check state.functionsOnly, the flag that task 43 adds to the web page toggle, to decide whether phone-separators.ts's overlay drawing should no-op."
+      },
+      {
+        "taskNumber": 44,
+        "reason": "This task must handle the filtered diagram shape that task 44's diagram filter produces, since phone-separators.ts's overlay functions assume the Q_/Q_CHOICE_ decision-tree shape a functions-only filtered diagram no longer has."
+      }
+    ]
   }
 ]
