@@ -2178,5 +2178,178 @@
       "c5db0cb"
     ],
     "closureNote": "manually completed by user: editor suite green at 66/66 after fixes on the mermaid-editor develop branch and merge of staging"
+  },
+  {
+    "taskNumber": 41,
+    "version": "5f4d84076b7830e36d28461156cbbc09cf0a37f7",
+    "title": "Move HTML viewer-editor code into the mermaid-editor submodule",
+    "userDescription": "move the HTML viewer-editor code into the mermaid-editor submodule",
+    "goal": [
+      "- Viewer/editor files (index.html, viewer.ts/js, and all split modules like dom.ts, state.ts, render.ts) live only in mermaid-editor/, with no leftover copies in relationship-mermaid",
+      "- server.js and its build scripts move into mermaid-editor/ as well",
+      "- relationship-mermaid only holds diagrams and the spec/tasks.json entries for the mobile app idea"
+    ],
+    "notInScope": [
+      "- Fixing the 38 currently-failing editor tests — that stays a separate test-cleanup effort",
+      "- Creating a brand-new separate repo/project — mermaid-editor is that already-existing submodule, so in-session task #8 (a whole new 'mermaid-viewer' project) is being closed as superseded by this task"
+    ],
+    "problemSolvedByTask": "Reuse the viewer across projects",
+    "description": "viewer.ts is the app entry point and imports all 19 root-level .ts modules (dom.ts, editor-actions.ts, editor-add.ts, editor-remove.ts, zoom.ts, diagram-io.ts, editor-events.ts, main-events.ts, render-helpers.ts, and their own transitive imports: editor-commit.ts, editor-graph.ts, editor-types.ts, diagram-source.ts, decision-nav.ts, node-inspector.ts, node-type-colors.ts, phone-separators.ts, graph-slice.ts, render.ts, source-edit.ts, state.ts). index.html loads the built viewer.js and is served by server.js (a bare Bun.serve HTTP server with no framework). Build/test tooling lives in package.json, tsconfig.json, bun.lock, and package-lock.json. tests/index.html.test.ts, tests/viewer.js.test.ts, tests/viewer.test.ts, and tests/server.test.js cover this app directly. The mermaid-editor submodule currently contains only a LICENSE file, so every destination path under mermaid-editor/ is new. diagrams/, .taskTools/, and .plate/ are unrelated task-management/data directories and are out of scope for this move.",
+    "modifiableFiles": [
+      "index.html",
+      "viewer.ts",
+      "viewer.js",
+      "dom.ts",
+      "render-helpers.ts",
+      "editor-actions.ts",
+      "editor-add.ts",
+      "editor-remove.ts",
+      "editor-commit.ts",
+      "editor-events.ts",
+      "editor-graph.ts",
+      "editor-types.ts",
+      "zoom.ts",
+      "diagram-io.ts",
+      "diagram-source.ts",
+      "decision-nav.ts",
+      "node-inspector.ts",
+      "node-type-colors.ts",
+      "phone-separators.ts",
+      "graph-slice.ts",
+      "render.ts",
+      "source-edit.ts",
+      "state.ts",
+      "main-events.ts",
+      "server.js",
+      "package.json",
+      "package-lock.json",
+      "bun.lock",
+      "tsconfig.json",
+      "tests/index.html.test.ts",
+      "tests/viewer.js.test.ts",
+      "tests/viewer.test.ts",
+      "tests/server.test.js",
+      "mermaid-editor/index.html",
+      "mermaid-editor/viewer.ts",
+      "mermaid-editor/viewer.js",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/render-helpers.ts",
+      "mermaid-editor/editor-actions.ts",
+      "mermaid-editor/editor-add.ts",
+      "mermaid-editor/editor-remove.ts",
+      "mermaid-editor/editor-commit.ts",
+      "mermaid-editor/editor-events.ts",
+      "mermaid-editor/editor-graph.ts",
+      "mermaid-editor/editor-types.ts",
+      "mermaid-editor/zoom.ts",
+      "mermaid-editor/diagram-io.ts",
+      "mermaid-editor/diagram-source.ts",
+      "mermaid-editor/decision-nav.ts",
+      "mermaid-editor/node-inspector.ts",
+      "mermaid-editor/node-type-colors.ts",
+      "mermaid-editor/phone-separators.ts",
+      "mermaid-editor/graph-slice.ts",
+      "mermaid-editor/render.ts",
+      "mermaid-editor/source-edit.ts",
+      "mermaid-editor/state.ts",
+      "mermaid-editor/main-events.ts",
+      "mermaid-editor/server.js",
+      "mermaid-editor/package.json",
+      "mermaid-editor/tsconfig.json",
+      "mermaid-editor/tests/index.html.test.ts",
+      "mermaid-editor/tests/viewer.js.test.ts",
+      "mermaid-editor/tests/viewer.test.ts",
+      "mermaid-editor/tests/server.test.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "mermaid-editor/index.html",
+      "mermaid-editor/viewer.ts",
+      "mermaid-editor/viewer.js",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/render-helpers.ts",
+      "mermaid-editor/editor-actions.ts",
+      "mermaid-editor/editor-add.ts",
+      "mermaid-editor/editor-remove.ts",
+      "mermaid-editor/editor-commit.ts",
+      "mermaid-editor/editor-events.ts",
+      "mermaid-editor/editor-graph.ts",
+      "mermaid-editor/editor-types.ts",
+      "mermaid-editor/zoom.ts",
+      "mermaid-editor/diagram-io.ts",
+      "mermaid-editor/diagram-source.ts",
+      "mermaid-editor/decision-nav.ts",
+      "mermaid-editor/node-inspector.ts",
+      "mermaid-editor/node-type-colors.ts",
+      "mermaid-editor/phone-separators.ts",
+      "mermaid-editor/graph-slice.ts",
+      "mermaid-editor/render.ts",
+      "mermaid-editor/source-edit.ts",
+      "mermaid-editor/state.ts",
+      "mermaid-editor/main-events.ts",
+      "mermaid-editor/server.js",
+      "mermaid-editor/package.json",
+      "mermaid-editor/tsconfig.json",
+      "mermaid-editor/tests/index.html.test.ts",
+      "mermaid-editor/tests/viewer.js.test.ts",
+      "mermaid-editor/tests/viewer.test.ts",
+      "mermaid-editor/tests/server.test.js"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "e2e: `bun run build` succeeds from inside mermaid-editor/, and relationship-mermaid still loads/serves the viewer correctly through the submodule.",
+    "difficulty": 7,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41",
+      "leaseRunId": "3464efdc-0abf-44bc-9bb5-5f524cc35818",
+      "history": [
+        {
+          "runId": "3464efdc-0abf-44bc-9bb5-5f524cc35818",
+          "startedAt": "2026-09-23T01:21:21-07:00",
+          "endedAt": "2026-09-23T01:52:49-07:00",
+          "exitType": "plan-scrapped",
+          "exitNote": "codex did not accept the plan in two reviews",
+          "modifiedFiles": [],
+          "commits": [],
+          "implementationNotesFile": null,
+          "taskTests": null,
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            }
+          ],
+          "attempts": {
+            "clarify": 1,
+            "planReview": 2
+          },
+          "countedPasses": {
+            "clarify": [
+              "64a420c7-804e-47be-b760-c6c53e1bc7a8"
+            ],
+            "planReview": [
+              "af984a25-c8d6-49d9-baf2-b3d005a4cb5c",
+              "20c99158-44f2-4fbe-8f20-c5639c2d3bc0"
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "clarifyRequest": "Add mermaid-editor/package-lock.json and mermaid-editor/bun.lock to task 41's createsFiles. Both destination files are absent, while the root copies are required build tooling that must move for the submodule to install and build independently; the required createsFiles list currently forbids adding either path.",
+    "codexReviewNotes": "[tests-red] Replace the byte-preserving-move instruction for tests/index.html.test.ts with the same move plus these exact destination edits at old lines 604 and 813: change each `execFileSync(\"git\", [\"show\", \\`HEAD:diagrams/${...}\\`], { encoding: \"utf8\" })` to `execFileSync(\"git\", [\"-C\", \"..\", \"show\", \\`HEAD:diagrams/${...}\\`], { encoding: \"utf8\" })`. Keep the new server-location test insertion after old line 178.\n\nDurable because: The fixture source is explicitly read from the parent relationship-mermaid repository, where diagrams remain after the relocation, regardless of the test process's mermaid-editor working directory.\n\n[move-tooling-and-server] Replace the server `new` pseudo-code with exact valid destination lines: `import { resolve } from \"node:path\";`, `const editorDir = import.meta.dir;`, `const diagramsDir = resolve(editorDir, \"..\", \"diagrams\");`, `Bun.file(resolve(editorDir, \"index.html\"))`, `Bun.file(resolve(editorDir, \"viewer.js\"))`, `Bun.file(resolve(editorDir, \"node_modules/mermaid/dist/mermaid.min.js\"))`, `glob.scan({ cwd: diagramsDir })`, `Bun.file(resolve(diagramsDir, name))`, `Bun.write(resolve(diagramsDir, name), text)`, and `watch(resolve(diagramsDir, name), ...)`.\n\nDurable because: The destination code is syntactically executable and anchors every editor asset to the submodule while addressing diagrams through its retained parent location.\n\n[move-tooling-and-server] Add `mermaid-editor/package-lock.json` and `mermaid-editor/bun.lock` to the top-level `createsFiles` array, and replace “Keep createsFiles unchanged” with the explicit declaration that these two absent destinations are created by the move.\n\nDurable because: The plan's declared created-file set will match every new build-tooling file required for a standalone mermaid-editor install.",
+    "completionDate": "2026-09-23",
+    "commitHashes": [
+      "d72c200",
+      "c5db0cb"
+    ],
+    "closureNote": "verified by user: all editor files live only in the mermaid-editor submodule and the parent root holds only diagrams and task bookkeeping"
   }
 ]
