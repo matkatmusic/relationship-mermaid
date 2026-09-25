@@ -25,7 +25,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 10
+    "difficulty": 1,
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 2,
@@ -58,13 +59,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Stay on one decision point past the limit, see the break prompt",
-    "difficulty": 8,
+    "difficulty": 2,
     "blockedBy": [
       {
         "taskNumber": 1,
         "reason": "Task 1 builds the couples mobile app itself (spec, mobile framework/backend, issue-raiser/issue-causer modes, and diagram-navigation state tracking) and none of that exists yet in the repo (modifiableFiles is empty, readOnlyFiles is \"*\", no spec written). This task's check-in prompts and decision-point timers are features layered on top of that app's raiser mode and diagram-navigation state, so they have nothing to attach to until task 1 produces the app/spec."
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 3,
@@ -95,13 +97,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Agree a loop-back time, see it land on the phone calendar and get a notification",
-    "difficulty": 10,
+    "difficulty": 1,
     "blockedBy": [
       {
         "taskNumber": 2,
         "reason": "Notifications for check-ins need the check-in feature to exist first, and task 2 is what builds issue-raiser check-ins; this task only adds notifications and calendar-reminder integration on top of that."
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 4,
@@ -138,7 +141,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 5
+    "difficulty": 8,
+    "splitWorthiness": 8
   },
   {
     "taskNumber": 5,
@@ -175,13 +179,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 6,
@@ -218,13 +223,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 7,
@@ -261,13 +267,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 8,
@@ -304,13 +311,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 9,
@@ -347,13 +355,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 10,
@@ -390,13 +399,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 11,
@@ -433,13 +443,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click the block in the viewer and the article opens",
-    "difficulty": 4,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 12,
@@ -472,13 +483,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Click a question diamond in the viewer and its article section opens",
-    "difficulty": 6,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 4,
         "reason": "Needs the articles/ static route that the empathy article task adds to server.js"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 13,
@@ -518,7 +530,8 @@
         "taskNumber": 2,
         "reason": "This task needs separate notepads shown to the issue-raiser vs. the note-taker, but index.html has no concept of roles at all right now — just one global chosenAnswers Set with no per-user state. Task 2 is the task that adds a role selector so the app knows who the issue-raiser is; this task's per-role notepad/journal has nothing to attach to until that role concept exists."
       }
-    ]
+    ],
+    "splitWorthiness": 8
   },
   {
     "taskNumber": 14,
@@ -549,13 +562,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Write an entry, share it, and see it appear in the partner's view of the same issue; unshare it and see it disappear",
-    "difficulty": 5,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 13,
         "reason": "Sharing needs journal entries to exist first"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 15,
@@ -589,13 +603,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Tag two issues, search by tag, see only those two",
-    "difficulty": 8,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 1,
         "reason": "Task 1 is what creates issues as data objects at all (\"they can log issues, and the app tracks issues\") — the repo currently has no issue entity anywhere (index.html/server.js have zero mention of issues, tags, or search), so there is nothing to make searchable or taggable until task 1 builds the issue-tracking data model."
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 16,
@@ -627,13 +642,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Create an issue whose text contains a word already used as a tag; see that tag suggested; accept it and see it on the issue",
-    "difficulty": 6,
+    "difficulty": 7,
     "blockedBy": [
       {
         "taskNumber": 15,
         "reason": "Suggestions need tags and issues to exist first"
       }
-    ]
+    ],
+    "splitWorthiness": 6
   },
   {
     "taskNumber": 17,
@@ -666,7 +682,8 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 1
+    "difficulty": 2,
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 18,
@@ -698,32 +715,34 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Serve the folder with a plain static server (bunx serve .), open the page, pick accountability.mmd, see it render with no server API",
-    "difficulty": 4,
+    "difficulty": 2,
     "blockedBy": [
       {
         "taskNumber": 17,
         "reason": "The fallback reads diagrams/index.json, which that task creates"
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 19,
     "version": "752d2d80fe9bdebbdfbafa4c70a449b9ac21588e",
-    "title": "Push the branch and turn on GitHub Pages",
-    "userDescription": "Push the develop branch to origin and turn on GitHub Pages in the repo settings (Deploy from a branch, root folder), then check https://matkatmusic.github.io/relationship-mermaid/ renders accountability.mmd.",
+    "title": "Push the mermaid-editor submodule branch and turn on GitHub Pages for it",
+    "userDescription": "Push the mermaid-editor submodule's develop branch to origin and turn on GitHub Pages in the mermaid-editor submodule's repo settings (Deploy from a branch, root folder), then check https://matkatmusic.github.io/mermaid-editor/ loads with no server. The diagrams/ folder lives in the parent repo, so the Pages viewer must be given diagrams some other way; that is out of scope here.",
     "chainGoal": [
       "- The viewer works on GitHub Pages with no server; the index.json, viewer fallback, and push tasks"
     ],
     "goal": [
-      "- https://matkatmusic.github.io/relationship-mermaid/ loads and renders accountability.mmd"
+      "- https://matkatmusic.github.io/mermaid-editor/ loads and renders a diagram with no server"
     ],
     "notInScope": [
       "- Saving diagrams from GitHub Pages; Save stays server-only",
       "- Live reload on GitHub Pages; the watcher stays server-only",
-      "- A custom domain; the default github.io address is enough"
+      "- A custom domain; the default github.io address is enough",
+      "- Serving the parent repo's diagrams/ folder from Pages; a separate task decides how diagrams reach the submodule site"
     ],
     "problemSolvedByTask": "I want to view the diagrams from any device without running the local server",
-    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ holds accountability.mmd, say-something-or-let-it-go.mmd, and stop-causing-harms.mmd, with no index.json yet; server.js derives the list via Bun.Glob, so diagrams/index.json must be created by hand listing those names. GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html and diagrams/ already sit at repo root; enabling Pages is a manual step in the repo Settings. Enabling Pages in Settings > Pages is manual; the push and the final check can be done from the terminal.",
+    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ lives in the parent repo, not in the mermaid-editor submodule, and getting those diagrams to the Pages viewer is a separate concern (out of scope here). GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html already sits at the mermaid-editor submodule's root; enabling Pages is a manual step in the mermaid-editor submodule's repo Settings. Enabling Pages in Settings > Pages is manual; the push and the final check can be done from the terminal.",
     "modifiableFiles": [],
     "readOnlyFiles": [
       "*"
@@ -731,13 +750,14 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 2,
+    "difficulty": 1,
     "blockedBy": [
       {
         "taskNumber": 18,
         "reason": "Pages has no server, so the viewer fallback must be in place before the page can work there"
       }
-    ]
+    ],
+    "splitWorthiness": 1
   },
   {
     "taskNumber": 39,
@@ -766,338 +786,116 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Update tests/index.html.test.ts's EDITOR_FIXTURE_NAME and all its hardcoded id literals (Start→new B_ id, Q1→new Q_ id, etc.) to match the renamed say-something-or-let-it-go.mmd; update tests/viewer.test.ts similarly if it references any renamed ids; assert `npm test` passes end to end.",
-    "difficulty": 5
+    "difficulty": 4,
+    "splitWorthiness": 6
   },
   {
-    "taskNumber": 40,
-    "version": "ce517bf09b0683fcc108175a724c08ec6ae2d3e8",
-    "title": "Green the editor test suite: fix viewer.ts choice-id naming and update stale test fixtures",
-    "userDescription": "Editor test suite is ~48 tests red on HEAD 90efd53 after the tasks 32-37 Codex work landed. Two failure groups: (1) stale fixtures in tests/index.html.test.ts assert pre-rename node ids (e.g. Q1{\"Can I stay calm?\"}, LetGo[...], A[\"A\"] --> B[\"B\"]) while diagrams/*.mmd were renamed to the new Q_/Q_CHOICE/B_ convention; (2) task-37 naming not fully landed in viewer.ts — tests assert new-convention ids (B_NEW_1[\"New static block\"], Q_NEW_1{\"New Decision\"}, B_B --> Q_NEW_1) but the code still emits old ids. Reconcile both: update genuinely-stale test expectations to match renamed diagrams, and make viewer.ts emit the strict B_/Q_ naming its tests require, until `npm test` is green. Files: viewer.ts, viewer.js, tests/index.html.test.ts, diagrams/*.mmd.",
+    "taskNumber": 46,
+    "version": "82d6a8f7113250caaf26001e6eff9c1269cc79b8",
+    "title": "Functions-only toggle: wire the toggle into render.ts (45 child 1 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"render.ts\"]`. Child 1 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): wire the toggle into render.ts. In render.ts's render() pipeline, when state.functionsOnly is true, pass both codeBox.value (main view) and the phone view's chunkSource output through function-routing.ts's filter before calling mermaid.render, for both the main and phone diagrams. Add a change listener on the toggle checkbox (from task 43) that flips state.functionsOnly and triggers a re-render. Disabling the toggle must restore the original diagram exactly. Not in scope: guarding graph-slice.ts or phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
     "goal": [
-      "- `npm test` passes with zero failing editor tests",
-      "- viewer.ts emits strict Q_/Q_CHOICE/B_ ids (e.g. B_NEW_1, Q_NEW_1, Q_NEW_1_Y) that its tests assert",
-      "- Stale fixtures in tests/index.html.test.ts are updated to the renamed diagram node ids/labels",
-      "- No leftover pre-rename node ids remain in the test assertions"
+      "- Toggling the checkbox on re-renders the main and phone diagrams through function-routing.ts's filter",
+      "- Toggling the checkbox off restores the original diagram exactly"
     ],
     "notInScope": [
-      "- Adding new editor actions or diagrams",
-      "- Changing the Q_/Q_CHOICE/B_ naming convention itself",
-      "- server.js changes",
-      "- Renaming diagrams/stop-causing-harms.mmd and its assertions — owned by task 39"
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
     ],
-    "problemSolvedByTask": "The editor test suite is broadly red after the 32-37 work, so real regressions are hidden and the naming convention is only half-applied.",
-    "description": "Ran `npm test` on HEAD ce517bf and confirmed 47 red tests, all in tests/index.html.test.ts. Root cause 1: diagrams/say-something-or-let-it-go.mmd (the EDITOR_FIXTURE_NAME read at module load) already uses the renamed convention (B_Start, Q_Q1, B_LetGo, B_HaveConvo, Q_CHOICE_Q1_NEW, and label \"Can I be calm?\"), but the test file still calls clickNode/selectEditorNode with pre-rename bare ids (Start, Q1..Q4, LetGo, HaveConvo) and asserts old labels/edges (e.g. Q1{\"Can I stay calm?\"}, A[\"A\"] --> B[\"B\"]); clickNode's `[id*=\"flowchart-${id}-\"]` selector then matches nothing, so the triggered action never fires and downstream assertions fail. Root cause 2: viewer.ts's addQuestionAfter (uses choiceId(qId,'Y'/'N')), insertDecisionBefore (choiceId(decisionId,'NEW')), and commitInsertDecisionAfter (choiceId(decisionId,'Y'/'N')) all route freshly-generated Q_NEW_n ids through choiceId(), which strips a leading \"Q_\" and reprefixes with \"Q_CHOICE_\", yielding Q_CHOICE_NEW_1_Y instead of the Q_NEW_1_Y the tests expect; choiceId() is correct as-is for addChoice/addChoiceOnDecision, which operate on existing named decisions like Q_DECISION. Fix: in those three viewer.ts call sites, build choice ids as `${decisionId}_SUFFIX` directly instead of via choiceId(); in tests/index.html.test.ts, update every stale node-id/label/edge reference to match the current diagrams/say-something-or-let-it-go.mmd content. viewer.js is a generated build artifact (bun build viewer.ts --outfile viewer.js, run automatically by `npm test`) and only changes as a byproduct of the viewer.ts edit. diagrams/*.mmd files were inspected and are already on the new B_/Q_/Q_CHOICE_ convention, so no diagram file needs editing.",
+    "problemSolvedByTask": "The checkbox and filter exist but nothing connects them; the render never applies the filter.",
+    "description": "render.ts's render() function (mermaid-editor/render.ts) currently calls mermaid.render('diagram-...', codeBox.value) for the main view and mermaid.render('phone-diagram-...', phoneSource) for the phone view, where phoneSource is chunkSource(shown, siblings, edges) from diagram-source.ts. Neither state.functionsOnly nor a toggle checkbox exist yet in state.ts/dom.ts (sibling task 43), and function-routing.ts's filter does not exist yet (sibling task 44); this child only edits render.ts and assumes those exports once unblocked. The change: when state.functionsOnly is true, run both codeBox.value and the computed phoneSource through function-routing.ts's filter before each mermaid.render call, for both diagrams. Also attach a 'change' listener to the toggle checkbox (imported from dom.ts) that flips state.functionsOnly and calls render() again, so disabling it re-renders with the unfiltered source. render.ts already exists (5.2K, 120 lines), so this is a single-file edit with no new files.",
     "modifiableFiles": [
-      "viewer.ts",
-      "viewer.js",
-      "tests/index.html.test.ts",
-      "editor-add.ts",
-      "editor-commit.ts",
-      "diagrams/say-something-or-let-it-go.mmd"
+      "render.ts"
     ],
     "readOnlyFiles": [
       "*"
     ],
     "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "The existing ~48 failing editor tests in tests/index.html.test.ts must all pass; npm test is green.",
-    "difficulty": 5,
-    "run": {
-      "active": true,
-      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-40",
-      "leaseRunId": "7e1e434f-f27a-4ab7-9520-39d65f2486c2",
-      "history": [
-        {
-          "runId": "7e1e434f-f27a-4ab7-9520-39d65f2486c2",
-          "startedAt": "2026-09-16T08:45:43-07:00",
-          "endedAt": null,
-          "exitType": null,
-          "exitNote": null,
-          "modifiedFiles": [],
-          "commits": [],
-          "implementationNotesFile": null,
-          "taskTests": null,
-          "fullSuite": null,
-          "stepResults": [
-            {
-              "stepId": "init-submodules",
-              "script": "initTaskSubmodules",
-              "result": {
-                "initialized": false
-              }
-            }
-          ],
-          "attempts": {
-            "planReview": 2
-          },
-          "countedPasses": {
-            "planReview": [
-              "db141cac-ae98-4b47-aa51-1608bf2599b3",
-              "c2d84c62-a77d-4636-b798-211b9ebad3d0"
-            ]
-          },
-          "tailCursor": {
-            "block": "pipeline-failuresExit.mmd::READ_FAILURES_PUBLICATION_STATE",
-            "input": "{\"box\":\"FAILURES_EXIT\",\"scriptSignal\":\"continue\",\"taskNumber\":40,\"runId\":\"7e1e434f-f27a-4ab7-9520-39d65f2486c2\",\"projectRoot\":\"/Users/matkatmusicllc/Programming/relationship-mermaid\",\"worktree\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-40\",\"branch\":\"task-40\",\"docsMode\":\"AUTOGEN\",\"planFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-40/plans/plan.json\",\"exitType\":\"plan-scrapped\",\"exitNote\":\"codex did not accept the plan in two reviews\",\"outcome\":\"PLAN\",\"clarifyRequest\":\"\",\"reviewOutputFile\":\"\",\"verdict\":\"AMEND\",\"notes\":\"the task declares tests but the plan does not name: tests/test-viewer.ts or tests/viewer.test.ts or viewer.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts\"}"
-          }
-        }
-      ]
-    },
-    "codexReviewNotes": "the task declares tests but the plan does not name: tests/test-viewer.ts or tests/viewer.test.ts or viewer.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts"
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4
   },
   {
-    "taskNumber": 41,
-    "version": "5f4d84076b7830e36d28461156cbbc09cf0a37f7",
-    "title": "Move HTML viewer-editor code into the mermaid-editor submodule",
-    "userDescription": "move the HTML viewer-editor code into the mermaid-editor submodule",
+    "taskNumber": 47,
+    "version": "86d3c3d1a4385ce071960236e6526f7905069bd9",
+    "title": "Functions-only toggle: make graph-slice.ts safe for a functions-only diagram (45 child 2 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"graph-slice.ts\"]`. Child 2 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make graph-slice.ts safe for a functions-only diagram. Verify graph-slice.ts's decision-path slicing (sliceIds/siblingIds/leadInIds) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
     "goal": [
-      "- Viewer/editor files (index.html, viewer.ts/js, and all split modules like dom.ts, state.ts, render.ts) live only in mermaid-editor/, with no leftover copies in relationship-mermaid",
-      "- server.js and its build scripts move into mermaid-editor/ as well",
-      "- relationship-mermaid only holds diagrams and the spec/tasks.json entries for the mobile app idea"
+      "- sliceIds, siblingIds, and leadInIds keep working or no-op when state.functionsOnly is true, with no thrown errors"
     ],
     "notInScope": [
-      "- Fixing the 38 currently-failing editor tests — that stays a separate test-cleanup effort",
-      "- Creating a brand-new separate repo/project — mermaid-editor is that already-existing submodule, so in-session task #8 (a whole new 'mermaid-viewer' project) is being closed as superseded by this task"
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
     ],
-    "problemSolvedByTask": "Reuse the viewer across projects",
-    "description": "viewer.ts is the app entry point and imports all 19 root-level .ts modules (dom.ts, editor-actions.ts, editor-add.ts, editor-remove.ts, zoom.ts, diagram-io.ts, editor-events.ts, main-events.ts, render-helpers.ts, and their own transitive imports: editor-commit.ts, editor-graph.ts, editor-types.ts, diagram-source.ts, decision-nav.ts, node-inspector.ts, node-type-colors.ts, phone-separators.ts, graph-slice.ts, render.ts, source-edit.ts, state.ts). index.html loads the built viewer.js and is served by server.js (a bare Bun.serve HTTP server with no framework). Build/test tooling lives in package.json, tsconfig.json, bun.lock, and package-lock.json. tests/index.html.test.ts, tests/viewer.js.test.ts, tests/viewer.test.ts, and tests/server.test.js cover this app directly. The mermaid-editor submodule currently contains only a LICENSE file, so every destination path under mermaid-editor/ is new. diagrams/, .taskTools/, and .plate/ are unrelated task-management/data directories and are out of scope for this move.",
+    "problemSolvedByTask": "graph-slice.ts generates a valid functions-only diagram with correct node names and properly linked nodes, and the phone view doesn't break on this generated diagram",
+    "description": "graph-slice.ts's sliceIds() walks forward from edges[0][0] (or phonePath's last entry) using generic out-degree branching (next.length > 1), with no Q_/Q_CHOICE_-specific check, so its forward walk already tolerates a functions-only edge list structurally. siblingIds() and leadInIds() both gate on `hasDecisionContext = state.phoneFocusUsesDecisionContext || state.phonePreviewChoiceId || phonePath.length` and return [] immediately when false; render.ts's existing phonePathIsStale purge (outside this task's files) already clears phonePath once its ids stop matching the current edge list, so toggling functionsOnly on will make that guard false and these two functions already no-op gracefully. contextualDecisionSliceIds()'s backward walk only breaks early via `predecessor.startsWith('Q_') && !predecessor.startsWith('Q_CHOICE')` (isPreviousDecision); a functions-only diagram has no Q_ nodes, so that condition never fires and the loop instead walks all the way to the graph root, reachable only when state.phoneFocusUsesDecisionContext is true. leadInIds() also calls isAnswerId (from render-helpers.ts), which matches a `Q_CHOICE_<name>_` prefix and will always return false against function nodes, weakening its 'isStatic' heuristic to `outgoingCount <= 1` alone rather than crashing. This task adds an explicit `state.functionsOnly` guard in contextualDecisionSliceIds (the one path lacking a natural no-op) and confirms by reading the sibling decision-nav.ts wiring whether phoneFocusUsesDecisionContext can ever be true in functions-only mode before deciding whether the guard is reachable.",
     "modifiableFiles": [
-      "index.html",
-      "viewer.ts",
-      "viewer.js",
-      "dom.ts",
-      "render-helpers.ts",
-      "editor-actions.ts",
-      "editor-add.ts",
-      "editor-remove.ts",
-      "editor-commit.ts",
-      "editor-events.ts",
-      "editor-graph.ts",
-      "editor-types.ts",
-      "zoom.ts",
-      "diagram-io.ts",
-      "diagram-source.ts",
-      "decision-nav.ts",
-      "node-inspector.ts",
-      "node-type-colors.ts",
-      "phone-separators.ts",
-      "graph-slice.ts",
-      "render.ts",
-      "source-edit.ts",
-      "state.ts",
-      "main-events.ts",
-      "server.js",
-      "package.json",
-      "package-lock.json",
-      "bun.lock",
-      "tsconfig.json",
-      "tests/index.html.test.ts",
-      "tests/viewer.js.test.ts",
-      "tests/viewer.test.ts",
-      "tests/server.test.js",
-      "mermaid-editor/index.html",
-      "mermaid-editor/viewer.ts",
-      "mermaid-editor/viewer.js",
-      "mermaid-editor/dom.ts",
-      "mermaid-editor/render-helpers.ts",
-      "mermaid-editor/editor-actions.ts",
-      "mermaid-editor/editor-add.ts",
-      "mermaid-editor/editor-remove.ts",
-      "mermaid-editor/editor-commit.ts",
-      "mermaid-editor/editor-events.ts",
-      "mermaid-editor/editor-graph.ts",
-      "mermaid-editor/editor-types.ts",
-      "mermaid-editor/zoom.ts",
-      "mermaid-editor/diagram-io.ts",
-      "mermaid-editor/diagram-source.ts",
-      "mermaid-editor/decision-nav.ts",
-      "mermaid-editor/node-inspector.ts",
-      "mermaid-editor/node-type-colors.ts",
-      "mermaid-editor/phone-separators.ts",
-      "mermaid-editor/graph-slice.ts",
-      "mermaid-editor/render.ts",
-      "mermaid-editor/source-edit.ts",
-      "mermaid-editor/state.ts",
-      "mermaid-editor/main-events.ts",
-      "mermaid-editor/server.js",
-      "mermaid-editor/package.json",
-      "mermaid-editor/tsconfig.json",
-      "mermaid-editor/tests/index.html.test.ts",
-      "mermaid-editor/tests/viewer.js.test.ts",
-      "mermaid-editor/tests/viewer.test.ts",
-      "mermaid-editor/tests/server.test.js"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "createsFiles": [
-      "mermaid-editor/index.html",
-      "mermaid-editor/viewer.ts",
-      "mermaid-editor/viewer.js",
-      "mermaid-editor/dom.ts",
-      "mermaid-editor/render-helpers.ts",
-      "mermaid-editor/editor-actions.ts",
-      "mermaid-editor/editor-add.ts",
-      "mermaid-editor/editor-remove.ts",
-      "mermaid-editor/editor-commit.ts",
-      "mermaid-editor/editor-events.ts",
-      "mermaid-editor/editor-graph.ts",
-      "mermaid-editor/editor-types.ts",
-      "mermaid-editor/zoom.ts",
-      "mermaid-editor/diagram-io.ts",
-      "mermaid-editor/diagram-source.ts",
-      "mermaid-editor/decision-nav.ts",
-      "mermaid-editor/node-inspector.ts",
-      "mermaid-editor/node-type-colors.ts",
-      "mermaid-editor/phone-separators.ts",
-      "mermaid-editor/graph-slice.ts",
-      "mermaid-editor/render.ts",
-      "mermaid-editor/source-edit.ts",
-      "mermaid-editor/state.ts",
-      "mermaid-editor/main-events.ts",
-      "mermaid-editor/server.js",
-      "mermaid-editor/package.json",
-      "mermaid-editor/tsconfig.json",
-      "mermaid-editor/tests/index.html.test.ts",
-      "mermaid-editor/tests/viewer.js.test.ts",
-      "mermaid-editor/tests/viewer.test.ts",
-      "mermaid-editor/tests/server.test.js"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "e2e: `bun run build` succeeds from inside mermaid-editor/, and relationship-mermaid still loads/serves the viewer correctly through the submodule.",
-    "difficulty": 7,
-    "run": {
-      "active": true,
-      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41",
-      "leaseRunId": "13223046-c06d-4174-b680-f8db8854a4b6",
-      "history": [
-        {
-          "runId": "13223046-c06d-4174-b680-f8db8854a4b6",
-          "startedAt": "2026-09-17T01:44:35-07:00",
-          "endedAt": null,
-          "exitType": null,
-          "exitNote": null,
-          "modifiedFiles": [],
-          "commits": [],
-          "implementationNotesFile": null,
-          "taskTests": null,
-          "fullSuite": null,
-          "stepResults": [
-            {
-              "stepId": "init-submodules",
-              "script": "initTaskSubmodules",
-              "result": {
-                "initialized": false
-              }
-            }
-          ],
-          "attempts": {
-            "planReview": 1
-          },
-          "countedPasses": {
-            "planReview": [
-              "3f8f935e-f067-466b-90ed-397f9e2213bb"
-            ]
-          },
-          "tailCursor": {
-            "block": "pipeline-failuresExit.mmd::READ_FAILURES_PUBLICATION_STATE",
-            "input": "{\"box\":\"FAILURES_EXIT\",\"scriptSignal\":\"continue\",\"taskNumber\":41,\"runId\":\"13223046-c06d-4174-b680-f8db8854a4b6\",\"projectRoot\":\"/Users/matkatmusicllc/Programming/relationship-mermaid\",\"worktree\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41\",\"branch\":\"task-41\",\"docsMode\":\"AUTOGEN\",\"planFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41/plans/plan.json\",\"exitType\":\"block-failed\",\"exitNote\":\"pipeline-implementTask.mmd::IMPLEMENT_TASK exited 1\\nError: Command failed: npm ci --no-audit --no-fund\",\"outcome\":\"PLAN\",\"clarifyRequest\":\"\",\"reviewOutputFile\":\"/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-41/plans/codex-review.json\",\"verdict\":\"AMEND_THEN_ACCEPT\",\"notes\":\"[move-tooling-and-lockfiles] Add mermaid-editor/package-lock.json and mermaid-editor/bun.lock to createsFiles; replace the two deletion entries with unchanged mv operations into mermaid-editor/. Update verify-moved-editor to require both moved lockfiles and run `bun install --frozen-lockfile` before the build.\\n\\nDurable because: The submodule retains the dependency resolution used by its package.json and can be installed and built independently, while neither root lockfile remains in relationship-mermaid.\"}"
-          }
-        }
-      ]
-    },
-    "codexReviewNotes": "the task declares tests but the plan does not name: tests/test-viewer.js or tests/viewer.test.js, tests/test-dom.ts or tests/dom.test.ts or dom.test.ts, tests/test-render-helpers.ts or tests/render-helpers.test.ts or render-helpers.test.ts, tests/test-editor-actions.ts or tests/editor-actions.test.ts or editor-actions.test.ts, tests/test-editor-add.ts or tests/editor-add.test.ts or editor-add.test.ts, tests/test-editor-remove.ts or tests/editor-remove.test.ts or editor-remove.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or editor-commit.test.ts, tests/test-editor-events.ts or tests/editor-events.test.ts or editor-events.test.ts, tests/test-editor-graph.ts or tests/editor-graph.test.ts or editor-graph.test.ts, tests/test-editor-types.ts or tests/editor-types.test.ts or editor-types.test.ts, tests/test-zoom.ts or tests/zoom.test.ts or zoom.test.ts, tests/test-diagram-io.ts or tests/diagram-io.test.ts or diagram-io.test.ts, tests/test-diagram-source.ts or tests/diagram-source.test.ts or diagram-source.test.ts, tests/test-decision-nav.ts or tests/decision-nav.test.ts or decision-nav.test.ts, tests/test-node-inspector.ts or tests/node-inspector.test.ts or node-inspector.test.ts, tests/test-node-type-colors.ts or tests/node-type-colors.test.ts or node-type-colors.test.ts, tests/test-phone-separators.ts or tests/phone-separators.test.ts or phone-separators.test.ts, tests/test-graph-slice.ts or tests/graph-slice.test.ts or graph-slice.test.ts, tests/test-render.ts or tests/render.test.ts or render.test.ts, tests/test-source-edit.ts or tests/source-edit.test.ts or source-edit.test.ts, tests/test-state.ts or tests/state.test.ts or state.test.ts, tests/test-main-events.ts or tests/main-events.test.ts or main-events.test.ts, tests/test-viewer.js or tests/viewer.test.js, tests/test-dom.ts or tests/dom.test.ts or mermaid-editor/dom.test.ts, tests/test-render-helpers.ts or tests/render-helpers.test.ts or mermaid-editor/render-helpers.test.ts, tests/test-editor-actions.ts or tests/editor-actions.test.ts or mermaid-editor/editor-actions.test.ts, tests/test-editor-add.ts or tests/editor-add.test.ts or mermaid-editor/editor-add.test.ts, tests/test-editor-remove.ts or tests/editor-remove.test.ts or mermaid-editor/editor-remove.test.ts, tests/test-editor-commit.ts or tests/editor-commit.test.ts or mermaid-editor/editor-commit.test.ts, tests/test-editor-events.ts or tests/editor-events.test.ts or mermaid-editor/editor-events.test.ts, tests/test-editor-graph.ts or tests/editor-graph.test.ts or mermaid-editor/editor-graph.test.ts, tests/test-editor-types.ts or tests/editor-types.test.ts or mermaid-editor/editor-types.test.ts, tests/test-zoom.ts or tests/zoom.test.ts or mermaid-editor/zoom.test.ts, tests/test-diagram-io.ts or tests/diagram-io.test.ts or mermaid-editor/diagram-io.test.ts, tests/test-diagram-source.ts or tests/diagram-source.test.ts or mermaid-editor/diagram-source.test.ts, tests/test-decision-nav.ts or tests/decision-nav.test.ts or mermaid-editor/decision-nav.test.ts, tests/test-node-inspector.ts or tests/node-inspector.test.ts or mermaid-editor/node-inspector.test.ts, tests/test-node-type-colors.ts or tests/node-type-colors.test.ts or mermaid-editor/node-type-colors.test.ts, tests/test-phone-separators.ts or tests/phone-separators.test.ts or mermaid-editor/phone-separators.test.ts, tests/test-graph-slice.ts or tests/graph-slice.test.ts or mermaid-editor/graph-slice.test.ts, tests/test-render.ts or tests/render.test.ts or mermaid-editor/render.test.ts, tests/test-source-edit.ts or tests/source-edit.test.ts or mermaid-editor/source-edit.test.ts, tests/test-state.ts or tests/state.test.ts or mermaid-editor/state.test.ts, tests/test-main-events.ts or tests/main-events.test.ts or mermaid-editor/main-events.test.ts"
-  },
-  {
-    "taskNumber": 43,
-    "version": "47b97a022edc520eb58d5da63ea27273e553a401",
-    "title": "Functions-only toggle: add the checkbox to the web page (step 1 of 3)",
-    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"index.html\",\"dom.ts\",\"state.ts\"]. Step 1 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): add toggle to web page only.",
-    "goal": [
-      "- A 'functions only' checkbox exists in the page header",
-      "- state.ts exposes a functionsOnly boolean flag (default false)"
-    ],
-    "notInScope": [
-      "- Building the function-node filter itself — that's a sibling task (function-routing.ts)",
-      "- Wiring the checkbox to trigger a live re-render — that's a sibling task (render.ts)"
-    ],
-    "problemSolvedByTask": "First step toward a less dense code-flow view — the UI control needs to exist before the filtering and wiring behind it can be built.",
-    "description": "Add a 'functions only' checkbox to index.html's header, following the app's existing toggle-control markup pattern. Expose its element reference via dom.ts (a const export, same pattern as zoomInBtn/zoomOutBtn). Add a `functionsOnly: boolean` flag (default false) to state.ts. No change listener and no rendering behavior yet — the checkbox exists but does nothing when toggled; that wiring is a later sibling task.",
-    "modifiableFiles": [
-      "index.html",
-      "dom.ts",
-      "state.ts"
+      "graph-slice.ts"
     ],
     "readOnlyFiles": [
       "*"
     ],
     "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "e2e: the 'functions only' checkbox exists in the page and is unchecked by default.",
-    "difficulty": 2,
-    "blockedBy": [
-      {
-        "taskNumber": 41,
-        "reason": "Task 41 moves index.html, dom.ts, and state.ts into the mermaid-editor submodule; this task's edits to those files should land after task 41 completes."
-      }
-    ]
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4
   },
   {
-    "taskNumber": 44,
-    "version": "4720ced72e9d60681bc4638863d5e10427100c2f",
-    "title": "Functions-only toggle: build the diagram filter (step 2 of 3)",
-    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"function-routing.ts\"]. Step 2 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): add filtering to loaded .mmd file and generate the filtered .mmd that gets rendered instead.",
+    "taskNumber": 48,
+    "version": "e10dba29eaba94835ebd25b86ba23999b8a8b8f4",
+    "title": "Functions-only toggle: make phone-separators.ts safe for a functions-only diagram (45 child 3 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"phone-separators.ts\"]`. Child 3 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make phone-separators.ts safe for a functions-only diagram. Verify phone-separators.ts's overlay drawing (drawLastDecisionMask, drawSeparatorBetween, scrollChoicesIntoView) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
     "goal": [
-      "- function-routing.ts exports a filter: mermaid source in, filtered source out",
-      "- Edges are rerouted directly between function nodes"
+      "- drawLastDecisionMask, drawSeparatorBetween, and scrollChoicesIntoView keep working or no-op when state.functionsOnly is true, with no thrown errors"
     ],
     "notInScope": [
-      "- Wiring the filter into the live render pipeline or toggle — that's a sibling task (render.ts)",
-      "- Changing how taskTools:mermaid generates .mmd files"
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
     ],
-    "problemSolvedByTask": "Code structure diagrams are too dense to read, and I need a high level view of code flow",
-    "description": "Create function-routing.ts, a pure module with a function that takes a diagram's mermaid source (parsed via the same node/edge model editor-graph.ts and diagram-source.ts already use) and returns a filtered source string. Function-definition nodes are B_ nodes whose label matches an identifier(...) call-signature shape (e.g. isPromptLine(entry: ...), shouldBlock(marker: string, ...)); every other B_/Q_/Q_CHOICE_ node is dropped. For each pair of function nodes, redraw a direct edge between them whenever the caller's body (traced from its own function node down through the graph) reaches a node that points at the callee's function node, so the reduced diagram still shows accurate call routing. Not yet called from anywhere — this task only builds and unit-tests the filter function itself.",
+    "problemSolvedByTask": "phone-separators.ts draws masks and separators around Q_ nodes; with functions-only active those nodes are gone and the overlays may break.",
+    "description": "phone-separators.ts exports drawLastDecisionMask(ids, edges, openDecisionId), drawSeparatorBetween(topId, belowIds, label), and scrollChoicesIntoView(bottomQ, edges), all called from render.ts's render(). drawLastDecisionMask and drawSeparatorBetween already return early via a nodeEl() lookup (hasTopAndChoices/hasTopAndBelow) that is null when a Q_/Q_CHOICE_ id has no matching SVG element in phoneDiagramBox, so they likely already no-op once render.ts starts feeding mermaid a functions-only-filtered phone source. render.ts computes ids/edges from parseEdges(codeBox.value), the unfiltered source, so these still-decision-tree ids keep reaching phone-separators.ts regardless of state.functionsOnly; only the rendered SVG changes shape. The risk case is scrollChoicesIntoView: when state.phoneFocusNodeId is set it unconditionally calls decision-nav.ts's centerNodeInViewport(phoneDiagramBox, phoneDiagramBox, state.phoneFocusNodeId), a file outside this task's scope, which may not tolerate a filtered-out focus node. state.functionsOnly does not exist anywhere in the codebase yet (added by blocking task 43); this task should add an explicit state.functionsOnly guard, or confirm the existing null-checks are sufficient, once that flag lands. Scope is phone-separators.ts only; render.ts wiring, graph-slice.ts guards, and the end-to-end test are sibling children of task 45.",
     "modifiableFiles": [
-      "function-routing.ts"
+      "phone-separators.ts"
     ],
     "readOnlyFiles": [
       "*"
     ],
-    "createsFiles": [
-      "function-routing.ts"
-    ],
     "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "Feed function-routing.ts's filter a sample source (e.g. ask-dont-dump-issues.mmd's content) and assert it returns only function-declaration nodes with edges rerouted directly between them.",
-    "difficulty": 5,
-    "blockedBy": [
-      {
-        "taskNumber": 41,
-        "reason": "Task 41 relocates the viewer/renderer codebase into the mermaid-editor submodule, including where this new function-routing.ts module should live; this task should land after task 41 completes."
-      }
-    ]
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4
   },
   {
-    "taskNumber": 45,
-    "version": "0c66200cf0903b5627ae1b0ce823a3d9aaa6cc02",
-    "title": "Functions-only toggle: wire toggle to live-filter the render (step 3 of 3)",
-    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"render.ts\",\"graph-slice.ts\",\"phone-separators.ts\",\"tests/index.html.test.ts\"]. Step 3 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): make toggle perform live filtering of web page render.",
+    "taskNumber": 49,
+    "version": "5681edacc5dec877e9c0c5116e3f8d6b1f6f389a",
+    "title": "Functions-only toggle: end-to-end test for live filtering (45 child 4 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"tests/index.html.test.ts\"]`. Child 4 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): add the end-to-end test to tests/index.html.test.ts. Load a code-flow diagram, enable the functions-only toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, guarding phone-separators.ts; those are sibling children. Blocked by tasks 43 and 44 and by the three sibling children of task 45.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
     "goal": [
-      "- Enabling the toggle live-filters both main and phone view diagrams",
-      "- Disabling it restores the original diagram exactly",
-      "- Phone-view decision overlays don't break when functions-only is active"
+      "- The end-to-end test in tests/index.html.test.ts passes"
     ],
     "notInScope": [
-      "- Building the toggle UI or the filter function themselves — those are sibling tasks",
-      "- Changing how taskTools:mermaid generates .mmd files"
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45 (task 47)",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45 (task 48)"
     ],
-    "problemSolvedByTask": "The toggle does nothing and there's no proof that the filtering produces a valid diagram; this task proves the filtering works.",
-    "description": "In render.ts's render() pipeline, when state.functionsOnly is true, pass both codeBox.value (main view) and the phone view's chunkSource output through function-routing.ts's filter before calling mermaid.render, for both the main and phone diagrams. Wire a change listener on the toggle checkbox (added in a sibling task) that flips state.functionsOnly and triggers a re-render. Verify graph-slice.ts's decision-path slicing (sliceIds/siblingIds/leadInIds) and phone-separators.ts's overlay drawing (drawLastDecisionMask, drawSeparatorBetween, scrollChoicesIntoView) either keep working against the filtered diagram or gracefully no-op when functions-only is active, since they assume the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Add the end-to-end test to tests/index.html.test.ts.",
+    "problemSolvedByTask": "There is no proof that the functions-only filter produces a valid diagram in both views and restores the original when turned off.",
+    "description": "tests/index.html.test.ts (in the mermaid-editor submodule, ~1872 lines) is a node:test suite that drives the real server.js and a headless Chrome instance over CDP; helpers like evaluate(), nodeIds(), and loadDiagram('name.mmd') (see test_split_workspace_always_renders_regular_and_phone_views_with_distinct_clicks and test_phone_view_shows_the_start_slice) are the established pattern for asserting on #diagram and #phoneDiagram svg node/edge state. No \"functionsOnly\" or \"function-routing\" symbol exists anywhere in mermaid-editor yet: the checkbox/state flag (task 43), the function-routing.ts filter (task 44), and the render.ts/graph-slice.ts/phone-separators.ts wiring (this task's sibling children) are all still unbuilt, so this test is written against an interface that does not exist yet and will not run until those land. diagrams/ (served by server.js's /api/diagrams and /api/diagrams/:name routes) only holds relationship-domain fixtures (accountability.mmd, financial-investments.mmd, questions.mmd, say-something-or-let-it-go.mmd, stop-causing-harms.mmd); no code-flow/function-declaration diagram fixture exists in this repo, so the test will need one added or generated (task 44's own tests field references an external \"ask-dont-dump-issues.mmd\" example that is not present here). The new test should follow the existing before/after CDP setup already in the file rather than adding a second Chrome session, call loadDiagram on a code-flow fixture, toggle the functions-only control task 43 adds, assert both #diagram and #phoneDiagram svgs contain only function-declaration nodes with edges rerouted directly between them, then untoggle and assert the diagram returns to its original node/edge set.",
     "modifiableFiles": [
-      "render.ts",
-      "graph-slice.ts",
-      "phone-separators.ts",
       "tests/index.html.test.ts"
     ],
     "readOnlyFiles": [
@@ -1106,19 +904,19 @@
     "schemaVersion": "1.0.1",
     "hasTests": true,
     "tests": "Load a code-flow diagram, enable the toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored.",
-    "difficulty": 5,
+    "difficulty": 4,
     "blockedBy": [
       {
-        "taskNumber": 41,
-        "reason": "Task 41 relocates render.ts, graph-slice.ts, phone-separators.ts, and tests/index.html.test.ts into the mermaid-editor submodule; this task should land after task 41 completes."
+        "taskNumber": 46,
+        "reason": "Task 46 wires the toggle into render.ts; the test cannot pass until the render applies the filter."
       },
       {
-        "taskNumber": 43,
-        "reason": "This task wires the toggle checkbox and state.functionsOnly flag that sibling task 43 creates."
+        "taskNumber": 47,
+        "reason": "Task 47 guards graph-slice.ts; the phone view in the test may throw until it lands."
       },
       {
-        "taskNumber": 44,
-        "reason": "This task calls the filter function that sibling task 44 builds in function-routing.ts."
+        "taskNumber": 48,
+        "reason": "Task 48 guards phone-separators.ts; the phone view overlays in the test may throw until it lands."
       }
     ]
   }

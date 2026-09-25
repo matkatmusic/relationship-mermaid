@@ -1,3 +1,10 @@
 {
-    "env":{"CLAUDE_CODE_TASK_LIST_ID":"relationship-mermaid"}
+  "env": {
+    "CLAUDE_CODE_TASK_LIST_ID": "relationship-mermaid"
+  },
+  "permissions": {
+    "allow": [
+      "Skill(taskTools:run-step *)"
+    ]
+  }
 }
