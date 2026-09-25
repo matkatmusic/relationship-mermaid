@@ -790,134 +790,88 @@
     "splitWorthiness": 6
   },
   {
-    "taskNumber": 46,
-    "version": "82d6a8f7113250caaf26001e6eff9c1269cc79b8",
-    "title": "Functions-only toggle: wire the toggle into render.ts (45 child 1 of 4)",
-    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"render.ts\"]`. Child 1 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): wire the toggle into render.ts. In render.ts's render() pipeline, when state.functionsOnly is true, pass both codeBox.value (main view) and the phone view's chunkSource output through function-routing.ts's filter before calling mermaid.render, for both the main and phone diagrams. Add a change listener on the toggle checkbox (from task 43) that flips state.functionsOnly and triggers a re-render. Disabling the toggle must restore the original diagram exactly. Not in scope: guarding graph-slice.ts or phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
-    "chainGoal": [
-      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
-    ],
+    "taskNumber": 50,
+    "version": "83a51c52e92ea8c5ea67f791880a34db0280acb2",
+    "title": "Replace the New, Save, Open file and Reset toolbar buttons with one dropdown menu",
+    "userDescription": "replace 'new save open file reset' buttons with a dropdown menu.",
     "goal": [
-      "- Toggling the checkbox on re-renders the main and phone diagrams through function-routing.ts's filter",
-      "- Toggling the checkbox off restores the original diagram exactly"
+      "- The New, Save, Open file... and Reset buttons no longer appear in the toolbar.",
+      "- One dropdown menu in the toolbar has four entries: New, Save, Open file... and Reset.",
+      "- Choosing each entry does exactly what its old button did.",
+      "- The existing mermaid-editor test suite passes."
     ],
     "notInScope": [
-      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
-      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
-      "- The end-to-end test — sibling child 4 of task 45"
+      "- Undo edit, Redo edit, Previous, Next, the zoom buttons and the diagram picker stay as they are.",
+      "- No new menu entries, keyboard shortcuts or icons beyond the four existing actions.",
+      "- The drawer buttons (Add question after and similar) are not changed.",
+      "- No restyling of the toolbar beyond what the menu needs."
     ],
-    "problemSolvedByTask": "The checkbox and filter exist but nothing connects them; the render never applies the filter.",
-    "description": "render.ts's render() function (mermaid-editor/render.ts) currently calls mermaid.render('diagram-...', codeBox.value) for the main view and mermaid.render('phone-diagram-...', phoneSource) for the phone view, where phoneSource is chunkSource(shown, siblings, edges) from diagram-source.ts. Neither state.functionsOnly nor a toggle checkbox exist yet in state.ts/dom.ts (sibling task 43), and function-routing.ts's filter does not exist yet (sibling task 44); this child only edits render.ts and assumes those exports once unblocked. The change: when state.functionsOnly is true, run both codeBox.value and the computed phoneSource through function-routing.ts's filter before each mermaid.render call, for both diagrams. Also attach a 'change' listener to the toggle checkbox (imported from dom.ts) that flips state.functionsOnly and calls render() again, so disabling it re-renders with the unfiltered source. render.ts already exists (5.2K, 120 lines), so this is a single-file edit with no new files.",
+    "problemSolvedByTask": "Toolbar is crowded, Reset is ambiguous, The menu bar needs room for a \"search\" field",
+    "description": "The four header buttons (newBtn, saveBtn, openFileBtn, resetBtn) sit in the #header div of mermaid-editor/index.html, with a hidden openFileInput file input between them. Their click handlers live in mermaid-editor/main-events.ts (newBtn and saveBtn by getElementById, resetBtn by getElementById, openFileBtn imported from dom.ts). The file menu should become one dropdown (a native details/summary or select element is the simplest choice) that holds New, Save, Open file and Reset, and each entry must call the same handler as today. The tests in mermaid-editor/tests/index.html.test.ts click resetBtn by id in several places, so either keep those ids on the menu entries or update the tests. The zoomResetBtn is a different button and stays unchanged. mermaid-editor/viewer.js is a tracked bundle of the TypeScript files, so it must be rebuilt after the edit. The dropdown should close after an entry is chosen.",
     "modifiableFiles": [
-      "render.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": false,
-    "tests": "",
-    "difficulty": 4
-  },
-  {
-    "taskNumber": 47,
-    "version": "86d3c3d1a4385ce071960236e6526f7905069bd9",
-    "title": "Functions-only toggle: make graph-slice.ts safe for a functions-only diagram (45 child 2 of 4)",
-    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"graph-slice.ts\"]`. Child 2 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make graph-slice.ts safe for a functions-only diagram. Verify graph-slice.ts's decision-path slicing (sliceIds/siblingIds/leadInIds) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
-    "chainGoal": [
-      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
-    ],
-    "goal": [
-      "- sliceIds, siblingIds, and leadInIds keep working or no-op when state.functionsOnly is true, with no thrown errors"
-    ],
-    "notInScope": [
-      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
-      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
-      "- The end-to-end test — sibling child 4 of task 45"
-    ],
-    "problemSolvedByTask": "graph-slice.ts generates a valid functions-only diagram with correct node names and properly linked nodes, and the phone view doesn't break on this generated diagram",
-    "description": "graph-slice.ts's sliceIds() walks forward from edges[0][0] (or phonePath's last entry) using generic out-degree branching (next.length > 1), with no Q_/Q_CHOICE_-specific check, so its forward walk already tolerates a functions-only edge list structurally. siblingIds() and leadInIds() both gate on `hasDecisionContext = state.phoneFocusUsesDecisionContext || state.phonePreviewChoiceId || phonePath.length` and return [] immediately when false; render.ts's existing phonePathIsStale purge (outside this task's files) already clears phonePath once its ids stop matching the current edge list, so toggling functionsOnly on will make that guard false and these two functions already no-op gracefully. contextualDecisionSliceIds()'s backward walk only breaks early via `predecessor.startsWith('Q_') && !predecessor.startsWith('Q_CHOICE')` (isPreviousDecision); a functions-only diagram has no Q_ nodes, so that condition never fires and the loop instead walks all the way to the graph root, reachable only when state.phoneFocusUsesDecisionContext is true. leadInIds() also calls isAnswerId (from render-helpers.ts), which matches a `Q_CHOICE_<name>_` prefix and will always return false against function nodes, weakening its 'isStatic' heuristic to `outgoingCount <= 1` alone rather than crashing. This task adds an explicit `state.functionsOnly` guard in contextualDecisionSliceIds (the one path lacking a natural no-op) and confirms by reading the sibling decision-nav.ts wiring whether phoneFocusUsesDecisionContext can ever be true in functions-only mode before deciding whether the guard is reachable.",
-    "modifiableFiles": [
-      "graph-slice.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": false,
-    "tests": "",
-    "difficulty": 4
-  },
-  {
-    "taskNumber": 48,
-    "version": "e10dba29eaba94835ebd25b86ba23999b8a8b8f4",
-    "title": "Functions-only toggle: make phone-separators.ts safe for a functions-only diagram (45 child 3 of 4)",
-    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"phone-separators.ts\"]`. Child 3 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make phone-separators.ts safe for a functions-only diagram. Verify phone-separators.ts's overlay drawing (drawLastDecisionMask, drawSeparatorBetween, scrollChoicesIntoView) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
-    "chainGoal": [
-      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
-    ],
-    "goal": [
-      "- drawLastDecisionMask, drawSeparatorBetween, and scrollChoicesIntoView keep working or no-op when state.functionsOnly is true, with no thrown errors"
-    ],
-    "notInScope": [
-      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
-      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
-      "- The end-to-end test — sibling child 4 of task 45"
-    ],
-    "problemSolvedByTask": "phone-separators.ts draws masks and separators around Q_ nodes; with functions-only active those nodes are gone and the overlays may break.",
-    "description": "phone-separators.ts exports drawLastDecisionMask(ids, edges, openDecisionId), drawSeparatorBetween(topId, belowIds, label), and scrollChoicesIntoView(bottomQ, edges), all called from render.ts's render(). drawLastDecisionMask and drawSeparatorBetween already return early via a nodeEl() lookup (hasTopAndChoices/hasTopAndBelow) that is null when a Q_/Q_CHOICE_ id has no matching SVG element in phoneDiagramBox, so they likely already no-op once render.ts starts feeding mermaid a functions-only-filtered phone source. render.ts computes ids/edges from parseEdges(codeBox.value), the unfiltered source, so these still-decision-tree ids keep reaching phone-separators.ts regardless of state.functionsOnly; only the rendered SVG changes shape. The risk case is scrollChoicesIntoView: when state.phoneFocusNodeId is set it unconditionally calls decision-nav.ts's centerNodeInViewport(phoneDiagramBox, phoneDiagramBox, state.phoneFocusNodeId), a file outside this task's scope, which may not tolerate a filtered-out focus node. state.functionsOnly does not exist anywhere in the codebase yet (added by blocking task 43); this task should add an explicit state.functionsOnly guard, or confirm the existing null-checks are sufficient, once that flag lands. Scope is phone-separators.ts only; render.ts wiring, graph-slice.ts guards, and the end-to-end test are sibling children of task 45.",
-    "modifiableFiles": [
-      "phone-separators.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": false,
-    "tests": "",
-    "difficulty": 4
-  },
-  {
-    "taskNumber": 49,
-    "version": "5681edacc5dec877e9c0c5116e3f8d6b1f6f389a",
-    "title": "Functions-only toggle: end-to-end test for live filtering (45 child 4 of 4)",
-    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"tests/index.html.test.ts\"]`. Child 4 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): add the end-to-end test to tests/index.html.test.ts. Load a code-flow diagram, enable the functions-only toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, guarding phone-separators.ts; those are sibling children. Blocked by tasks 43 and 44 and by the three sibling children of task 45.",
-    "chainGoal": [
-      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
-    ],
-    "goal": [
-      "- The end-to-end test in tests/index.html.test.ts passes"
-    ],
-    "notInScope": [
-      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
-      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45 (task 47)",
-      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45 (task 48)"
-    ],
-    "problemSolvedByTask": "There is no proof that the functions-only filter produces a valid diagram in both views and restores the original when turned off.",
-    "description": "tests/index.html.test.ts (in the mermaid-editor submodule, ~1872 lines) is a node:test suite that drives the real server.js and a headless Chrome instance over CDP; helpers like evaluate(), nodeIds(), and loadDiagram('name.mmd') (see test_split_workspace_always_renders_regular_and_phone_views_with_distinct_clicks and test_phone_view_shows_the_start_slice) are the established pattern for asserting on #diagram and #phoneDiagram svg node/edge state. No \"functionsOnly\" or \"function-routing\" symbol exists anywhere in mermaid-editor yet: the checkbox/state flag (task 43), the function-routing.ts filter (task 44), and the render.ts/graph-slice.ts/phone-separators.ts wiring (this task's sibling children) are all still unbuilt, so this test is written against an interface that does not exist yet and will not run until those land. diagrams/ (served by server.js's /api/diagrams and /api/diagrams/:name routes) only holds relationship-domain fixtures (accountability.mmd, financial-investments.mmd, questions.mmd, say-something-or-let-it-go.mmd, stop-causing-harms.mmd); no code-flow/function-declaration diagram fixture exists in this repo, so the test will need one added or generated (task 44's own tests field references an external \"ask-dont-dump-issues.mmd\" example that is not present here). The new test should follow the existing before/after CDP setup already in the file rather than adding a second Chrome session, call loadDiagram on a code-flow fixture, toggle the functions-only control task 43 adds, assert both #diagram and #phoneDiagram svgs contain only function-declaration nodes with edges rerouted directly between them, then untoggle and assert the diagram returns to its original node/edge set.",
-    "modifiableFiles": [
-      "tests/index.html.test.ts"
+      "mermaid-editor/index.html",
+      "mermaid-editor/main-events.ts",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/viewer.js",
+      "mermaid-editor/tests/index.html.test.ts"
     ],
     "readOnlyFiles": [
       "*"
     ],
     "schemaVersion": "1.0.1",
     "hasTests": true,
-    "tests": "Load a code-flow diagram, enable the toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored.",
-    "difficulty": 4,
+    "tests": "Open the page, open the menu, click each of New, Save, Open file... and Reset in it, and check each does what its old button did. Also check the four old buttons are gone.",
+    "difficulty": 4
+  },
+  {
+    "taskNumber": 51,
+    "version": "6ba745f90e12bd2d2d5c98b39cf462f37aa49b4e",
+    "title": "Add a search field that jumps to and selects matching nodes",
+    "userDescription": "add a \"search\" textField that lets you type in either: node text, or node name.  the result is jumped to and selected, showing the 'selected item widget'.  cycle buttons are shown when multiple results exist.  when text is entered into the text field, each keypress results in an updated search and navigating to the first hit in the search results.  a (x) button is shown in the text editor when text is entered, to clear the text contents.",
+    "goal": [
+      "- Typing in the search field finds nodes by node name or by node text.",
+      "- Each keypress reruns the search and moves to the first hit, which is selected with the selected item widget showing.",
+      "- Cycle buttons show only when there are 2 or more results, and step through the hits.",
+      "- An (x) button shows in the field when it has text, and clicking it empties the field.",
+      "- Search field shows in menu bar, next to new menu (TT #50)"
+    ],
+    "notInScope": [
+      "- Only plain text matching, with no typo tolerance and no regular expressions.",
+      "- Search covers only the loaded diagram, not other files.",
+      "- No find-and-replace and no editing of results.",
+      "- Moving New, Save, Open file... and Reset into a menu is task 50."
+    ],
+    "problemSolvedByTask": "Hard to find nodes, \"Know name, not place\", Slow to jump",
+    "description": "Work is in the mermaid-editor submodule. The header in index.html holds the Previous/Next decision buttons and the decisionCounter span; add the search input, a clear (x) button and search cycle buttons with a match counter there, and register their elements in dom.ts. Node data comes from editorGraph() in editor-graph.ts, which returns nodes with id, kind, label and lineIndex; a search matches when the id (node name) or the label (node text) contains the query, case-insensitively, sorted by lineIndex. Selecting a hit reuses the existing decision-nav.ts pattern: call selectEditorNode(id) from editor-actions.ts, which opens the selected-node widget (nodeActions and the node inspector), then await render(), reassert selectEditorNode, and call centerNodeInViewport(outputBox, diagramBox, id) to jump to it. Add a new node-search.ts holding the match list, current index and cycle logic, and wire an input listener (one search per keypress that jumps to the first hit), the clear-button click, and the previous/next cycle buttons in main-events.ts. Show the cycle buttons only when more than one match exists and show the clear button only when the input has text; use the hidden attribute. Handle editorGraph() validation errors the way navigateDecision does, via showEditorValidationError. viewer.js is the tracked bun build output of viewer.ts (script build in package.json), so rebuild it after the change. Existing browser tests in tests/index.html.test.ts use an evaluate() helper against the real page; add tests there for typing, first-hit selection, cycle buttons and clear.",
+    "modifiableFiles": [
+      "mermaid-editor/index.html",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/node-search.ts",
+      "mermaid-editor/main-events.ts",
+      "mermaid-editor/viewer.js",
+      "mermaid-editor/tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "mermaid-editor/node-search.ts"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "page is loaded, a search textEditor exists on the page, in the menu bar, and all of option 2.",
+    "difficulty": 5,
     "blockedBy": [
       {
-        "taskNumber": 46,
-        "reason": "Task 46 wires the toggle into render.ts; the test cannot pass until the render applies the filter."
-      },
-      {
-        "taskNumber": 47,
-        "reason": "Task 47 guards graph-slice.ts; the phone view in the test may throw until it lands."
-      },
-      {
-        "taskNumber": 48,
-        "reason": "Task 48 guards phone-separators.ts; the phone view overlays in the test may throw until it lands."
+        "taskNumber": 50,
+        "reason": "The search field sits next to the new file menu that task 50 adds."
       }
-    ]
+    ],
+    "agent": {
+      "PLAN_THE_TASK": {
+        "model": "claude-opus-5-5[1m]",
+        "effort": "medium"
+      }
+    }
   }
 ]
