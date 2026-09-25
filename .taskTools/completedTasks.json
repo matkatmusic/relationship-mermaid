@@ -2868,5 +2868,763 @@
       "ae1394e80fed576eb59c9fd2e6dd97cfeffa2cb6"
     ],
     "closureNote": "Task 44 completed.\n\nCommits:\n  7f6935fcc857286a095faea9b1965c4eda4c0ebf  mermaid-editor   work\n  d1607f185672b3a9ce01e26b8d4834f578aa7f19  (root)   work\n  9c830927a63db14d0fac92c888521dbb6d611478  (root)   repair\n  2f91e8918c6139a2e1fcdc5561fe48e6f6dbd4e9  (root)   merge\n  ae1394e80fed576eb59c9fd2e6dd97cfeffa2cb6  mermaid-editor   merge\nModified files: mermaid-editor::function-routing.ts, mermaid-editor::tests/function-routing.test.ts, mermaid-editor, plans/implementation-notes-44.md\nTask tests: 1 files, green\nFull suite: (not recorded)"
+  },
+  {
+    "taskNumber": 46,
+    "version": "82d6a8f7113250caaf26001e6eff9c1269cc79b8",
+    "title": "Functions-only toggle: wire the toggle into render.ts (45 child 1 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"render.ts\"]`. Child 1 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): wire the toggle into render.ts. In render.ts's render() pipeline, when state.functionsOnly is true, pass both codeBox.value (main view) and the phone view's chunkSource output through function-routing.ts's filter before calling mermaid.render, for both the main and phone diagrams. Add a change listener on the toggle checkbox (from task 43) that flips state.functionsOnly and triggers a re-render. Disabling the toggle must restore the original diagram exactly. Not in scope: guarding graph-slice.ts or phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- Toggling the checkbox on re-renders the main and phone diagrams through function-routing.ts's filter",
+      "- Toggling the checkbox off restores the original diagram exactly"
+    ],
+    "notInScope": [
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
+    ],
+    "problemSolvedByTask": "The checkbox and filter exist but nothing connects them; the render never applies the filter.",
+    "description": "render.ts's render() function (mermaid-editor/render.ts) currently calls mermaid.render('diagram-...', codeBox.value) for the main view and mermaid.render('phone-diagram-...', phoneSource) for the phone view, where phoneSource is chunkSource(shown, siblings, edges) from diagram-source.ts. Neither state.functionsOnly nor a toggle checkbox exist yet in state.ts/dom.ts (sibling task 43), and function-routing.ts's filter does not exist yet (sibling task 44); this child only edits render.ts and assumes those exports once unblocked. The change: when state.functionsOnly is true, run both codeBox.value and the computed phoneSource through function-routing.ts's filter before each mermaid.render call, for both diagrams. Also attach a 'change' listener to the toggle checkbox (imported from dom.ts) that flips state.functionsOnly and calls render() again, so disabling it re-renders with the unfiltered source. render.ts already exists (5.2K, 120 lines), so this is a single-file edit with no new files.",
+    "modifiableFiles": [
+      "mermaid-editor/render.ts",
+      "mermaid-editor/viewer.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-46",
+      "leaseRunId": "c2a5bcb2-3879-48ad-9b8d-421ce1b4e6b9",
+      "history": [
+        {
+          "runId": "c2a5bcb2-3879-48ad-9b8d-421ce1b4e6b9",
+          "startedAt": "2026-09-24T20:36:03-07:00",
+          "endedAt": "2026-09-24T20:43:00-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "mermaid-editor::render.ts",
+            "mermaid-editor"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "7e3918386656d954e173edad30233a14e4977f80",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "1efd27ac5bc7a3db304495650f7f9e83212a3404",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "53f686cc7c1c08f848eca459ce7987f607b25ed0",
+              "kind": "merge"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "22297379642f1dfb9460d1f69c7f905e3151ba15",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "testFiles": [],
+            "createdTestFiles": [],
+            "deletedTestFiles": [],
+            "missingTests": false,
+            "output": "",
+            "newFailingTests": [],
+            "knownFailingTests": [],
+            "checkedAt": "2026-09-24T20:42:53-07:00"
+          },
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                "",
+                "mermaid-editor"
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "1efd27ac5bc7a3db304495650f7f9e83212a3404"
+                },
+                {
+                  "occurrenceId": "mermaid-editor",
+                  "head": "7e3918386656d954e173edad30233a14e4977f80"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  46
+                ],
+                "skipped": [],
+                "unblocked": [
+                  49
+                ],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "d9635ef1fb2cacbd880ff71e5ff16403715a50f9"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "baseBranch": "staging",
+              "sourceTip": "ae1394e80fed576eb59c9fd2e6dd97cfeffa2cb6"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              "",
+              "mermaid-editor"
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "1efd27ac5bc7a3db304495650f7f9e83212a3404"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "head": "7e3918386656d954e173edad30233a14e4977f80"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "d9635ef1fb2cacbd880ff71e5ff16403715a50f9"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "baseBranch": "staging",
+                "sourceTip": "ae1394e80fed576eb59c9fd2e6dd97cfeffa2cb6"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-24",
+    "commitHashes": [
+      "7e3918386656d954e173edad30233a14e4977f80",
+      "1efd27ac5bc7a3db304495650f7f9e83212a3404",
+      "53f686cc7c1c08f848eca459ce7987f607b25ed0",
+      "22297379642f1dfb9460d1f69c7f905e3151ba15"
+    ],
+    "closureNote": "Task 46 completed.\n\nCommits:\n  7e3918386656d954e173edad30233a14e4977f80  mermaid-editor   work\n  1efd27ac5bc7a3db304495650f7f9e83212a3404  (root)   work\n  53f686cc7c1c08f848eca459ce7987f607b25ed0  (root)   merge\n  22297379642f1dfb9460d1f69c7f905e3151ba15  mermaid-editor   merge\nModified files: mermaid-editor::render.ts, mermaid-editor\nTask tests: 0 files, green\nFull suite: (not recorded)"
+  },
+  {
+    "taskNumber": 47,
+    "version": "86d3c3d1a4385ce071960236e6526f7905069bd9",
+    "title": "Functions-only toggle: make graph-slice.ts safe for a functions-only diagram (45 child 2 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"graph-slice.ts\"]`. Child 2 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make graph-slice.ts safe for a functions-only diagram. Verify graph-slice.ts's decision-path slicing (sliceIds/siblingIds/leadInIds) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding phone-separators.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- sliceIds, siblingIds, and leadInIds keep working or no-op when state.functionsOnly is true, with no thrown errors"
+    ],
+    "notInScope": [
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
+    ],
+    "problemSolvedByTask": "graph-slice.ts generates a valid functions-only diagram with correct node names and properly linked nodes, and the phone view doesn't break on this generated diagram",
+    "description": "graph-slice.ts's sliceIds() walks forward from edges[0][0] (or phonePath's last entry) using generic out-degree branching (next.length > 1), with no Q_/Q_CHOICE_-specific check, so its forward walk already tolerates a functions-only edge list structurally. siblingIds() and leadInIds() both gate on `hasDecisionContext = state.phoneFocusUsesDecisionContext || state.phonePreviewChoiceId || phonePath.length` and return [] immediately when false; render.ts's existing phonePathIsStale purge (outside this task's files) already clears phonePath once its ids stop matching the current edge list, so toggling functionsOnly on will make that guard false and these two functions already no-op gracefully. contextualDecisionSliceIds()'s backward walk only breaks early via `predecessor.startsWith('Q_') && !predecessor.startsWith('Q_CHOICE')` (isPreviousDecision); a functions-only diagram has no Q_ nodes, so that condition never fires and the loop instead walks all the way to the graph root, reachable only when state.phoneFocusUsesDecisionContext is true. leadInIds() also calls isAnswerId (from render-helpers.ts), which matches a `Q_CHOICE_<name>_` prefix and will always return false against function nodes, weakening its 'isStatic' heuristic to `outgoingCount <= 1` alone rather than crashing. This task adds an explicit `state.functionsOnly` guard in contextualDecisionSliceIds (the one path lacking a natural no-op) and confirms by reading the sibling decision-nav.ts wiring whether phoneFocusUsesDecisionContext can ever be true in functions-only mode before deciding whether the guard is reachable.",
+    "modifiableFiles": [
+      "mermaid-editor/graph-slice.ts",
+      "mermaid-editor/viewer.js",
+      "viewer.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-47",
+      "leaseRunId": "fadfa3e0-9e4c-45da-8988-5dc6c1b90d78",
+      "history": [
+        {
+          "runId": "fadfa3e0-9e4c-45da-8988-5dc6c1b90d78",
+          "startedAt": "2026-09-24T20:36:09-07:00",
+          "endedAt": "2026-09-24T20:47:58-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "mermaid-editor::graph-slice.ts",
+            "mermaid-editor",
+            "plans/implementation-notes-47.md"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "99ca2a8acc376a17b52e1caace72798b156616c6",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "23a5d2a14f17ec86fec90878337b3acf25a8c43d",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "237f6dde5262a909d13d53ce231a2cb5c6b39f47",
+              "kind": "merge"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "890a1c790e6422d414c16775dc1ed563614f0117",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "testFiles": [],
+            "createdTestFiles": [],
+            "deletedTestFiles": [],
+            "missingTests": false,
+            "output": "",
+            "newFailingTests": [],
+            "knownFailingTests": [],
+            "checkedAt": "2026-09-24T20:47:51-07:00"
+          },
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                "",
+                "mermaid-editor"
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "23a5d2a14f17ec86fec90878337b3acf25a8c43d"
+                },
+                {
+                  "occurrenceId": "mermaid-editor",
+                  "head": "99ca2a8acc376a17b52e1caace72798b156616c6"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  47
+                ],
+                "skipped": [],
+                "unblocked": [
+                  49
+                ],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "53f686cc7c1c08f848eca459ce7987f607b25ed0"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "baseBranch": "staging",
+              "sourceTip": "22297379642f1dfb9460d1f69c7f905e3151ba15"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              "",
+              "mermaid-editor"
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "23a5d2a14f17ec86fec90878337b3acf25a8c43d"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "head": "99ca2a8acc376a17b52e1caace72798b156616c6"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "53f686cc7c1c08f848eca459ce7987f607b25ed0"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "baseBranch": "staging",
+                "sourceTip": "22297379642f1dfb9460d1f69c7f905e3151ba15"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-24",
+    "commitHashes": [
+      "99ca2a8acc376a17b52e1caace72798b156616c6",
+      "23a5d2a14f17ec86fec90878337b3acf25a8c43d",
+      "237f6dde5262a909d13d53ce231a2cb5c6b39f47",
+      "890a1c790e6422d414c16775dc1ed563614f0117"
+    ],
+    "closureNote": "Task 47 completed.\n\nCommits:\n  99ca2a8acc376a17b52e1caace72798b156616c6  mermaid-editor   work\n  23a5d2a14f17ec86fec90878337b3acf25a8c43d  (root)   work\n  237f6dde5262a909d13d53ce231a2cb5c6b39f47  (root)   merge\n  890a1c790e6422d414c16775dc1ed563614f0117  mermaid-editor   merge\nModified files: mermaid-editor::graph-slice.ts, mermaid-editor, plans/implementation-notes-47.md\nTask tests: 0 files, green\nFull suite: (not recorded)"
+  },
+  {
+    "taskNumber": 48,
+    "version": "e10dba29eaba94835ebd25b86ba23999b8a8b8f4",
+    "title": "Functions-only toggle: make phone-separators.ts safe for a functions-only diagram (45 child 3 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"phone-separators.ts\"]`. Child 3 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): make phone-separators.ts safe for a functions-only diagram. Verify phone-separators.ts's overlay drawing (drawLastDecisionMask, drawSeparatorBetween, scrollChoicesIntoView) either keeps working against the filtered diagram or gracefully no-ops when state.functionsOnly is true, since it assumes the Q_/Q_CHOICE_ decision-tree shape that a functions-only filtered diagram no longer has. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, and the end-to-end test; those are sibling children. Blocked by tasks 43 and 44.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- drawLastDecisionMask, drawSeparatorBetween, and scrollChoicesIntoView keep working or no-op when state.functionsOnly is true, with no thrown errors"
+    ],
+    "notInScope": [
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45",
+      "- The end-to-end test — sibling child 4 of task 45"
+    ],
+    "problemSolvedByTask": "phone-separators.ts draws masks and separators around Q_ nodes; with functions-only active those nodes are gone and the overlays may break.",
+    "description": "phone-separators.ts exports drawLastDecisionMask(ids, edges, openDecisionId), drawSeparatorBetween(topId, belowIds, label), and scrollChoicesIntoView(bottomQ, edges), all called from render.ts's render(). drawLastDecisionMask and drawSeparatorBetween already return early via a nodeEl() lookup (hasTopAndChoices/hasTopAndBelow) that is null when a Q_/Q_CHOICE_ id has no matching SVG element in phoneDiagramBox, so they likely already no-op once render.ts starts feeding mermaid a functions-only-filtered phone source. render.ts computes ids/edges from parseEdges(codeBox.value), the unfiltered source, so these still-decision-tree ids keep reaching phone-separators.ts regardless of state.functionsOnly; only the rendered SVG changes shape. The risk case is scrollChoicesIntoView: when state.phoneFocusNodeId is set it unconditionally calls decision-nav.ts's centerNodeInViewport(phoneDiagramBox, phoneDiagramBox, state.phoneFocusNodeId), a file outside this task's scope, which may not tolerate a filtered-out focus node. state.functionsOnly does not exist anywhere in the codebase yet (added by blocking task 43); this task should add an explicit state.functionsOnly guard, or confirm the existing null-checks are sufficient, once that flag lands. Scope is phone-separators.ts only; render.ts wiring, graph-slice.ts guards, and the end-to-end test are sibling children of task 45.",
+    "modifiableFiles": [
+      "mermaid-editor/phone-separators.ts",
+      "mermaid-editor/viewer.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": false,
+    "tests": "",
+    "difficulty": 4,
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-48",
+      "leaseRunId": "8c089e4a-573d-4a81-ae39-44c9741c2220",
+      "history": [
+        {
+          "runId": "8c089e4a-573d-4a81-ae39-44c9741c2220",
+          "startedAt": "2026-09-24T20:36:03-07:00",
+          "endedAt": "2026-09-24T20:48:48-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "mermaid-editor::phone-separators.ts",
+            "mermaid-editor"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "7db86eaaccdb8f273a25e3b39f99879d4d1759ea",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "1072bffa8ceeaaed94424fd21431378334d3d45c",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "d1863e628bfdb02cef087fb739c43146ca3fcfb1",
+              "kind": "merge"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "a4c37e21d336c24d6768d365bcc25bc8a84b01dd",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "testFiles": [],
+            "createdTestFiles": [],
+            "deletedTestFiles": [],
+            "missingTests": false,
+            "output": "",
+            "newFailingTests": [],
+            "knownFailingTests": [],
+            "checkedAt": "2026-09-24T20:48:42-07:00"
+          },
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                "",
+                "mermaid-editor"
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "1072bffa8ceeaaed94424fd21431378334d3d45c"
+                },
+                {
+                  "occurrenceId": "mermaid-editor",
+                  "head": "7db86eaaccdb8f273a25e3b39f99879d4d1759ea"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  48
+                ],
+                "skipped": [],
+                "unblocked": [
+                  49
+                ],
+                "ambiguous": []
+              }
+            }
+          ],
+          "attempts": {},
+          "countedPasses": {},
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "237f6dde5262a909d13d53ce231a2cb5c6b39f47"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "baseBranch": "staging",
+              "sourceTip": "890a1c790e6422d414c16775dc1ed563614f0117"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              "",
+              "mermaid-editor"
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "1072bffa8ceeaaed94424fd21431378334d3d45c"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "head": "7db86eaaccdb8f273a25e3b39f99879d4d1759ea"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "237f6dde5262a909d13d53ce231a2cb5c6b39f47"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "baseBranch": "staging",
+                "sourceTip": "890a1c790e6422d414c16775dc1ed563614f0117"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "codexReviewNotes": "[scrollchoicesintoview-safe] Replace the no-edit conclusion with an edit to `mermaid-editor/phone-separators.ts`: insert `if (state.functionsOnly) return;` as the first statement of `scrollChoicesIntoView`, before the `state.phoneFocusNodeId` branch; update the section to name the old first line and the new guard exactly.\n\nDurable because: The owned function then returns before invoking external navigation with an ID removed from the functions-only SVG, independent of that helper's implementation.\n\n[verification] Correct every line citation and expected result to the current source locations: `drawSeparatorBetween` lines 42-108 with guard 53-55, `drawLastDecisionMask` lines 110-159 with guard 121-123, and `scrollChoicesIntoView` lines 215-236. Replace the focus-delegation check with a command that checks the newly added `state.functionsOnly` early return and its expected current line.\n\nDurable because: The implementation instructions and verification will point to the actual guards that an implementer must preserve.",
+    "completionDate": "2026-09-24",
+    "commitHashes": [
+      "7db86eaaccdb8f273a25e3b39f99879d4d1759ea",
+      "1072bffa8ceeaaed94424fd21431378334d3d45c",
+      "d1863e628bfdb02cef087fb739c43146ca3fcfb1",
+      "a4c37e21d336c24d6768d365bcc25bc8a84b01dd"
+    ],
+    "closureNote": "Task 48 completed.\n\nCommits:\n  7db86eaaccdb8f273a25e3b39f99879d4d1759ea  mermaid-editor   work\n  1072bffa8ceeaaed94424fd21431378334d3d45c  (root)   work\n  d1863e628bfdb02cef087fb739c43146ca3fcfb1  (root)   merge\n  a4c37e21d336c24d6768d365bcc25bc8a84b01dd  mermaid-editor   merge\nModified files: mermaid-editor::phone-separators.ts, mermaid-editor\nTask tests: 0 files, green\nFull suite: (not recorded)"
+  },
+  {
+    "taskNumber": 49,
+    "version": "5681edacc5dec877e9c0c5116e3f8d6b1f6f389a",
+    "title": "Functions-only toggle: end-to-end test for live filtering (45 child 4 of 4)",
+    "userDescription": "[split-task-child] This task is being created by `/split-task` as one of an already-requested set of 4 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"tests/index.html.test.ts\"]`. Child 4 of 4 of task 45 (functions-only toggle, step 3 of 3 of task 42): add the end-to-end test to tests/index.html.test.ts. Load a code-flow diagram, enable the functions-only toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored. Not in scope: wiring the toggle in render.ts, guarding graph-slice.ts, guarding phone-separators.ts; those are sibling children. Blocked by tasks 43 and 44 and by the three sibling children of task 45.",
+    "chainGoal": [
+      "- Task 42 chain: add a functions-only toggle that live-filters the diagram render; tasks 43, 44, and the four children of task 45 belong to it"
+    ],
+    "goal": [
+      "- The end-to-end test in tests/index.html.test.ts passes"
+    ],
+    "notInScope": [
+      "- Wiring the toggle into render.ts — sibling child 1 of task 45 (task 46)",
+      "- Guarding graph-slice.ts against a functions-only diagram — sibling child 2 of task 45 (task 47)",
+      "- Guarding phone-separators.ts against a functions-only diagram — sibling child 3 of task 45 (task 48)"
+    ],
+    "problemSolvedByTask": "There is no proof that the functions-only filter produces a valid diagram in both views and restores the original when turned off.",
+    "description": "tests/index.html.test.ts (in the mermaid-editor submodule, ~1872 lines) is a node:test suite that drives the real server.js and a headless Chrome instance over CDP; helpers like evaluate(), nodeIds(), and loadDiagram('name.mmd') (see test_split_workspace_always_renders_regular_and_phone_views_with_distinct_clicks and test_phone_view_shows_the_start_slice) are the established pattern for asserting on #diagram and #phoneDiagram svg node/edge state. No \"functionsOnly\" or \"function-routing\" symbol exists anywhere in mermaid-editor yet: the checkbox/state flag (task 43), the function-routing.ts filter (task 44), and the render.ts/graph-slice.ts/phone-separators.ts wiring (this task's sibling children) are all still unbuilt, so this test is written against an interface that does not exist yet and will not run until those land. diagrams/ (served by server.js's /api/diagrams and /api/diagrams/:name routes) only holds relationship-domain fixtures (accountability.mmd, financial-investments.mmd, questions.mmd, say-something-or-let-it-go.mmd, stop-causing-harms.mmd); no code-flow/function-declaration diagram fixture exists in this repo, so the test will need one added or generated (task 44's own tests field references an external \"ask-dont-dump-issues.mmd\" example that is not present here). The new test should follow the existing before/after CDP setup already in the file rather than adding a second Chrome session, call loadDiagram on a code-flow fixture, toggle the functions-only control task 43 adds, assert both #diagram and #phoneDiagram svgs contain only function-declaration nodes with edges rerouted directly between them, then untoggle and assert the diagram returns to its original node/edge set.",
+    "modifiableFiles": [
+      "mermaid-editor/tests/index.html.test.ts",
+      "mermaid-editor/viewer.js"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Load a code-flow diagram, enable the toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored.",
+    "difficulty": 4,
+    "createsFiles": [],
+    "run": {
+      "active": false,
+      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-49",
+      "leaseRunId": "a39be1fd-3c64-408d-b31c-e2c6875d1682",
+      "history": [
+        {
+          "runId": "a39be1fd-3c64-408d-b31c-e2c6875d1682",
+          "startedAt": "2026-09-24T21:28:00-07:00",
+          "endedAt": "2026-09-24T21:49:34-07:00",
+          "exitType": "completed",
+          "exitNote": "All layers merged successfully.",
+          "modifiedFiles": [
+            "mermaid-editor::tests/index.html.test.ts",
+            "mermaid-editor::viewer.js",
+            "mermaid-editor",
+            "plans/implementation-notes-49.md"
+          ],
+          "commits": [
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "3c9c23c38de95b9f54aafd93906dc8a6f39c0ed9",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "117aa45e35cedce9144be0ffbe8b17978843f072",
+              "kind": "work",
+              "stepId": "implement-0"
+            },
+            {
+              "occurrenceId": "",
+              "hash": "de4c583e136b3cc1623d1b38d8487cfc64361f43",
+              "kind": "merge"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "hash": "7423afd0635f7923aed7fc58ec177bd1382239d4",
+              "kind": "merge"
+            }
+          ],
+          "implementationNotesFile": null,
+          "taskTests": {
+            "stepId": "run-full-suite-0",
+            "passed": true,
+            "testFiles": [
+              "mermaid-editor::tests/index.html.test.ts"
+            ],
+            "createdTestFiles": [],
+            "deletedTestFiles": [],
+            "missingTests": false,
+            "output": "known failing test (ignored): tests/index.html.test.ts — test_font_size_is_the_same_in_every_view\n✖ test_font_size_is_the_same_in_every_view (3.221333ms)\n✖ failing tests:\n✖ test_font_size_is_the_same_in_every_view (3.221333ms)\n\n> test\n> bun run build && bun test tests/server.test.js && node --test --test-timeout=120000 \"tests/**/*.test.ts\"\n\n$ bun build viewer.ts --outfile viewer.js\nBundled 23 modules in 8ms\n\n  viewer.js  79.91 KB  (entry point)\n\nbun test v1.4.2 (744846f84)\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 1 file. [7.00ms]\n✔ test_isFunctionLabel_matches_call_signatures (0.566917ms)\n✔ test_filterToFunctions_keeps_only_function_nodes_and_reroutes_edges (0.431042ms)\n✔ test_filterToFunctions_does_not_bridge_through_a_callee (0.126167ms)\nBundled 23 modules in 7ms\n\n  viewer.js  79.91 KB  (entry point)\n\n✔ test_split_workspace_always_renders_regular_and_phone_views_with_distinct_clicks (2852.768917ms)\n✔ test_phone_view_shows_the_start_slice (427.9145ms)\n✔ test_clicking_a_decision_node_slices_to_the_next_decision_point (463.311333ms)\n✔ test_reset_returns_to_the_start_slice (317.858375ms)\n✔ test_back_button_undoes_one_choice_at_a_time (1272.869958ms)\n✔ test_clicking_the_no_answer_shows_the_lead_in_nodes_and_dims_the_other_answer (641.4915ms)\n✔ test_phone_view_handles_a_diagram_with_no_edges (1143.325458ms)\n✔ test_decision_log_reflects_choices_and_undo (1176.162791ms)\n✖ test_font_size_is_the_same_in_every_view (3.221333ms)\n✔ test_syntax_error_keeps_last_good_diagram_and_shows_error_log (1756.603542ms)\n✔ test_add_question_after_terminal_block_creates_two_choices (946.634209ms)\n✔ test_add_question_in_middle_splices_each_former_successor (918.545666ms)\n✔ test_add_block_after_terminal_block (900.475791ms)\n✔ test_add_block_in_middle_splices_the_edge (884.176208ms)\n✔ test_remove_block_deletes_the_selected_terminal_block (854.037292ms)\n✔ test_remove_block_deletes_the_selected_block_and_reconnects_its_neighbors (950.8105ms)\n✔ test_remove_choice_orphans_its_downstream_path (916.442833ms)\n✔ test_add_choice_normalizes_the_first_labelled_question_branch (1129.66425ms)\n✔ test_inline_question_text_edit_persists (982.611916ms)\n✔ test_inline_static_block_text_edit_persists (1131.991709ms)\n✔ test_question_removal_preview_cancel_confirm_undo_and_redo_persist (670.084ms)\n✔ test_clicking_a_question_opens_a_decision_block_inspector (478.625833ms)\n✔ test_clicking_a_block_opens_a_static_block_inspector (433.176791ms)\n✔ test_inspector_is_fixed_while_scrolling_and_tracks_the_editor_drawer (43.957375ms)\n✔ test_clicking_a_choice_opens_a_choice_block_inspector (439.326083ms)\n✔ test_double_clicking_a_node_focuses_and_selects_the_text_input (444.084667ms)\n✔ test_cancel_discards_uncommitted_text_and_closes_the_inspector (499.878042ms)\n✔ test_escape_discards_uncommitted_text_and_closes_the_inspector (500.739542ms)\n✔ test_clicking_empty_drawing_space_closes_the_inspector (457.638458ms)\n✔ test_clicking_another_node_retargets_the_inspector_and_discards_text (497.144917ms)\n✔ test_inspector_keeps_the_diagram_scroll_position (1184.8635ms)\n✔ test_save_persists_and_load_restores_editor_metadata_trailer (1934.875667ms)\n✔ test_load_uses_the_first_node_position_when_scroll_metadata_is_missing (656.980916ms)\n✔ test_node_categories_and_colors_persist_and_recolor_both_views (801.907291ms)\n✔ test_decision_navigation_uses_the_nearest_graph_neighbor_and_focuses_both_views (2045.36825ms)\n✔ test_main_view_choice_and_regular_nodes_preview_their_feeding_decision_as_chosen (1796.51325ms)\n✔ test_header_zoom_controls_resize_only_the_main_mermaid_diagram (409.532417ms)\n✔ test_previous_selection_mask_stops_before_the_open_decision_after_each_phone_choice (1847.841167ms)\n✔ test_add_and_insert_actions_preserve_the_zoom_scale_in_both_views (892.221542ms)\n✔ test_destination_lists_terminal_then_unique_static_and_decision_nodes_in_source_order (724.5765ms)\n✔ test_destination_is_hidden_for_decisions_and_close_tracks_terminal_static_or_choice (526.934625ms)\n✔ test_destination_row_is_rendered_for_choice_and_static_nodes_but_not_for_decision_nodes (648.225792ms)\n✔ test_destination_replaces_an_outgoing_edge_and_keeps_the_old_path_as_an_orphan (1293.380333ms)\n✔ test_destination_terminal_removes_only_the_selected_outgoing_edge (1115.388583ms)\n✔ test_destination_accepts_descendants_and_current_value_is_a_no_op (1156.490583ms)\n✔ test_insert_static_before_splices_a_chained_edge_line (1138.078208ms)\n✔ test_dirty_text_then_destination_creates_two_ordered_undo_entries (1230.347917ms)\n✔ test_inspector_add_after_controls_exist_only_for_static_and_choice_blocks (499.438208ms)\n✔ test_inspector_remove_button_dispatches_removal_by_node_kind (2549.16825ms)\n✔ test_inspector_remove_choices_button_orphans_every_outgoing_branch (1687.334333ms)\n✔ test_new_static_button_and_destination_option_have_identical_terminal_orphan_results (2373.277333ms)\n✔ test_insert_static_after_splices_a_static_or_choice_node_without_dropping_its_destination (2298.305416ms)\n✔ test_insert_static_after_a_terminal_node_matches_terminal_add_static_behavior (1101.748083ms)\n✔ test_insert_decision_after_splices_blocks_and_choices_with_one_terminal_branch (2358.727959ms)\n✔ test_insert_decision_after_a_terminal_node_creates_two_terminal_choices (1140.92275ms)\n✔ test_new_static_text_enter_keeps_selection_and_focuses_destination (1079.063208ms)\n✔ test_new_decision_button_and_destination_option_have_identical_source_and_initial_focus (2341.010834ms)\n✔ test_new_decision_text_enter_commits_the_new_decision (1180.246166ms)\n✔ test_add_choice_on_inspector_appends_a_new_terminal_choice_without_touching_existing_edges (1169.685459ms)\n✔ test_add_choice_on_inspector_keeps_the_original_decision_selected (807.9175ms)\n✔ test_insert_static_block_before_splices_incoming_edges_with_their_labels (1040.4185ms)\n✔ test_insert_static_block_before_a_root_node_becomes_the_new_root (972.947291ms)\n✔ test_insert_decision_before_adds_one_leading_choice_and_splices_incoming_edges (1061.193542ms)\n✔ test_insert_decision_before_a_root_node_becomes_the_new_root (901.026625ms)\n✔ test_functions_only_toggle_exists_and_is_unchecked_by_default (1.670583ms)\n✔ test_functions_only_toggle_filters_both_views_to_functions_and_restores_on_toggle_off (1764.309625ms)\nBundled 23 modules in 9ms\n\n  viewer.js  79.91 KB  (entry point)\n\n✔ test_all_committed_diagrams_validate_with_mermaid (55.142625ms)\n✔ test_viewer_js_build_matches_committed_bundle (19.349958ms)\n✔ committed viewer.js matches a fresh build of viewer.ts byte for byte (19.361833ms)\n✔ bun build viewer.ts succeeds and includes expected DOM ids (20.023417ms)\n✔ bun build viewer.ts keeps the real destination as an option even when its kind is choice (14.4ms)\nℹ tests 74\nℹ suites 0\nℹ pass 73\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 70117.139084\n\n✖ failing tests:\n\ntest at tests/index.html.test.ts:498:1\n✖ test_font_size_is_the_same_in_every_view (3.221333ms)\n  SyntaxError [Error]: \"undefined\" is not valid JSON\n      at JSON.parse (<anonymous>)\n      at labelLineHeight (file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-49/mermaid-editor/tests/index.html.test.ts:108:15)\n      at async TestContext.<anonymous> (file:///private/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-49/mermaid-editor/tests/index.html.test.ts:500:22)\n      at async Test.run (node:internal/test_runner/test:1409:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)\n",
+            "newFailingTests": [],
+            "knownFailingTests": [
+              {
+                "file": "tests/index.html.test.ts",
+                "name": "test_font_size_is_the_same_in_every_view"
+              }
+            ],
+            "checkedAt": "2026-09-24T21:49:27-07:00"
+          },
+          "fullSuite": null,
+          "stepResults": [
+            {
+              "stepId": "init-submodules",
+              "script": "initTaskSubmodules",
+              "result": {
+                "initialized": false
+              }
+            },
+            {
+              "stepId": "rebase",
+              "script": "rebaseTaskWorktree",
+              "result": {
+                "lock": "acquired",
+                "heldByOwner": null,
+                "recoveryCommand": null,
+                "conflicted": false,
+                "stoppedAt": null,
+                "conflictedFilePaths": [],
+                "failureReason": null
+              },
+              "occurrenceIds": [
+                "",
+                "mermaid-editor"
+              ],
+              "worktreeHeads": [
+                {
+                  "occurrenceId": "",
+                  "head": "117aa45e35cedce9144be0ffbe8b17978843f072"
+                },
+                {
+                  "occurrenceId": "mermaid-editor",
+                  "head": "3c9c23c38de95b9f54aafd93906dc8a6f39c0ed9"
+                }
+              ]
+            },
+            {
+              "stepId": "merge-succeeded-exit",
+              "script": "closeTaskRun",
+              "result": {
+                "closed": [
+                  49
+                ],
+                "skipped": [],
+                "unblocked": [],
+                "ambiguous": []
+              }
+            }
+          ],
+          "sourceTipsAtRebase": [
+            {
+              "occurrenceId": "",
+              "baseBranch": "staging",
+              "sourceTip": "d1863e628bfdb02cef087fb739c43146ca3fcfb1"
+            },
+            {
+              "occurrenceId": "mermaid-editor",
+              "baseBranch": "staging",
+              "sourceTip": "a4c37e21d336c24d6768d365bcc25bc8a84b01dd"
+            }
+          ],
+          "rebaseStepReceipt": {
+            "stepId": "rebase",
+            "occurrenceIds": [
+              "",
+              "mermaid-editor"
+            ],
+            "worktreeHeads": [
+              {
+                "occurrenceId": "",
+                "head": "117aa45e35cedce9144be0ffbe8b17978843f072"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "head": "3c9c23c38de95b9f54aafd93906dc8a6f39c0ed9"
+              }
+            ],
+            "sourceTips": [
+              {
+                "occurrenceId": "",
+                "baseBranch": "staging",
+                "sourceTip": "d1863e628bfdb02cef087fb739c43146ca3fcfb1"
+              },
+              {
+                "occurrenceId": "mermaid-editor",
+                "baseBranch": "staging",
+                "sourceTip": "a4c37e21d336c24d6768d365bcc25bc8a84b01dd"
+              }
+            ]
+          },
+          "tailCursor": null
+        }
+      ]
+    },
+    "completionDate": "2026-09-24",
+    "commitHashes": [
+      "3c9c23c38de95b9f54aafd93906dc8a6f39c0ed9",
+      "117aa45e35cedce9144be0ffbe8b17978843f072",
+      "de4c583e136b3cc1623d1b38d8487cfc64361f43",
+      "7423afd0635f7923aed7fc58ec177bd1382239d4"
+    ],
+    "closureNote": "Task 49 completed.\n\nCommits:\n  3c9c23c38de95b9f54aafd93906dc8a6f39c0ed9  mermaid-editor   work\n  117aa45e35cedce9144be0ffbe8b17978843f072  (root)   work\n  de4c583e136b3cc1623d1b38d8487cfc64361f43  (root)   merge\n  7423afd0635f7923aed7fc58ec177bd1382239d4  mermaid-editor   merge\nModified files: mermaid-editor::tests/index.html.test.ts, mermaid-editor::viewer.js, mermaid-editor, plans/implementation-notes-49.md\nTask tests: 1 files, green\nFull suite: (not recorded)"
   }
 ]
