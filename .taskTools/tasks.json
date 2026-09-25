@@ -788,5 +788,39 @@
     "tests": "Update tests/index.html.test.ts's EDITOR_FIXTURE_NAME and all its hardcoded id literals (Start→new B_ id, Q1→new Q_ id, etc.) to match the renamed say-something-or-let-it-go.mmd; update tests/viewer.test.ts similarly if it references any renamed ids; assert `npm test` passes end to end.",
     "difficulty": 4,
     "splitWorthiness": 6
+  },
+  {
+    "taskNumber": 50,
+    "version": "83a51c52e92ea8c5ea67f791880a34db0280acb2",
+    "title": "Replace the New, Save, Open file and Reset toolbar buttons with one dropdown menu",
+    "userDescription": "replace 'new save open file reset' buttons with a dropdown menu.",
+    "goal": [
+      "- The New, Save, Open file... and Reset buttons no longer appear in the toolbar.",
+      "- One dropdown menu in the toolbar has four entries: New, Save, Open file... and Reset.",
+      "- Choosing each entry does exactly what its old button did.",
+      "- The existing mermaid-editor test suite passes."
+    ],
+    "notInScope": [
+      "- Undo edit, Redo edit, Previous, Next, the zoom buttons and the diagram picker stay as they are.",
+      "- No new menu entries, keyboard shortcuts or icons beyond the four existing actions.",
+      "- The drawer buttons (Add question after and similar) are not changed.",
+      "- No restyling of the toolbar beyond what the menu needs."
+    ],
+    "problemSolvedByTask": "Toolbar is crowded, Reset is ambiguous, The menu bar needs room for a \"search\" field",
+    "description": "The four header buttons (newBtn, saveBtn, openFileBtn, resetBtn) sit in the #header div of mermaid-editor/index.html, with a hidden openFileInput file input between them. Their click handlers live in mermaid-editor/main-events.ts (newBtn and saveBtn by getElementById, resetBtn by getElementById, openFileBtn imported from dom.ts). The file menu should become one dropdown (a native details/summary or select element is the simplest choice) that holds New, Save, Open file and Reset, and each entry must call the same handler as today. The tests in mermaid-editor/tests/index.html.test.ts click resetBtn by id in several places, so either keep those ids on the menu entries or update the tests. The zoomResetBtn is a different button and stays unchanged. mermaid-editor/viewer.js is a tracked bundle of the TypeScript files, so it must be rebuilt after the edit. The dropdown should close after an entry is chosen.",
+    "modifiableFiles": [
+      "mermaid-editor/index.html",
+      "mermaid-editor/main-events.ts",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/viewer.js",
+      "mermaid-editor/tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Open the page, open the menu, click each of New, Save, Open file... and Reset in it, and check each does what its old button did. Also check the four old buttons are gone.",
+    "difficulty": 4
   }
 ]
