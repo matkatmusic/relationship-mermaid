@@ -727,21 +727,22 @@
   {
     "taskNumber": 19,
     "version": "752d2d80fe9bdebbdfbafa4c70a449b9ac21588e",
-    "title": "Push the branch and turn on GitHub Pages",
-    "userDescription": "Push the develop branch to origin and turn on GitHub Pages in the repo settings (Deploy from a branch, root folder), then check https://matkatmusic.github.io/relationship-mermaid/ renders accountability.mmd.",
+    "title": "Push the mermaid-editor submodule branch and turn on GitHub Pages for it",
+    "userDescription": "Push the mermaid-editor submodule's develop branch to origin and turn on GitHub Pages in the mermaid-editor submodule's repo settings (Deploy from a branch, root folder), then check https://matkatmusic.github.io/mermaid-editor/ loads with no server. The diagrams/ folder lives in the parent repo, so the Pages viewer must be given diagrams some other way; that is out of scope here.",
     "chainGoal": [
       "- The viewer works on GitHub Pages with no server; the index.json, viewer fallback, and push tasks"
     ],
     "goal": [
-      "- https://matkatmusic.github.io/relationship-mermaid/ loads and renders accountability.mmd"
+      "- https://matkatmusic.github.io/mermaid-editor/ loads and renders a diagram with no server"
     ],
     "notInScope": [
       "- Saving diagrams from GitHub Pages; Save stays server-only",
       "- Live reload on GitHub Pages; the watcher stays server-only",
-      "- A custom domain; the default github.io address is enough"
+      "- A custom domain; the default github.io address is enough",
+      "- Serving the parent repo's diagrams/ folder from Pages; a separate task decides how diagrams reach the submodule site"
     ],
     "problemSolvedByTask": "I want to view the diagrams from any device without running the local server",
-    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ holds accountability.mmd, say-something-or-let-it-go.mmd, and stop-causing-harms.mmd, with no index.json yet; server.js derives the list via Bun.Glob, so diagrams/index.json must be created by hand listing those names. GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html and diagrams/ already sit at repo root; enabling Pages is a manual step in the repo Settings. Enabling Pages in Settings > Pages is manual; the push and the final check can be done from the terminal.",
+    "description": "index.html's loadList() calls fetch('/api/diagrams') and loadDiagram() calls fetch('/api/diagrams/'+name), both served only by server.js's Bun.serve handler; on GitHub Pages there is no server, so these calls fail. watchDiagram() opens an EventSource against /api/watch/<name>, which has no static equivalent and must not run when there is no server. saveDiagram() PUTs to /api/diagrams/<name>, so Save stays server-only. diagrams/ lives in the parent repo, not in the mermaid-editor submodule, and getting those diagrams to the Pages viewer is a separate concern (out of scope here). GitHub Pages \"Deploy from a branch, root folder\" needs no workflow file since index.html already sits at the mermaid-editor submodule's root; enabling Pages is a manual step in the mermaid-editor submodule's repo Settings. Enabling Pages in Settings > Pages is manual; the push and the final check can be done from the terminal.",
     "modifiableFiles": [],
     "readOnlyFiles": [
       "*"
@@ -789,103 +790,6 @@
     "splitWorthiness": 6
   },
   {
-    "taskNumber": 43,
-    "version": "47b97a022edc520eb58d5da63ea27273e553a401",
-    "title": "Functions-only toggle: add the checkbox to the web page (step 1 of 3)",
-    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"index.html\",\"dom.ts\",\"state.ts\"]. Step 1 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): add toggle to web page only.",
-    "goal": [
-      "- A 'functions only' checkbox exists in the page header",
-      "- state.ts exposes a functionsOnly boolean flag (default false)"
-    ],
-    "notInScope": [
-      "- Building the function-node filter itself — that's a sibling task (function-routing.ts)",
-      "- Wiring the checkbox to trigger a live re-render — that's a sibling task (render.ts)"
-    ],
-    "problemSolvedByTask": "First step toward a less dense code-flow view — the UI control needs to exist before the filtering and wiring behind it can be built.",
-    "description": "Add a 'functions only' checkbox to index.html's header, following the app's existing toggle-control markup pattern. Expose its element reference via dom.ts (a const export, same pattern as zoomInBtn/zoomOutBtn). Add a `functionsOnly: boolean` flag (default false) to state.ts. No change listener and no rendering behavior yet — the checkbox exists but does nothing when toggled; that wiring is a later sibling task.\n\n## Clarification answer (2026-09-24)\n\nYes. The live files are in the mermaid-editor folder, not the repo root. Edit `mermaid-editor/index.html` (header has `zoomInBtn` at line 70, use its markup pattern), `mermaid-editor/dom.ts` (`export const zoomInBtn = document.getElementById(...)` at line 25 is the pattern), and `mermaid-editor/state.ts` (the state object, add `functionsOnly: false`). Write the e2e test in `mermaid-editor/tests/index.html.test.ts`. `mermaid-editor/server.js` serves `mermaid-editor/index.html`. Do not create root-level files: the root has no index.html, dom.ts, or state.ts.",
-    "modifiableFiles": [
-      "index.html",
-      "dom.ts",
-      "state.ts",
-      "mermaid-editor/index.html",
-      "mermaid-editor/dom.ts",
-      "mermaid-editor/state.ts",
-      "mermaid-editor/tests/index.html.test.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "e2e: the 'functions only' checkbox exists in the page and is unchecked by default.",
-    "difficulty": 8,
-    "splitWorthiness": 8,
-    "run": {
-      "active": false,
-      "worktree": "/var/folders/fy/wg2tzrv957sg2vqjcvdkdzvm0000gn/T/taskTools-wt/relationship-mermaid-dd53a9ae/task-43",
-      "leaseRunId": "29b7f866-7623-4640-bcda-2b523ef27701",
-      "history": [
-        {
-          "runId": "29b7f866-7623-4640-bcda-2b523ef27701",
-          "startedAt": "2026-09-23T19:51:53-07:00",
-          "endedAt": "2026-09-23T20:02:01-07:00",
-          "exitType": "clarify-stuck",
-          "exitNote": "the planner asked twice for something the docs cannot supply. worktree preserved.",
-          "modifiedFiles": [],
-          "commits": [],
-          "implementationNotesFile": null,
-          "taskTests": null,
-          "fullSuite": null,
-          "stepResults": [
-            {
-              "stepId": "init-submodules",
-              "script": "initTaskSubmodules",
-              "result": {
-                "initialized": false
-              }
-            }
-          ],
-          "tailCursor": null
-        }
-      ]
-    },
-    "createsFiles": [
-      "index.html",
-      "dom.ts",
-      "state.ts"
-    ]
-  },
-  {
-    "taskNumber": 44,
-    "version": "4720ced72e9d60681bc4638863d5e10427100c2f",
-    "title": "Functions-only toggle: build the diagram filter (step 2 of 3)",
-    "userDescription": "[split-task-child] This task is being created by /split-task as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's files field must be exactly this list, in this order, and no other files: [\"function-routing.ts\"]. Step 2 of 3 (parent task 42, 'Add a functions only toggle to the diagram renderer'): add filtering to loaded .mmd file and generate the filtered .mmd that gets rendered instead.",
-    "goal": [
-      "- function-routing.ts exports a filter: mermaid source in, filtered source out",
-      "- Edges are rerouted directly between function nodes"
-    ],
-    "notInScope": [
-      "- Wiring the filter into the live render pipeline or toggle — that's a sibling task (render.ts)",
-      "- Changing how taskTools:mermaid generates .mmd files"
-    ],
-    "problemSolvedByTask": "Code structure diagrams are too dense to read, and I need a high level view of code flow",
-    "description": "Create function-routing.ts, a pure module with a function that takes a diagram's mermaid source (parsed via the same node/edge model editor-graph.ts and diagram-source.ts already use) and returns a filtered source string. Function-definition nodes are B_ nodes whose label matches an identifier(...) call-signature shape (e.g. isPromptLine(entry: ...), shouldBlock(marker: string, ...)); every other B_/Q_/Q_CHOICE_ node is dropped. For each pair of function nodes, redraw a direct edge between them whenever the caller's body (traced from its own function node down through the graph) reaches a node that points at the callee's function node, so the reduced diagram still shows accurate call routing. Not yet called from anywhere — this task only builds and unit-tests the filter function itself.",
-    "modifiableFiles": [
-      "function-routing.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "createsFiles": [
-      "function-routing.ts"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "Feed function-routing.ts's filter a sample source (e.g. ask-dont-dump-issues.mmd's content) and assert it returns only function-declaration nodes with edges rerouted directly between them.",
-    "difficulty": 2,
-    "splitWorthiness": 1
-  },
-  {
     "taskNumber": 46,
     "version": "82d6a8f7113250caaf26001e6eff9c1269cc79b8",
     "title": "Functions-only toggle: wire the toggle into render.ts (45 child 1 of 4)",
@@ -913,17 +817,7 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 4,
-    "blockedBy": [
-      {
-        "taskNumber": 43,
-        "reason": "This task adds a change listener on the toggle checkbox and reads/flips state.functionsOnly, but neither the checkbox nor that state field exists in the codebase yet; task 43 creates both."
-      },
-      {
-        "taskNumber": 44,
-        "reason": "This task calls function-routing.ts's filter function before mermaid.render, but function-routing.ts does not exist in the repo yet; task 44 builds it."
-      }
-    ]
+    "difficulty": 4
   },
   {
     "taskNumber": 47,
@@ -952,17 +846,7 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 4,
-    "blockedBy": [
-      {
-        "taskNumber": 43,
-        "reason": "graph-slice.ts's fix must branch on state.functionsOnly, but that flag doesn't exist in state.ts yet — it's added by task 43."
-      },
-      {
-        "taskNumber": 44,
-        "reason": "This task verifies graph-slice.ts's sliceIds/siblingIds/leadInIds against the filtered diagram's edge shape, but function-routing.ts (the filter that produces that filtered diagram) doesn't exist yet — it's built by task 44."
-      }
-    ]
+    "difficulty": 4
   },
   {
     "taskNumber": 48,
@@ -991,17 +875,7 @@
     "schemaVersion": "1.0.1",
     "hasTests": false,
     "tests": "",
-    "difficulty": 4,
-    "blockedBy": [
-      {
-        "taskNumber": 43,
-        "reason": "This task must check state.functionsOnly, the flag that task 43 adds to the web page toggle, to decide whether phone-separators.ts's overlay drawing should no-op."
-      },
-      {
-        "taskNumber": 44,
-        "reason": "This task must handle the filtered diagram shape that task 44's diagram filter produces, since phone-separators.ts's overlay functions assume the Q_/Q_CHOICE_ decision-tree shape a functions-only filtered diagram no longer has."
-      }
-    ]
+    "difficulty": 4
   },
   {
     "taskNumber": 49,
@@ -1032,14 +906,6 @@
     "tests": "Load a code-flow diagram, enable the toggle, assert only function-declaration nodes remain in both main and phone views with rerouted edges; disable it and assert the original diagram is restored.",
     "difficulty": 4,
     "blockedBy": [
-      {
-        "taskNumber": 43,
-        "reason": "Sibling task 43 adds the checkbox and state.functionsOnly flag this end-to-end test drives by clicking; the test has nothing to toggle until 43 lands."
-      },
-      {
-        "taskNumber": 44,
-        "reason": "Sibling task 44 builds the diagram filter in function-routing.ts that produces the function-only node/edge set this test asserts on."
-      },
       {
         "taskNumber": 46,
         "reason": "Task 46 wires the toggle into render.ts; the test cannot pass until the render applies the filter."
