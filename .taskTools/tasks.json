@@ -822,5 +822,50 @@
     "hasTests": true,
     "tests": "Open the page, open the menu, click each of New, Save, Open file... and Reset in it, and check each does what its old button did. Also check the four old buttons are gone.",
     "difficulty": 4
+  },
+  {
+    "taskNumber": 51,
+    "version": "6ba745f90e12bd2d2d5c98b39cf462f37aa49b4e",
+    "title": "Add a search field that jumps to and selects matching nodes",
+    "userDescription": "add a \"search\" textField that lets you type in either: node text, or node name.  the result is jumped to and selected, showing the 'selected item widget'.  cycle buttons are shown when multiple results exist.  when text is entered into the text field, each keypress results in an updated search and navigating to the first hit in the search results.  a (x) button is shown in the text editor when text is entered, to clear the text contents.",
+    "goal": [
+      "- Typing in the search field finds nodes by node name or by node text.",
+      "- Each keypress reruns the search and moves to the first hit, which is selected with the selected item widget showing.",
+      "- Cycle buttons show only when there are 2 or more results, and step through the hits.",
+      "- An (x) button shows in the field when it has text, and clicking it empties the field.",
+      "- Search field shows in menu bar, next to new menu (TT #50)"
+    ],
+    "notInScope": [
+      "- Only plain text matching, with no typo tolerance and no regular expressions.",
+      "- Search covers only the loaded diagram, not other files.",
+      "- No find-and-replace and no editing of results.",
+      "- Moving New, Save, Open file... and Reset into a menu is task 50."
+    ],
+    "problemSolvedByTask": "Hard to find nodes, \"Know name, not place\", Slow to jump",
+    "description": "Work is in the mermaid-editor submodule. The header in index.html holds the Previous/Next decision buttons and the decisionCounter span; add the search input, a clear (x) button and search cycle buttons with a match counter there, and register their elements in dom.ts. Node data comes from editorGraph() in editor-graph.ts, which returns nodes with id, kind, label and lineIndex; a search matches when the id (node name) or the label (node text) contains the query, case-insensitively, sorted by lineIndex. Selecting a hit reuses the existing decision-nav.ts pattern: call selectEditorNode(id) from editor-actions.ts, which opens the selected-node widget (nodeActions and the node inspector), then await render(), reassert selectEditorNode, and call centerNodeInViewport(outputBox, diagramBox, id) to jump to it. Add a new node-search.ts holding the match list, current index and cycle logic, and wire an input listener (one search per keypress that jumps to the first hit), the clear-button click, and the previous/next cycle buttons in main-events.ts. Show the cycle buttons only when more than one match exists and show the clear button only when the input has text; use the hidden attribute. Handle editorGraph() validation errors the way navigateDecision does, via showEditorValidationError. viewer.js is the tracked bun build output of viewer.ts (script build in package.json), so rebuild it after the change. Existing browser tests in tests/index.html.test.ts use an evaluate() helper against the real page; add tests there for typing, first-hit selection, cycle buttons and clear.",
+    "modifiableFiles": [
+      "mermaid-editor/index.html",
+      "mermaid-editor/dom.ts",
+      "mermaid-editor/node-search.ts",
+      "mermaid-editor/main-events.ts",
+      "mermaid-editor/viewer.js",
+      "mermaid-editor/tests/index.html.test.ts"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "mermaid-editor/node-search.ts"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "page is loaded, a search textEditor exists on the page, in the menu bar, and all of option 2.",
+    "difficulty": 5,
+    "blockedBy": [
+      {
+        "taskNumber": 50,
+        "reason": "The search field sits next to the new file menu that task 50 adds."
+      }
+    ]
   }
 ]
