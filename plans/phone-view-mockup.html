@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Flow</title>
+<style>
+  :root {
+    --page-bg: #eef0f3;
+    --page-fg: #23232a;
+    --hint-fg: #6b6b76;
+    --phone-bezel: #0c0c10;
+    --screen-bg: #17171c;
+
+    --color-question: #c9781f;
+    --color-static: #3f7fc4;
+    --color-choice: #3a3a42;
+    --color-choice-hover: #4a4a54;
+    --color-chosen: #2f7d43;
+    --color-declined: #58585f;
+    --color-declined-alt: #4c4c53;
+    --text-on-color: #f5f5f7;
+    --mask-overlay: rgba(8, 8, 12, 0.55);
+    --separator-color: #e0674f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page-bg: #121216;
+      --page-fg: #f0f0f2;
+      --hint-fg: #93939c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page-bg: #121216;
+    --page-fg: #f0f0f2;
+    --hint-fg: #93939c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 16px 40px;
+    min-height: 100vh;
+  }
+
+  h1 { font-size: 16px; margin: 0; font-weight: 600; }
+
+  .phone-frame {
+    width: 380px;
+    max-width: 100%;
+    height: 720px;
+    max-height: 85vh;
+    background: var(--phone-bezel);
+    border-radius: 34px;
+    padding: 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  }
+  .phone-notch {
+    width: 90px;
+    height: 18px;
+    background: var(--phone-bezel);
+    border-radius: 0 0 12px 12px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  .screen {
+    height: calc(100% - 18px);
+    background: var(--screen-bg);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .stream {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
+  .block { width: 100%; }
+
+  .q-card {
+    width: 100%;
+    padding: 22px 16px;
+    background: var(--color-question);
+    color: var(--text-on-color);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .b-card {
+    width: 100%;
+    padding: 16px;
+    background: var(--color-static);
+    color: var(--text-on-color);
+    font-size: 13px;
+    text-align: center;
+  }
+  .choice-row {
+    display: flex;
+    width: 100%;
+  }
+  .choice-btn {
+    flex: 1 1 0;
+    padding: 16px 8px;
+    border: none;
+    color: var(--text-on-color);
+    font-size: 13px;
+    font-family: inherit;
+    text-align: center;
+    cursor: pointer;
+    background: var(--color-choice);
+  }
+  .choice-btn:hover { background: var(--color-choice-hover); }
+  .choice-btn.chosen { background: var(--color-chosen); cursor: default; }
+  .choice-btn.declined {
+    background: repeating-linear-gradient(45deg,
+      var(--color-declined), var(--color-declined) 6px,
+      var(--color-declined-alt) 6px, var(--color-declined-alt) 12px);
+    opacity: 0.9;
+  }
+  .choice-btn.declined:hover { filter: brightness(1.15); }
+
+  .past-wrap { position: relative; }
+  .past-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--mask-overlay);
+    pointer-events: none;
+  }
+
+  .separator {
+    border: none;
+    border-top: 2px dashed var(--separator-color);
+    margin: 10px 14px;
+  }
+
+  .done-note {
+    padding: 18px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--hint-fg);
+  }
+
+  .hint {
+    max-width: 380px;
+    font-size: 12px;
+    color: var(--hint-fg);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <h1>Phone view — decision flow mockup</h1>
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="screen">
+      <div class="stream" id="stream"></div>
+    </div>
+  </div>
+  <div class="hint">Tap a choice to move forward. Scroll up and tap a greyed, striped "declined" option to switch that decision — it replaces "undo" and the log.</div>
+
+<script>
+  // Branching graph: each Q_CHOICE names its own `next`, so different choices at the same question lead down different paths.
+  var NODES = {
+    q0: { type: 'Q', question: "Who brings it up?", choices: [
+      { label: "You", next: "q1a" },
+      { label: "Your partner", next: "q1b" },
+      { label: "Neither", next: "b1" }
+    ]},
+    b1: { type: 'B', text: "It goes unspoken for a few days.", next: "q1c" },
+
+    q1a: { type: 'Q', question: "What's the tone?", choices: [
+      { label: "Calm", next: "q2a" },
+      { label: "Tense", next: "q2b" }
+    ]},
+    q1b: { type: 'Q', question: "How do they bring it up?", choices: [
+      { label: "Directly", next: "q2a" },
+      { label: "Hints first", next: "q2c" }
+    ]},
+    q1c: { type: 'Q', question: "Does it surface later?", choices: [
+      { label: "Yes, it comes up", next: "q2c" },
+      { label: "No, it fades", next: "end_faded" }
+    ]},
+
+    q2a: { type: 'Q', question: "Where does it happen?", choices: [
+      { label: "At home", next: "q3" },
+      { label: "In public", next: "end_public" },
+      { label: "Over text", next: "q3" }
+    ]},
+    q2b: { type: 'Q', question: "Does it escalate?", choices: [
+      { label: "Yes", next: "end_escalate" },
+      { label: "No, it cools off", next: "q3" }
+    ]},
+    q2c: { type: 'Q', question: "Who names the real issue?", choices: [
+      { label: "You do", next: "q3" },
+      { label: "They do", next: "q3" }
+    ]},
+
+    q3: { type: 'Q', question: "How does it end?", choices: [
+      { label: "It gets fixed", next: "end_fixed" },
+      { label: "It waits for later", next: "end_waits" }
+    ]},
+
+    end_fixed:    { type: 'B', text: "Outcome: resolved.", next: null },
+    end_waits:    { type: 'B', text: "Outcome: paused, waits for later.", next: null },
+    end_escalate: { type: 'B', text: "Outcome: it escalates.", next: null },
+    end_public:   { type: 'B', text: "Outcome: cut short in public.", next: null },
+    end_faded:    { type: 'B', text: "Outcome: it just fades, unresolved.", next: null }
+  };
+  var START = 'q0';
+
+  var answers = {}; // nodeId -> chosen choice index, for answered Q nodes only
+
+  function buildSequence() {
+    var seq = [];
+    var cur = START;
+    while (cur) {
+      var node = NODES[cur];
+      seq.push(cur);
+      if (node.type === 'B') {
+        cur = node.next;
+      } else if (cur in answers) {
+        cur = node.choices[answers[cur]].next;
+      } else {
+        break; // unanswered Q: stop here, it's the active node
+      }
+    }
+    return seq;
+  }
+
+  function choose(nodeId, idx) {
+    answers[nodeId] = idx;
+    render();
+  }
+
+  function revert(nodeId, idx) {
+    var seq = buildSequence();
+    var cut = seq.indexOf(nodeId);
+    var kept = {};
+    for (var i = 0; i < cut; i++) {
+      var id = seq[i];
+      if (NODES[id].type === 'Q' && (id in answers)) kept[id] = answers[id];
+    }
+    kept[nodeId] = idx;
+    answers = kept;
+    render();
+  }
+
+  function renderChoiceRow(nodeId, node, mode) {
+    var html = '<div class="choice-row">';
+    node.choices.forEach(function (choice, idx) {
+      if (mode === 'active') {
+        html += '<button class="choice-btn" onclick="choose(\'' + nodeId + '\',' + idx + ')">' + choice.label + '</button>';
+      } else {
+        var chosenIdx = answers[nodeId];
+        if (idx === chosenIdx) {
+          html += '<button class="choice-btn chosen" disabled>' + choice.label + '</button>';
+        } else {
+          html += '<button class="choice-btn declined" onclick="revert(\'' + nodeId + '\',' + idx + ')">&#8634; ' + choice.label + '</button>';
+        }
+      }
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function render() {
+    var seq = buildSequence();
+
+    var lastAnsweredIdx = -1;
+    seq.forEach(function (id, i) {
+      if (NODES[id].type === 'Q' && (id in answers)) lastAnsweredIdx = i;
+    });
+
+    var html = '';
+    seq.forEach(function (id, i) {
+      var node = NODES[id];
+      if (node.type === 'B') {
+        html += '<div class="block b-card">' + node.text + '</div>';
+      } else {
+        if (id in answers) {
+          html += '<div class="past-wrap">' +
+            '<div class="block q-card">' + node.question + '</div>' +
+            renderChoiceRow(id, node, 'past') +
+            '</div>';
+        } else {
+          html += '<div class="block q-card" id="active-q">' + node.question + '</div>' +
+            renderChoiceRow(id, node, 'active');
+        }
+      }
+
+      if (i === lastAnsweredIdx) {
+        html += '<hr class="separator">';
+      }
+    });
+
+    var last = NODES[seq[seq.length - 1]];
+    if (last.type === 'B' && !last.next) {
+      html += '<div class="done-note">End of this path. Scroll up and tap a declined option to try another branch.</div>';
+    }
+
+    var stream = document.getElementById('stream');
+    stream.innerHTML = html;
+
+    var target = document.getElementById('active-q') || stream.lastElementChild;
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  render();
+</script>
+</body>
+</html>
