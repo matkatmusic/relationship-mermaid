@@ -790,88 +790,77 @@
     "splitWorthiness": 6
   },
   {
-    "taskNumber": 50,
-    "version": "83a51c52e92ea8c5ea67f791880a34db0280acb2",
-    "title": "Replace the New, Save, Open file and Reset toolbar buttons with one dropdown menu",
-    "userDescription": "replace 'new save open file reset' buttons with a dropdown menu.",
+    "taskNumber": 213,
+    "version": "4c9f5327eff5614b3191d68e7f2b2d15010e4d41",
+    "title": "Add the reflow-diagram skill to the mermaid-editor plugin",
+    "userDescription": "Add a 'reflow-diagram' skill to the ~/Programming/relationship-mermaid/mermaid-editor plugin: it restructures a .mmd diagram file so node declarations are at the top, node links come afterwards, each link line names at most 2 nodes (no A --> B --> C chains), and decision nodes are grouped together with their outgoing choice links for easy readability. It never renames nodes. The SKILL.md contains no prose, only a dynamic-injection command that runs a script; the script does all the work. Running it twice changes nothing the second time. [split-task-child] This task is being created by `/split-task` as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/.claude-plugin/plugin.json\",\"/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/skills/reflow-diagram/SKILL.md\"]`.",
+    "chainGoal": [
+      "- Parent task 210: the mermaid-editor repo becomes a plugin shipping create-mermaid, find-bad-nodes, and reflow-diagram; task 211 moves create-mermaid, task 212 adds find-bad-nodes, this task adds reflow-diagram"
+    ],
     "goal": [
-      "- The New, Save, Open file... and Reset buttons no longer appear in the toolbar.",
-      "- One dropdown menu in the toolbar has four entries: New, Save, Open file... and Reset.",
-      "- Choosing each entry does exactly what its old button did.",
-      "- The existing mermaid-editor test suite passes."
+      "- Declarations first, links after: every node declaration is above the first link line",
+      "- At most 2 nodes per link line: no A --> B --> C chains remain",
+      "- Decision nodes sit with their choices: a decision node's outgoing links are grouped right after it",
+      "- the skill body contains no prose, except a dynamic injection command to run a script, which is where all of the work is performed."
     ],
     "notInScope": [
-      "- Undo edit, Redo edit, Previous, Next, the zoom buttons and the diagram picker stay as they are.",
-      "- No new menu entries, keyboard shortcuts or icons beyond the four existing actions.",
-      "- The drawer buttons (Add question after and similar) are not changed.",
-      "- No restyling of the toolbar beyond what the menu needs."
+      "- Renaming nodes: names are untouched; flagging bad names is task 212",
+      "- Moving the generator into the plugin: owned by task 211"
     ],
-    "problemSolvedByTask": "Toolbar is crowded, Reset is ambiguous, The menu bar needs room for a \"search\" field",
-    "description": "The four header buttons (newBtn, saveBtn, openFileBtn, resetBtn) sit in the #header div of mermaid-editor/index.html, with a hidden openFileInput file input between them. Their click handlers live in mermaid-editor/main-events.ts (newBtn and saveBtn by getElementById, resetBtn by getElementById, openFileBtn imported from dom.ts). The file menu should become one dropdown (a native details/summary or select element is the simplest choice) that holds New, Save, Open file and Reset, and each entry must call the same handler as today. The tests in mermaid-editor/tests/index.html.test.ts click resetBtn by id in several places, so either keep those ids on the menu entries or update the tests. The zoomResetBtn is a different button and stays unchanged. mermaid-editor/viewer.js is a tracked bundle of the TypeScript files, so it must be rebuilt after the edit. The dropdown should close after an entry is chosen.",
+    "problemSolvedByTask": "Diagram files are hard to read because declarations and links are mixed, and long link chains and scattered decision branches hide the flow.",
+    "description": "mermaid-editor is a git submodule at /Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor, currently tracking only LICENSE at commit 4027f15; neither .claude-plugin/ nor skills/ exists yet. This is one of 3 children split from task 210; sibling task 211 creates .claude-plugin/plugin.json, so this task lands after it and only bumps that manifest. taskTools's own skills/mermaid/SKILL.md establishes the dynamic-injection convention (a node \"${CLAUDE_PLUGIN_ROOT}/scripts/<skill>/<script>.ts\" command block); the SKILL.md here holds only that command, and the work lives in scripts/reflow-diagram/reflowDiagram.ts with a golden-file test at tests/reflow-diagram.test.ts. The reflow algorithm must parse node declarations and link lines out of the .mmd flowchart body, split any link line naming 3+ nodes into separate 2-node link lines, place all declarations before all links, group decision nodes with their outgoing choice links, and never alter a node id; running it on its own output must be a no-op.",
     "modifiableFiles": [
-      "mermaid-editor/index.html",
-      "mermaid-editor/main-events.ts",
-      "mermaid-editor/dom.ts",
-      "mermaid-editor/viewer.js",
-      "mermaid-editor/tests/index.html.test.ts"
-    ],
-    "readOnlyFiles": [
-      "*"
-    ],
-    "schemaVersion": "1.0.1",
-    "hasTests": true,
-    "tests": "Open the page, open the menu, click each of New, Save, Open file... and Reset in it, and check each does what its old button did. Also check the four old buttons are gone.",
-    "difficulty": 4
-  },
-  {
-    "taskNumber": 51,
-    "version": "6ba745f90e12bd2d2d5c98b39cf462f37aa49b4e",
-    "title": "Add a search field that jumps to and selects matching nodes",
-    "userDescription": "add a \"search\" textField that lets you type in either: node text, or node name.  the result is jumped to and selected, showing the 'selected item widget'.  cycle buttons are shown when multiple results exist.  when text is entered into the text field, each keypress results in an updated search and navigating to the first hit in the search results.  a (x) button is shown in the text editor when text is entered, to clear the text contents.",
-    "goal": [
-      "- Typing in the search field finds nodes by node name or by node text.",
-      "- Each keypress reruns the search and moves to the first hit, which is selected with the selected item widget showing.",
-      "- Cycle buttons show only when there are 2 or more results, and step through the hits.",
-      "- An (x) button shows in the field when it has text, and clicking it empties the field.",
-      "- Search field shows in menu bar, next to new menu (TT #50)"
-    ],
-    "notInScope": [
-      "- Only plain text matching, with no typo tolerance and no regular expressions.",
-      "- Search covers only the loaded diagram, not other files.",
-      "- No find-and-replace and no editing of results.",
-      "- Moving New, Save, Open file... and Reset into a menu is task 50."
-    ],
-    "problemSolvedByTask": "Hard to find nodes, \"Know name, not place\", Slow to jump",
-    "description": "Work is in the mermaid-editor submodule. The header in index.html holds the Previous/Next decision buttons and the decisionCounter span; add the search input, a clear (x) button and search cycle buttons with a match counter there, and register their elements in dom.ts. Node data comes from editorGraph() in editor-graph.ts, which returns nodes with id, kind, label and lineIndex; a search matches when the id (node name) or the label (node text) contains the query, case-insensitively, sorted by lineIndex. Selecting a hit reuses the existing decision-nav.ts pattern: call selectEditorNode(id) from editor-actions.ts, which opens the selected-node widget (nodeActions and the node inspector), then await render(), reassert selectEditorNode, and call centerNodeInViewport(outputBox, diagramBox, id) to jump to it. Add a new node-search.ts holding the match list, current index and cycle logic, and wire an input listener (one search per keypress that jumps to the first hit), the clear-button click, and the previous/next cycle buttons in main-events.ts. Show the cycle buttons only when more than one match exists and show the clear button only when the input has text; use the hidden attribute. Handle editorGraph() validation errors the way navigateDecision does, via showEditorValidationError. viewer.js is the tracked bun build output of viewer.ts (script build in package.json), so rebuild it after the change. Existing browser tests in tests/index.html.test.ts use an evaluate() helper against the real page; add tests there for typing, first-hit selection, cycle buttons and clear.",
-    "modifiableFiles": [
-      "mermaid-editor/index.html",
-      "mermaid-editor/dom.ts",
-      "mermaid-editor/node-search.ts",
-      "mermaid-editor/main-events.ts",
-      "mermaid-editor/viewer.js",
-      "mermaid-editor/tests/index.html.test.ts"
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/.claude-plugin/plugin.json",
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/skills/reflow-diagram/SKILL.md"
     ],
     "readOnlyFiles": [
       "*"
     ],
     "createsFiles": [
-      "mermaid-editor/node-search.ts"
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/skills/reflow-diagram/SKILL.md",
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/scripts/reflow-diagram/reflowDiagram.ts",
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/tests/reflow-diagram.test.ts"
     ],
     "schemaVersion": "1.0.1",
     "hasTests": true,
-    "tests": "page is loaded, a search textEditor exists on the page, in the menu bar, and all of option 2.",
-    "difficulty": 5,
-    "blockedBy": [
-      {
-        "taskNumber": 50,
-        "reason": "The search field sits next to the new file menu that task 50 adds."
-      }
+    "tests": "Run /reflow-diagram on a messy fixture .mmd; the result matches a golden file byte for byte, and running it again changes nothing.",
+    "difficulty": 7
+  },
+  {
+    "taskNumber": 212,
+    "version": "3a87cec594c65b88e2bff82309aaa0f303b18ee0",
+    "title": "Add the find-bad-nodes skill to the mermaid-editor plugin",
+    "userDescription": "Add a 'find-bad-nodes' skill to the ~/Programming/relationship-mermaid/mermaid-editor plugin: it finds and flags diagram nodes in a .mmd file that don't follow the naming convention. The naming convention is whatever node names the create-mermaid generator (mermaid.ts, moved there by the sibling task 211) emits; do not hand-write a second rule. The SKILL.md contains no prose, only a dynamic-injection command that runs a script; the script does all the work. It flags only; it does not fix nodes. [split-task-child] This task is being created by `/split-task` as one of an already-requested set of 3 children — skip the oversized-task assessment regardless of this task's difficulty. This child's `files` field must be exactly this list, in this order, and no other files: `[\"/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/.claude-plugin/plugin.json\",\"/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/skills/find-bad-nodes/SKILL.md\"]`.",
+    "chainGoal": [
+      "- Parent task 210: the mermaid-editor repo becomes a plugin shipping create-mermaid, find-bad-nodes, and reflow-diagram; task 211 moves create-mermaid, this task adds find-bad-nodes, its sibling adds reflow-diagram"
     ],
-    "agent": {
-      "PLAN_THE_TASK": {
-        "model": "claude-opus-5-5[1m]",
-        "effort": "medium"
-      }
-    }
+    "goal": [
+      "- `/find-bad-nodes <file.mmd>` prints each bad node with its file and line; a clean diagram prints nothing and exits 0",
+      "- The rule is the same one mermaid.ts emits; no second naming rule is written by hand",
+      "- the skill file contains no prose, and only contains a Dynamic Injection command to run a script file, which is what does all the work."
+    ],
+    "notInScope": [
+      "- Fixing or renaming the flagged nodes: this skill flags only",
+      "- reflow-diagram: owned by the sibling child task that adds that skill",
+      "- Moving the generator into the plugin: owned by task 211"
+    ],
+    "problemSolvedByTask": "Hand-edited diagrams break the tooling that reads node names",
+    "description": "mermaid-editor (~/Programming/relationship-mermaid/mermaid-editor) is a git submodule currently holding only LICENSE; neither .claude-plugin/plugin.json nor any skills/ directory exists yet there — both are created by sibling task 211, which this task depends on. The naming convention to check comes from scripts/mermaid/mermaid.ts (moved to scripts/create-mermaid/mermaid.ts by task 211): assignFinalId/computeBaseId produce statement-box ids as B_<tokens>, decision diamonds as Q_<tokens> with branches Q_CHOICE_<tokens>_Y/_N, function/method entry boxes as B_<functionName> or B_<className>_<methodName>, and the file-root box as B_<sanitizedRelativePath>. The SKILL.md holds only a dynamic-injection command that runs scripts/find-bad-nodes/findBadNodes.ts; that script imports the id rules from create-mermaid's generator rather than hand-writing a duplicate regex, and a test at tests/find-bad-nodes.test.ts covers it. taskTools' own root .claude-plugin/plugin.json shows plugins auto-discover skills by directory name (no explicit skill listing), so the plugin.json edit here is a small version/keyword update, not a registration list. The skill only flags nodes whose ids don't match the convention; it must not modify the .mmd file.",
+    "modifiableFiles": [
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/.claude-plugin/plugin.json",
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/skills/find-bad-nodes/SKILL.md"
+    ],
+    "readOnlyFiles": [
+      "*"
+    ],
+    "createsFiles": [
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/skills/find-bad-nodes/SKILL.md",
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/scripts/find-bad-nodes/findBadNodes.ts",
+      "/Users/matkatmusicllc/Programming/relationship-mermaid/mermaid-editor/tests/find-bad-nodes.test.ts"
+    ],
+    "schemaVersion": "1.0.1",
+    "hasTests": true,
+    "tests": "Run /find-bad-nodes on a fixture .mmd with one node that breaks the generator's naming; output names that node and nothing else.",
+    "difficulty": 4
   }
 ]
