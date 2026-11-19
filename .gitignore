@@ -5,3 +5,4 @@ node_modules/
 .taskTools/runs/
 **/plans/checkpoint.json
 .taskTools/workflows/
+.claude_hooks/
